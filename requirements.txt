@@ -1,0 +1,26 @@
+# DR foundation-model external-validation study
+# Python 3.14.7 (Windows). Pinned to the versions installed for Phase 2-3.
+#
+# Install:  python -m venv .venv
+#           .venv\Scripts\python.exe -m pip install -r requirements.txt
+#
+# Phase 2-3 (data audit + preprocessing) -- direct dependencies:
+numpy==2.5.3
+pandas==3.0.5
+pillow==12.3.0
+scikit-learn==1.9.0
+scipy==1.18.1
+matplotlib==3.11.1
+
+# Phase 3+ (Dataset/DataLoader, and training in Phase 4-5):
+# Installed here as CPU builds (this machine has no CUDA). For Phase 4-5,
+# install the CUDA build on a GPU machine instead:
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu124
+torch==2.14.0
+torchvision==0.29.0
+torchmetrics==1.9.0
+
+# Added in later phases (uncomment when reached):
+#   Phase 5    timm                                  (baseline CNN backbones / RETFound helpers)
+#   Phase 7    grad-cam  (pytorch-grad-cam)          (explainability)
+#   Phase 9    statsmodels                           (DeLong / bootstrap helpers)

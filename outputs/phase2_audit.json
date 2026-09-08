@@ -1,0 +1,136 @@
+{
+  "generated_utc": "2026-09-08T06:23:00+00:00",
+  "aptos": {
+    "name": "APTOS 2019",
+    "role": "internal (train/val/test)",
+    "train": {
+      "label_csv": "C:\\Users\\pravi\\OneDrive\\Desktop\\DIABETIC_FUNDUS_REASEARCH PAPER\\aptos2019-blindness-detection\\train.csv",
+      "image_dir": "C:\\Users\\pravi\\OneDrive\\Desktop\\DIABETIC_FUNDUS_REASEARCH PAPER\\aptos2019-blindness-detection\\train_images",
+      "n_label_rows": 3662,
+      "n_unique_label_ids": 3662,
+      "n_image_files": 3662,
+      "labels_without_image": [],
+      "images_without_label": [],
+      "n_labels_without_image": 0,
+      "n_images_without_label": 0,
+      "n_duplicate_label_ids": 0,
+      "class_distribution": {
+        "n_labeled": 3662,
+        "counts": {
+          "0": 1805,
+          "1": 370,
+          "2": 999,
+          "3": 193,
+          "4": 295
+        },
+        "pct": {
+          "0": 49.29,
+          "1": 10.1,
+          "2": 27.28,
+          "3": 5.27,
+          "4": 8.06
+        },
+        "n_unexpected_labels": 0,
+        "majority_grade": 0,
+        "imbalance_ratio": 9.35
+      }
+    },
+    "kaggle_holdout_test": {
+      "label_csv": "C:\\Users\\pravi\\OneDrive\\Desktop\\DIABETIC_FUNDUS_REASEARCH PAPER\\aptos2019-blindness-detection\\test.csv",
+      "image_dir": "C:\\Users\\pravi\\OneDrive\\Desktop\\DIABETIC_FUNDUS_REASEARCH PAPER\\aptos2019-blindness-detection\\test_images",
+      "n_rows": 1928,
+      "n_image_files": 1928,
+      "has_labels": false,
+      "note": "Kaggle competition holdout - NO public labels. Not usable as an internal test set. Internal test is carved from train.csv in Phase 3."
+    }
+  },
+  "messidor": {
+    "name": "Messidor-2",
+    "role": "EXTERNAL TEST ONLY",
+    "n_label_rows": 1744,
+    "n_image_files": 1744,
+    "n_labels_without_image": 0,
+    "n_images_without_label": 0,
+    "labels_without_image": [],
+    "images_without_label": [],
+    "n_duplicate_label_ids": 0,
+    "class_distribution_all": {
+      "n_labeled": 1744,
+      "counts": {
+        "0": 1017,
+        "1": 270,
+        "2": 347,
+        "3": 75,
+        "4": 35
+      },
+      "pct": {
+        "0": 58.31,
+        "1": 15.48,
+        "2": 19.9,
+        "3": 4.3,
+        "4": 2.01
+      },
+      "n_unexpected_labels": 0,
+      "majority_grade": 0,
+      "imbalance_ratio": 29.06
+    },
+    "n_ungradable": 0,
+    "class_distribution_gradable_only": {
+      "n_labeled": 1744,
+      "counts": {
+        "0": 1017,
+        "1": 270,
+        "2": 347,
+        "3": 75,
+        "4": 35
+      },
+      "pct": {
+        "0": 58.31,
+        "1": 15.48,
+        "2": 19.9,
+        "3": 4.3,
+        "4": 2.01
+      },
+      "n_unexpected_labels": 0,
+      "majority_grade": 0,
+      "imbalance_ratio": 29.06
+    },
+    "note_gradable": "Recommend restricting the external test to adjudicated_gradable == 1."
+  },
+  "idrid": {
+    "name": "IDRiD (Disease Grading)",
+    "role": "EXTERNAL TEST ONLY",
+    "n_label_rows": 455,
+    "n_unique_label_ids": 455,
+    "n_image_files": 455,
+    "n_labels_without_image": 0,
+    "n_images_without_label": 0,
+    "labels_without_image": [],
+    "images_without_label": [],
+    "orig_split_breakdown": {
+      "train": 375,
+      "test": 80
+    },
+    "class_distribution": {
+      "n_labeled": 455,
+      "counts": {
+        "0": 129,
+        "1": 22,
+        "2": 156,
+        "3": 84,
+        "4": 64
+      },
+      "pct": {
+        "0": 28.35,
+        "1": 4.84,
+        "2": 34.29,
+        "3": 18.46,
+        "4": 14.07
+      },
+      "n_unexpected_labels": 0,
+      "majority_grade": 2,
+      "imbalance_ratio": 7.09
+    },
+    "note": "Official IDRiD Disease Grading subset is 516 images (413 train + 103 test). This mirror provides 455 images / 455 labels - confirm completeness against the source before the Data Availability statement."
+  }
+}
