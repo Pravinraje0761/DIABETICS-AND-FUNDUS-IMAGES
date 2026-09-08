@@ -1,0 +1,21 @@
+dataset,subset,grade,grade_name,count,pct
+APTOS 2019,train.csv (all labeled),0,No DR,1805,49.29
+APTOS 2019,train.csv (all labeled),1,Mild,370,10.1
+APTOS 2019,train.csv (all labeled),2,Moderate,999,27.28
+APTOS 2019,train.csv (all labeled),3,Severe,193,5.27
+APTOS 2019,train.csv (all labeled),4,Proliferative,295,8.06
+Messidor-2,all,0,No DR,1017,58.31
+Messidor-2,all,1,Mild,270,15.48
+Messidor-2,all,2,Moderate,347,19.9
+Messidor-2,all,3,Severe,75,4.3
+Messidor-2,all,4,Proliferative,35,2.01
+Messidor-2,gradable only,0,No DR,1017,58.31
+Messidor-2,gradable only,1,Mild,270,15.48
+Messidor-2,gradable only,2,Moderate,347,19.9
+Messidor-2,gradable only,3,Severe,75,4.3
+Messidor-2,gradable only,4,Proliferative,35,2.01
+IDRiD,all,0,No DR,129,28.35
+IDRiD,all,1,Mild,22,4.84
+IDRiD,all,2,Moderate,156,34.29
+IDRiD,all,3,Severe,84,18.46
+IDRiD,all,4,Proliferative,64,14.07

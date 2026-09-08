@@ -1,0 +1,52 @@
+{
+  "generated_utc": "2026-09-08T06:45:17+00:00",
+  "params": {
+    "size": 224,
+    "border_tol": 7,
+    "circle_crop": false,
+    "clahe": false
+  },
+  "datasets": {
+    "aptos": {
+      "output_folder": "data_processed\\aptos",
+      "manifest": "data_splits\\aptos_manifest.csv",
+      "n_rows": 3662,
+      "n_processed_or_present": 3662,
+      "n_skipped_existing": 3662,
+      "n_failures": 0,
+      "failures": [],
+      "split_breakdown": {
+        "train": 2562,
+        "test": 733,
+        "val": 367
+      },
+      "seconds": 0.4
+    },
+    "messidor": {
+      "output_folder": "data_processed\\messidor2",
+      "manifest": "data_splits\\messidor2_manifest.csv",
+      "n_rows": 1744,
+      "n_processed_or_present": 1744,
+      "n_skipped_existing": 1744,
+      "n_failures": 0,
+      "failures": [],
+      "split_breakdown": {
+        "external": 1744
+      },
+      "seconds": 0.1
+    },
+    "idrid": {
+      "output_folder": "data_processed\\idrid",
+      "manifest": "data_splits\\idrid_manifest.csv",
+      "n_rows": 455,
+      "n_processed_or_present": 455,
+      "n_skipped_existing": 455,
+      "n_failures": 0,
+      "failures": [],
+      "split_breakdown": {
+        "external": 455
+      },
+      "seconds": 0.0
+    }
+  }
+}

@@ -1,0 +1,31 @@
+# Environments
+.venv/
+__pycache__/
+*.pyc
+
+# Raw datasets - NEVER commit (licence: link to source instead; see DATA_PROVENANCE.md)
+/aptos2019-blindness-detection/
+/archive/
+/archive (1)/
+
+# Preprocessed images - regenerable from raw via scripts/phase3_preprocess.py
+/data_processed/
+*.png
+*.jpg
+*.jpeg
+*.tif
+*.tiff
+# ...but keep generated figures/plots under outputs/
+!outputs/*.png
+
+# Model checkpoints (large; Phases 4-5)
+*.pt
+*.pth
+*.ckpt
+checkpoints/
+
+# Local scratch
+.ipynb_checkpoints/
+*.log
+.DS_Store
+Thumbs.db

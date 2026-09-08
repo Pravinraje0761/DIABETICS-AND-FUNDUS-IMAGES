@@ -1,0 +1,46 @@
+{
+  "generated_utc": "2026-09-08T06:32:10+00:00",
+  "source_csv": "C:\\Users\\pravi\\OneDrive\\Desktop\\DIABETIC_FUNDUS_REASEARCH PAPER\\aptos2019-blindness-detection\\train.csv",
+  "seed": 42,
+  "ratios": {
+    "train": 0.7,
+    "val": 0.1,
+    "test": 0.2
+  },
+  "stratified_by": "diagnosis",
+  "sklearn_train_test_split": "two-stage (test first, then val from trainval)",
+  "n_total": 3662,
+  "n_train": 2562,
+  "n_val": 367,
+  "n_test": 733,
+  "class_distribution": {
+    "total": {
+      "0": 1805,
+      "1": 370,
+      "2": 999,
+      "3": 193,
+      "4": 295
+    },
+    "train": {
+      "0": 1263,
+      "1": 259,
+      "2": 699,
+      "3": 135,
+      "4": 206
+    },
+    "val": {
+      "0": 181,
+      "1": 37,
+      "2": 100,
+      "3": 19,
+      "4": 30
+    },
+    "test": {
+      "0": 361,
+      "1": 74,
+      "2": 200,
+      "3": 39,
+      "4": 59
+    }
+  }
+}
