@@ -1,0 +1,14 @@
+{
+  "arch": "resnet50",
+  "best_epoch": 6,
+  "val_qwk": 0.9187506341841394,
+  "internal_test": {
+    "n": 733,
+    "accuracy": 0.7885402455661664,
+    "quadratic_weighted_kappa": 0.8746691349506475,
+    "macro_f1": 0.6164468903883676,
+    "balanced_accuracy": 0.6303134043331236,
+    "auc_ovr_macro": 0.9237547419683428
+  },
+  "finished_utc": "2026-09-08T07:06:01+00:00"
+}
