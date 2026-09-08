@@ -127,6 +127,10 @@ def main() -> int:
     ap.add_argument("--no-class-weights", action="store_true")
     ap.add_argument("--no-amp", action="store_true")
     ap.add_argument("--device", default="auto", choices=["auto", "cpu", "cuda"])
+    ap.add_argument("--ckpt-dir", default=None,
+                    help="write <mode>_best.pt here instead of outputs/phase5_retfound/ "
+                         "(use a path OUTSIDE OneDrive - the 1.2 GB ViT-L checkpoint "
+                         "re-synced every epoch is what stalled the first full run)")
     args = ap.parse_args()
 
     epochs = args.epochs or (40 if args.mode == "linprobe" else 30)
@@ -135,6 +139,8 @@ def main() -> int:
 
     set_seed(args.seed)
     OUT_DIR.mkdir(parents=True, exist_ok=True)
+    ckpt_dir = Path(args.ckpt_dir) if args.ckpt_dir else OUT_DIR
+    ckpt_dir.mkdir(parents=True, exist_ok=True)
     tag = args.mode
 
     if args.device == "cpu" or (args.device == "auto" and not torch.cuda.is_available()):
@@ -229,7 +235,9 @@ def main() -> int:
     # -- train loop ------------------------------------------------------------ #
     history: list[dict] = []
     best_qwk, best_epoch, since_best = -np.inf, -1, 0
-    best_path = OUT_DIR / f"{tag}_best.pt"
+    best_path = ckpt_dir / f"{tag}_best.pt"
+    if ckpt_dir != OUT_DIR:
+        print(f"checkpoints -> {best_path} (outside outputs/ to avoid OneDrive sync)")
 
     for epoch in range(1, epochs + 1):
         t0 = time.time()
