@@ -1,0 +1,5 @@
+model,external_dataset,accuracy_internal,accuracy_external,accuracy_drop,quadratic_weighted_kappa_internal,quadratic_weighted_kappa_external,quadratic_weighted_kappa_drop,macro_f1_internal,macro_f1_external,macro_f1_drop,balanced_accuracy_internal,balanced_accuracy_external,balanced_accuracy_drop,auc_ovr_macro_internal,auc_ovr_macro_external,auc_ovr_macro_drop
+baseline_efficientnet_b3,Messidor-2,0.8035,0.6256,0.178,0.876,0.4988,0.3771,0.6442,0.3596,0.2846,0.6412,0.3527,0.2885,0.9279,0.7752,0.1527
+baseline_efficientnet_b3,IDRiD,0.8035,0.4967,0.3068,0.876,0.7597,0.1163,0.6442,0.441,0.2032,0.6412,0.4975,0.1437,0.9279,0.8302,0.0977
+baseline_resnet50,Messidor-2,0.7885,0.6135,0.175,0.8747,0.4347,0.44,0.6164,0.3545,0.262,0.6303,0.3392,0.2911,0.9238,0.7537,0.1701
+baseline_resnet50,IDRiD,0.7885,0.4484,0.3402,0.8747,0.7073,0.1673,0.6164,0.4034,0.213,0.6303,0.477,0.1533,0.9238,0.8408,0.083
