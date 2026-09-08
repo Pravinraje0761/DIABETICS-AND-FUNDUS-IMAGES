@@ -1,0 +1,14 @@
+{
+  "arch": "efficientnet_b3",
+  "best_epoch": 13,
+  "val_qwk": 0.9297059794109435,
+  "internal_test": {
+    "n": 733,
+    "accuracy": 0.8035470668485676,
+    "quadratic_weighted_kappa": 0.8759582640786872,
+    "macro_f1": 0.644189217981854,
+    "balanced_accuracy": 0.6412206633746613,
+    "auc_ovr_macro": 0.9278914830239235
+  },
+  "finished_utc": "2026-09-08T07:23:59+00:00"
+}

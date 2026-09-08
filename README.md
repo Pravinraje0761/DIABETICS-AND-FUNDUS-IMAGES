@@ -39,9 +39,9 @@ to this repo's parent folder:
 |---|---|---|
 | 2 | Data acquisition, provenance log, class-balance audit | **done** -- `PHASE2_REPORT.md`, `DATA_PROVENANCE.md` |
 | 3 | Single preprocessing pipeline; stratified APTOS 70/10/20 split; DataLoader; sanity-viz | **done** -- `PHASE3_REPORT.md` |
-| 4 | Baseline CNN (ResNet-50 / EfficientNet-B3), internal-test metrics | not started -- needs GPU env (torch is CPU-only here) |
-| 5 | RETFound fine-tuning (linear probe + full), internal-test metrics | not started |
-| 6 | External validation on Messidor-2 + IDRiD; master results table | not started |
+| 4 | Baseline CNN (ResNet-50 + EfficientNet-B3), internal-test metrics | **done** -- `PHASE4_REPORT.md`. EfficientNet-B3 selected (test QWK 0.876, acc 0.804) |
+| 5 | RETFound fine-tuning (linear probe + full), internal-test metrics | **code ready** -- blocked on gated HF weights, see `PHASE5_SETUP.md` |
+| 6 | External validation on Messidor-2 + IDRiD; master results table | not started (needs Phase 5) |
 | 7 | Grad-CAM / attention maps + plausibility rubric | not started |
 | 8 | MC-dropout uncertainty; correct-vs-incorrect test; selective prediction | not started |
 | 9 | Bootstrap 95% CIs, DeLong AUC test, stats methods paragraph | not started |
@@ -57,6 +57,12 @@ to this repo's parent folder:
 | `scripts/phase3_preprocess.py` | 3 | `.venv\Scripts\python.exe scripts\phase3_preprocess.py` |
 | `scripts/phase3_sanity_check.py` | 3 | `.venv\Scripts\python.exe scripts\phase3_sanity_check.py` |
 | `scripts/dataset.py` | 3+ | `.venv\Scripts\python.exe scripts\dataset.py` (smoke test) |
+| `scripts/metrics.py` | 4+ | importable — QWK, per-class sens/spec, OvR AUC, confusion |
+| `scripts/models.py` | 4+ | importable — `build_model(arch)` |
+| `scripts/train_baseline.py` | 4 | `.venv\Scripts\python.exe scripts\train_baseline.py --arch efficientnet_b3` |
+| `scripts/predict.py` | 4/6/8 | `.venv\Scripts\python.exe scripts\predict.py --checkpoint ... --manifest ... --split ... --out-prefix ...` |
+| `scripts/retfound.py` | 5+ | importable — ViT-L build + RETFound weight loader |
+| `scripts/train_retfound.py` | 5 | `.venv\Scripts\python.exe scripts\train_retfound.py --mode {linprobe,full} --weights weights\...pth` |
 
 ## Reproducing Phases 2–3
 
