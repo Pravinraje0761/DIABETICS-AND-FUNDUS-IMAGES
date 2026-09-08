@@ -86,6 +86,14 @@ def load_retfound_weights(model: nn.Module, path: str | Path) -> dict:
     drop_prefixes = ("decoder", "mask_token", "head.", "fc.")
     state = {k: v for k, v in state.items() if not k.startswith(drop_prefixes)}
 
+    # The MAE checkpoint carries a pre-pool `norm` (used with the CLS token).
+    # timm's global-average-pool ViT uses `fc_norm` for the same role. Reuse the
+    # pretrained LayerNorm as `fc_norm` rather than training it from scratch -
+    # matters for linear probing, where the head sees fc_norm's output directly.
+    if "fc_norm.weight" not in state and "norm.weight" in state:
+        state["fc_norm.weight"] = state.pop("norm.weight")
+        state["fc_norm.bias"] = state.pop("norm.bias")
+
     _interpolate_pos_embed(model, state)
 
     model_keys = set(model.state_dict().keys())
