@@ -24,6 +24,9 @@ __pycache__/
 *.ckpt
 checkpoints/
 
+# Pretrained foundation-model weights - licence: link to source, never commit
+/weights/
+
 # Local scratch
 .ipynb_checkpoints/
 *.log

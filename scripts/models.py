@@ -17,11 +17,18 @@ import torch.nn as nn
 from torchvision import models
 
 ARCHS = ["resnet50", "efficientnet_b3"]
+RETFOUND_ARCH = "retfound_vit_large_patch16"
 NUM_CLASSES = 5
 
 
 def build_model(arch: str, num_classes: int = NUM_CLASSES, pretrained: bool = True) -> nn.Module:
     arch = arch.lower()
+    if arch == RETFOUND_ARCH:
+        # Structure only (pretrained MAE weights are loaded separately in Phase 5).
+        # Lets predict.py reload a RETFound checkpoint the same way as a CNN one.
+        from retfound import build_retfound_backbone
+
+        return build_retfound_backbone(num_classes=num_classes)
     if arch == "resnet50":
         weights = models.ResNet50_Weights.IMAGENET1K_V2 if pretrained else None
         m = models.resnet50(weights=weights)
