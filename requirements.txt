@@ -12,12 +12,12 @@ scikit-learn==1.9.0
 scipy==1.18.1
 matplotlib==3.11.1
 
-# Phase 3+ (Dataset/DataLoader, and training in Phase 4-5):
-# Installed here as CPU builds (this machine has no CUDA). For Phase 4-5,
-# install the CUDA build on a GPU machine instead:
-#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu124
-torch==2.14.0
-torchvision==0.29.0
+# Phase 3+ (Dataset/DataLoader) and training (Phase 4-5).
+# CUDA 12.8 build for the local RTX 5060 (Blackwell, sm_120):
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
+# For CPU-only machines drop the index-url; versions will differ.
+torch==2.11.0
+torchvision==0.26.0
 torchmetrics==1.9.0
 
 # Added in later phases (uncomment when reached):
