@@ -40,11 +40,11 @@ to this repo's parent folder:
 | 2 | Data acquisition, provenance log, class-balance audit | **done** -- `PHASE2_REPORT.md`, `DATA_PROVENANCE.md` |
 | 3 | Single preprocessing pipeline; stratified APTOS 70/10/20 split; DataLoader; sanity-viz | **done** -- `PHASE3_REPORT.md` |
 | 4 | Baseline CNN (ResNet-50 + EfficientNet-B3), internal-test metrics | **done** -- `PHASE4_REPORT.md`. EfficientNet-B3 selected (test QWK 0.876, acc 0.804) |
-| 5 | RETFound fine-tuning (linear probe + full), internal-test metrics | **code ready** -- blocked on gated HF weights, see `PHASE5_SETUP.md` |
-| 6 | External validation on Messidor-2 + IDRiD; master results table | not started (needs Phase 5) |
+| 5 | RETFound fine-tuning (linear probe + full), internal-test metrics | **done** -- `PHASE5_REPORT.md`. linprobe test QWK 0.847; full (ep6, truncated) 0.869 |
+| 6 | External validation on Messidor-2 + IDRiD; master results table | **done** -- `PHASE6_REPORT.md`. RETFound shows NO generalisation advantage over the CNN baseline |
 | 7 | Grad-CAM / attention maps + plausibility rubric | not started |
-| 8 | MC-dropout uncertainty; correct-vs-incorrect test; selective prediction | not started |
-| 9 | Bootstrap 95% CIs, DeLong AUC test, stats methods paragraph | not started |
+| 8 | MC-dropout uncertainty; correct-vs-incorrect test; selective prediction | not started (`predict.py --mc-dropout` ready) |
+| 9 | Bootstrap 95% CIs, DeLong AUC test, stats methods paragraph | not started (Phase 6 preds CSVs are the inputs) |
 | 10-13 | Figures/tables, manuscript, TRIPOD-AI checklist, submission | not started |
 
 ## Scripts
