@@ -12,6 +12,7 @@ Used by Phases 4 (baseline), 5 (RETFound), 6 (external eval), 8 (MC-dropout).
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -27,11 +28,25 @@ from preprocessing import IMAGENET_MEAN, IMAGENET_STD, RETFOUND_INPUT_SIZE  # no
 NUM_CLASSES = 5
 PROJECT_DIR = Path(__file__).resolve().parents[1]
 
+# Optional: relocate the (large, read-every-epoch) processed-image tree onto a
+# fast local disk without editing manifests. If DR_DATA_ROOT is set and it holds
+# the referenced relative path, it overrides PROJECT_DIR. Manifests stay portable;
+# unset -> identical behaviour. Motivation: OneDrive Files-On-Demand dehydrating
+# data_processed/ between epochs stalled the RETFound fine-tune (see PHASE5_REPORT).
+_DATA_ROOT = os.environ.get("DR_DATA_ROOT") or None
+
 
 def _resolve(path_str: str) -> Path:
-    """Manifest paths are relative to PROJECT_DIR (portable); absolute is honoured too."""
+    """Manifest paths are relative to PROJECT_DIR (portable); absolute is honoured.
+    DR_DATA_ROOT, if set and it actually holds the file, wins over PROJECT_DIR."""
     p = Path(path_str)
-    return p if p.is_absolute() else (PROJECT_DIR / p)
+    if p.is_absolute():
+        return p
+    if _DATA_ROOT:
+        cand = Path(_DATA_ROOT) / p
+        if cand.exists():
+            return cand
+    return PROJECT_DIR / p
 
 
 def build_transform(train: bool, size: int = RETFOUND_INPUT_SIZE) -> transforms.Compose:

@@ -122,6 +122,10 @@ def main() -> int:
     ap.add_argument("--label-smoothing", type=float, default=0.1)
     ap.add_argument("--warmup-epochs", type=int, default=3)
     ap.add_argument("--patience", type=int, default=7)
+    ap.add_argument("--save-every", type=int, default=10_000,
+                    help="flush the ~1.2 GB checkpoint to disk every N epochs "
+                         "(and always once at the end). Default: only at the end. "
+                         "Set 1 for the legacy per-epoch behaviour.")
     ap.add_argument("--num-workers", type=int, default=4)
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--no-class-weights", action="store_true")
@@ -239,6 +243,31 @@ def main() -> int:
     if ckpt_dir != OUT_DIR:
         print(f"checkpoints -> {best_path} (outside outputs/ to avoid OneDrive sync)")
 
+    # The ViT-L checkpoint is ~1.2 GB. Re-writing it every epoch (each early epoch
+    # is a new best) let Windows Defender's on-write scan backlog compound and
+    # stalled the run from ~90 s/epoch to 400-900 s/epoch. Fix: keep the best
+    # weights in RAM and flush to disk only every --save-every epochs and once at
+    # the end. Set --save-every 1 to restore the old per-epoch behaviour.
+    best_state: dict | None = None
+
+    def _snapshot(ep: int, vm: dict) -> dict:
+        return {
+            "arch": ARCH_NAME, "num_classes": 5,
+            "model_state": {k: v.detach().to("cpu", copy=True)
+                            for k, v in model.state_dict().items()},
+            "epoch": ep, "mode": args.mode, "val_metrics": vm,
+            "hyperparams": hyperparams, "weight_load_report": report,
+        }
+
+    def _flush(reason: str) -> None:
+        if best_state is None:
+            return
+        tmp = best_path.with_suffix(".pt.tmp")
+        torch.save(best_state, tmp)
+        tmp.replace(best_path)
+        print(f"  -> checkpoint flushed to {best_path.name} "
+              f"(best epoch {best_state['epoch']}, {reason})")
+
     for epoch in range(1, epochs + 1):
         t0 = time.time()
         model.train()
@@ -283,26 +312,17 @@ def main() -> int:
 
         if val_m["quadratic_weighted_kappa"] > best_qwk + 1e-5:
             best_qwk, best_epoch, since_best = val_m["quadratic_weighted_kappa"], epoch, 0
-            torch.save(
-                {
-                    "arch": ARCH_NAME,
-                    "num_classes": 5,
-                    "model_state": model.state_dict(),
-                    "epoch": epoch,
-                    "mode": args.mode,
-                    "val_metrics": val_m,
-                    "hyperparams": hyperparams,
-                    "weight_load_report": report,
-                },
-                best_path,
-            )
-            print(f"  -> new best (val QWK {best_qwk:.4f}), saved {best_path.name}")
+            best_state = _snapshot(epoch, val_m)
+            print(f"  -> new best (val QWK {best_qwk:.4f}) held in memory")
+            if epoch % args.save_every == 0:
+                _flush("periodic")
         else:
             since_best += 1
             if since_best >= args.patience:
                 print(f"early stopping at epoch {epoch}")
                 break
 
+    _flush("final")
     print(f"\nbest epoch {best_epoch}, val QWK {best_qwk:.4f}")
 
     # -- internal test ------------------------------------------------------- #

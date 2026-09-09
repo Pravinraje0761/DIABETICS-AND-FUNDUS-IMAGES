@@ -15,8 +15,13 @@ __pycache__/
 *.jpeg
 *.tif
 *.tiff
-# ...but keep generated figures/plots under outputs/
+# ...but keep generated figures/plots (NOT the per-image saliency overlays in
+# outputs/phase7/maps/, which are large and regenerable)
 !outputs/*.png
+!outputs/figures/*.png
+!outputs/phase7/fig_*.png
+!outputs/phase8/fig_*.png
+!paper/figures/*.png
 
 # Model checkpoints (large; Phases 4-5)
 *.pt

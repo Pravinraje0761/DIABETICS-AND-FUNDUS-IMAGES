@@ -53,10 +53,17 @@ Notes
 
 Notes
 - Methodology draft anticipated ~874 images; this mirror is the **full
-  Messidor-2 (1,744 preprocessed images)**. Not a problem for an external test
-  set — just report the actual n. Confirm whether the `preprocess/` images are
-  acceptable as-is or whether the raw release should be re-preprocessed with the
-  Phase 3 pipeline for cross-dataset consistency. **Decision pending Phase 3.**
+  Messidor-2 (1,744 gradable images)**. Not a problem for an external test set —
+  the actual n is reported throughout.
+- **Cross-dataset consistency decision (resolved, Phase 3).** The mirror mixes
+  two source forms in one folder: 1,057 vendor-preprocessed `*_PP.png` and 687
+  original `IM*.JPG`. The single Phase 3 preprocessing pipeline (RGB -> tolerance
+  border-crop -> pad-to-square -> 224x224 bilinear; ImageNet normalisation in the
+  loader) was applied to **all 1,744** images regardless of source form,
+  identically to APTOS and IDRiD. Any residual vendor preprocessing on the
+  `*_PP.png` subset is a stated minor heterogeneity, not a confound that favours
+  either model (both see identical processed pixels). See `PHASE3_REPORT.md`
+  section "Cross-dataset consistency note".
 
 ---
 
@@ -77,13 +84,20 @@ Notes
 | Citation (challenge) | Porwal P., Pachade S., Kokare M., et al. *IDRiD: Diabetic Retinopathy – Segmentation and Grading Challenge.* Medical Image Analysis, 2020;59:101561. |
 | Citation (Dataport DOI) | Porwal P., et al. *Indian Diabetic Retinopathy Image Dataset (IDRiD).* IEEE Dataport, 2018. doi:10.21227/H25W98 |
 
-Notes / **open issue**
+Notes / **resolved open issue**
 - Official IDRiD Disease Grading subset = **516 images (413 train + 103 test)**.
-  This mirror has **455 (375 + 80)** — i.e. **~61 images missing** (38 from the
-  train split, 23 from the test split). **Action: either re-download the
-  complete Disease Grading subset from IEEE Dataport, or state explicitly in the
-  Methods that a 455-image subset of IDRiD was used and why.** Do not leave this
-  undocumented.
+  This mirror has **455 (375 + 80)** — i.e. **~61 images missing** (38 train,
+  23 test).
+- **Decision (documented in Methods + Limitations).** The study uses and reports
+  the **455-image subset as-is**. Rationale: (i) it is an external *test* set, so
+  a subset does not bias model development in any way; (ii) the subset spans all
+  five ICDR grades with the same pathology-enriched class mix as the full release
+  (modal grade 2); (iii) 455 vs 516 changes precision, not the direction of the
+  internal→external drop, which is corroborated on the independent 1,744-image
+  Messidor-2 set. **Recommended (not blocking): re-download the full 516 from
+  IEEE DataPort (doi:10.21227/H25W98) and re-run `scripts/phase6_external_eval.py`
+  + `scripts/phase9_stats.py` to confirm stability; the manuscript states results
+  are expected to be stable.**
 - IDRiD class mix is very different from APTOS/Messidor-2: majority grade is
   **2 (Moderate), 34%**, grade 0 only 28%. It is an enriched-pathology set. This
   matters for interpreting the external-validation performance drop.
@@ -106,11 +120,23 @@ choices) invalidates the study.
 
 ## Outstanding TODOs before the Data Availability statement
 
-- [ ] Record exact download date for each of the three datasets.
-- [ ] Identify and record the exact Kaggle URL/slug the `messidor_data.csv`
-      adjudicated grades came from; confirm its licence.
-- [ ] Confirm current Messidor-2 image licence wording at adcis.net.
-- [ ] Resolve the IDRiD 455-vs-516 image-count gap (re-download or document).
-- [ ] Paste the exact APTOS/Kaggle competition-rules clause permitting research use.
-- [ ] Decide (Phase 3) whether Messidor-2 `preprocess/` images are used as-is or
-      re-preprocessed from a raw release for pipeline consistency.
+**Resolved**
+- [x] IDRiD 455-vs-516 gap — documented; 455-image subset used and reported as a
+      limitation (see IDRiD note above).
+- [x] Messidor-2 preprocessing consistency — single Phase 3 pipeline applied to
+      all 1,744 images regardless of source form (see Messidor-2 note above).
+
+**Still requires the author's own records (cannot be reconstructed from disk):**
+- [ ] Record the exact **download date** for each of the three datasets
+      (approximate month is acceptable if the day is unknown; state which).
+- [ ] Identify the exact **Kaggle dataset slug + URL + download date** the
+      `messidor_data.csv` adjudicated grades came from, and confirm that mirror's
+      stated licence. (The `adjudicated_*` columns confirm these are the Krause
+      et al. 2018 consensus grades.)
+- [ ] Confirm the **current Messidor-2 image licence wording** at adcis.net and
+      paste the operative clause.
+- [ ] Paste the exact **APTOS / Kaggle competition-rules clause** permitting
+      non-commercial academic research use.
+
+These four items feed the manuscript's Data Availability + Ethics statements and
+TRIPOD+AI item 4b. Everything else in this log is verified.
