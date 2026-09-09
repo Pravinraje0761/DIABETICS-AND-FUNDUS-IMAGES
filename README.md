@@ -42,10 +42,11 @@ to this repo's parent folder:
 | 4 | Baseline CNN (ResNet-50 + EfficientNet-B3), internal-test metrics | **done** -- `PHASE4_REPORT.md`. EfficientNet-B3 selected (test QWK 0.876, acc 0.804) |
 | 5 | RETFound fine-tuning (linear probe + full), internal-test metrics | **done** -- `PHASE5_REPORT.md`. linprobe test QWK 0.847; full (ep6, truncated) 0.869 |
 | 6 | External validation on Messidor-2 + IDRiD; master results table | **done** -- `PHASE6_REPORT.md`. RETFound shows NO generalisation advantage over the CNN baseline |
-| 7 | Grad-CAM / attention maps + plausibility rubric | not started |
-| 8 | MC-dropout uncertainty; correct-vs-incorrect test; selective prediction | not started (`predict.py --mc-dropout` ready) |
-| 9 | Bootstrap 95% CIs, DeLong AUC test, stats methods paragraph | not started (Phase 6 preds CSVs are the inputs) |
-| 10-13 | Figures/tables, manuscript, TRIPOD-AI checklist, submission | not started |
+| 7 | Grad-CAM++ / attention-rollout maps + automated plausibility proxy | **done** -- `scripts/phase7_explainability.py`, `outputs/phase7/` |
+| 8 | Predictive-entropy uncertainty; correct-vs-incorrect (Mann-Whitney U); selective prediction; MC-dropout sensitivity | **done** -- `scripts/phase8_uncertainty.py`, `scripts/phase8_mc_dropout.py`, `outputs/phase8/` |
+| 9 | Bootstrap 95% CIs, internal->external drop CIs, difference-in-drop CIs, DeLong AUC test, stats methods paragraph | **done** -- `scripts/phase9_stats.py`, `outputs/phase9/` |
+| 10 | Figures (study design, forest plot; Phase 7/8 emit their own) | **done** -- `scripts/phase10_figures.py`, `outputs/figures/` |
+| 11-13 | Manuscript, TRIPOD+AI checklist, cover letter, submission package | manuscript + checklist + cover letter drafted (`paper/`); author-only items in `paper/AUTHOR_TODO.md` |
 
 ## Scripts
 
@@ -62,7 +63,13 @@ to this repo's parent folder:
 | `scripts/train_baseline.py` | 4 | `.venv\Scripts\python.exe scripts\train_baseline.py --arch efficientnet_b3` |
 | `scripts/predict.py` | 4/6/8 | `.venv\Scripts\python.exe scripts\predict.py --checkpoint ... --manifest ... --split ... --out-prefix ...` |
 | `scripts/retfound.py` | 5+ | importable — ViT-L build + RETFound weight loader |
-| `scripts/train_retfound.py` | 5 | `.venv\Scripts\python.exe scripts\train_retfound.py --mode {linprobe,full} --weights weights\...pth` |
+| `scripts/train_retfound.py` | 5 | `.venv\Scripts\python.exe scripts\train_retfound.py --mode {linprobe,full} --weights weights\...pth` (`--save-every N` throttles the 1.2 GB checkpoint write; `DR_DATA_ROOT` env relocates `data_processed/` off OneDrive) |
+| `scripts/phase6_external_eval.py` | 6 | `.venv\Scripts\python.exe scripts\phase6_external_eval.py` — master results table |
+| `scripts/phase7_explainability.py` | 7 | `.venv\Scripts\python.exe scripts\phase7_explainability.py [--device cpu]` — Grad-CAM++/attention rollout + plausibility proxy |
+| `scripts/phase8_mc_dropout.py` | 8 | `.venv\Scripts\python.exe scripts\phase8_mc_dropout.py --passes 30` — T=30 MC-dropout preds -> `outputs/phase8/mc/` |
+| `scripts/phase8_uncertainty.py` | 8 | `.venv\Scripts\python.exe scripts\phase8_uncertainty.py [--preds-dir outputs/phase8/mc --tag mc]` |
+| `scripts/phase9_stats.py` | 9 | `.venv\Scripts\python.exe scripts\phase9_stats.py --boot 2000 --seed 42` — bootstrap CIs, drop CIs, DeLong |
+| `scripts/phase10_figures.py` | 10 | `.venv\Scripts\python.exe scripts\phase10_figures.py` — Fig 1 (design) + Fig 2 (forest) |
 
 ## Reproducing Phases 2–3
 
