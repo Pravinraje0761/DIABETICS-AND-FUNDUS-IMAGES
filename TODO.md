@@ -94,8 +94,19 @@ Then in `paper/main_standalone.tex`:
 4. [ ] **Full IDRiD 516** Disease-Grading set: re-download, re-run
    `phase6_external_eval.py` + `phase9_stats.py` + `phase11_review_response.py`,
    confirm the drop is unchanged; identify + characterise the 61 missing images.
-5. [ ] **Multiple training seeds** (>=3) for EfficientNet-B3 and RETFound-full;
-   report seed variance on internal + external QWK.
+5. [x] **Multiple training seeds.** DONE for EfficientNet-B3 AND RETFound linear
+   probing: seeds 43/44/45 trained for each
+   (`outputs/phase4_baseline/efficientnet_b3_seed4*`,
+   `C:\dr_ckpts_seeds\linprobe_seed4*_best.pt` +
+   `outputs/phase5_retfound/linprobe_seed4*`), all 4 seeds/model scored on
+   APTOS-internal + Messidor-2 + IDRiD by `scripts/phase16_seed_sweep.py`
+   (`outputs/phase16/`). Internal QWK SD 0.003 (EffNet) / 0.008 (RETFound-LP);
+   Messidor-2 QWK 0.500 +/- 0.024 vs 0.395 +/- 0.015, non-overlapping ranges;
+   Messidor-2 drop 0.379 +/- 0.025 vs 0.461 +/- 0.017 -> gap is not seed noise;
+   RETFound-full's +0.124 excess drop is ~5x the baseline seed SD. Folded into
+   Limitations "Sensitivity analyses" (vi) + repro table + supplement list +
+   `manuscript_rendered.md`. RETFound-full x3 seeds still blocked by laptop
+   throttle (needs Colab/Kaggle) -- noted as remaining in "Not yet run".
 6. [ ] **Class-weighting sensitivity** (focal loss / no weights) as a robustness
    check (currently inverse-frequency CE only).
 7. [ ] **Post-hoc temperature scaling** on a dedicated calibration split

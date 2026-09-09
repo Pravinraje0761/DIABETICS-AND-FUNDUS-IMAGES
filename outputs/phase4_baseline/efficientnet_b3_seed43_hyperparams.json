@@ -1,0 +1,29 @@
+{
+  "phase": 4,
+  "arch": "efficientnet_b3",
+  "pretrained": "ImageNet (torchvision default weights)",
+  "fine_tuning": "full (all layers unfrozen)",
+  "epochs_max": 30,
+  "batch_size": 32,
+  "optimizer": "AdamW",
+  "lr": 0.0001,
+  "weight_decay": 0.0001,
+  "lr_schedule": "CosineAnnealingLR",
+  "loss": "CrossEntropy (inverse-freq class weights)",
+  "class_weights": [
+    0.2158,
+    1.0523,
+    0.3899,
+    2.0189,
+    1.3231
+  ],
+  "early_stopping": "val quadratic-weighted kappa, patience=7",
+  "augmentation": "resize224, H/V flip, +/-15deg rotation, brightness/contrast jitter 0.1",
+  "normalisation": "ImageNet mean/std",
+  "amp": true,
+  "seed": 43,
+  "device": "cuda",
+  "train_n": 2562,
+  "val_n": 367,
+  "started_utc": "2026-09-09T06:02:44+00:00"
+}

@@ -1175,13 +1175,32 @@ above, the ranking was stable to: (i) the secondary CNN backbone (ResNet-50
 mirrors EfficientNet-B3); (ii) the RETFound adaptation regime (linear probing and
 full fine-tuning agree); (iii) single-pass versus $T=20$ Monte-Carlo-dropout
 entropy for the uncertainty analysis ($\Delta$AUROC $\leq 0.02$); (iv)
-recomputation of every headline metric by an independent script; and (v) the
+recomputation of every headline metric by an independent script; (v) the
 calibration-source choice for temperature scaling (APTOS validation versus a
-disjoint APTOS-train subset; Section~\ref{sec:results-calib}). The inference-time
-CLAHE / colour-transfer ablation (Section~\ref{sec:results-ablation}) further
-showed the direction of the RETFound--CNN gap is not an artefact of the specific
-preprocessing choice. Not yet run: the same normalisations applied at
-\emph{training} time, multiple training seeds, and alternative class-weighting.
+disjoint APTOS-train subset; Section~\ref{sec:results-calib}); and (vi) three
+additional training seeds each for EfficientNet-B3 and for RETFound linear
+probing (seeds 43--45; four runs per model, each scored unmodified on the
+Phase-6 code path). Training-seed variability was small for both models:
+internal-test QWK standard deviation $0.003$ (EfficientNet-B3) and $0.008$
+(RETFound linear probe), and external QWK standard deviation $0.024$ / $0.015$
+(EfficientNet-B3) versus $0.015$ / $0.012$ (RETFound linear probe) on
+Messidor-2 / IDRiD. The per-model seed distributions do not overlap on either
+external set --- on Messidor-2, EfficientNet-B3 QWK is $0.500 \pm 0.024$
+(range $0.469$--$0.527$) against RETFound linear probe $0.395 \pm 0.015$
+(range $0.374$--$0.408$); on IDRiD, $0.749$ against $0.623$ --- and the
+internal-to-external QWK drop on Messidor-2 was larger for RETFound at every
+seed ($0.461 \pm 0.017$ versus $0.379 \pm 0.025$). The excess Messidor-2 drop
+of the RETFound full fine-tune over the baseline ($+0.124$ [$0.074$, $0.175$];
+Table~\ref{tab:drop}) is roughly five times the baseline's seed standard
+deviation, so neither the direction nor the magnitude of the RETFound--CNN gap
+is attributable to training-seed variance
+(\texttt{scripts/phase16\_seed\_sweep.py}, \texttt{outputs/phase16/}). The
+inference-time CLAHE / colour-transfer ablation
+(Section~\ref{sec:results-ablation}) further showed the direction of the
+RETFound--CNN gap is not an artefact of the specific preprocessing choice. Not
+yet run: the same normalisations applied at \emph{training} time, matched
+multi-seed retraining of the RETFound full fine-tune (the seed sweep above
+covers the linear-probe regime only), and alternative class-weighting.
 
 \textbf{Highest-value next experiments}, in priority order:
 (1) extending the mechanistic ablation from inference-time perturbation
@@ -1261,6 +1280,7 @@ Duplicate / leakage check (Section~\ref{sec:methods-split}) & \texttt{scripts/ph
 Temperature scaling (Section~\ref{sec:results-calib}) & \texttt{scripts/phase13\_temperature\_scaling.py --calib-preds \ldots} \\
 Embedding near-duplicate check (Section~\ref{sec:methods-split}) & \texttt{scripts/phase14\_embedding\_dedup.py} \\
 Degradation ablation (Section~\ref{sec:results-ablation}) & \texttt{scripts/phase15\_ablation.py} \\
+Training-seed sensitivity (Limitations) & \texttt{scripts/phase16\_seed\_sweep.py} \\
 Figs.~\ref{fig:forest}, \ref{fig:confusion}, \ref{fig:perclass}, \ref{fig:grades} & \texttt{scripts/phase10\_figures.py}, \texttt{phase10b\_figures.py} \\
 Figs.~\ref{fig:reliability}, \ref{fig:rocpr}, \ref{fig:perclassci} & \texttt{scripts/phase11\_figures.py} \\
 Fig.~\ref{fig:pipeline} & hand-drawn (TikZ, in this file) \\
@@ -1283,6 +1303,9 @@ $T=20$ Monte-Carlo-dropout uncertainty
 temperature-scaling table, raw versus recalibrated
 (\texttt{outputs/phase13/temperature\_scaling.csv}); the deduplicated-internal
 sensitivity analysis (\texttt{outputs/phase12/dedup\_internal\_metrics.csv});
+the four-seed training-seed sweep for EfficientNet-B3 and RETFound linear
+probing, per-seed and aggregated (\texttt{outputs/phase16/seed\_master.csv},
+\texttt{seed\_summary.md});
 attention-rollout saliency maps and per-image plausibility scores
 (\texttt{outputs/phase7/}); hyperparameter JSONs; the split image-ID lists; and
 the TRIPOD+AI checklist (\texttt{paper/TRIPOD-AI\_checklist.md}).

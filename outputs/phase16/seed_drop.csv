@@ -1,0 +1,17 @@
+family,seed,external,qwk_internal,qwk_external,qwk_drop
+efficientnet_b3,42,Messidor-2,0.876,0.4988,0.3772
+efficientnet_b3,42,IDRiD,0.876,0.7597,0.1163
+efficientnet_b3,43,Messidor-2,0.8827,0.4693,0.4134
+efficientnet_b3,43,IDRiD,0.8827,0.7644,0.1183
+efficientnet_b3,44,Messidor-2,0.88,0.5268,0.3532
+efficientnet_b3,44,IDRiD,0.88,0.7318,0.1482
+efficientnet_b3,45,Messidor-2,0.8786,0.5066,0.372
+efficientnet_b3,45,IDRiD,0.8786,0.7409,0.1377
+retfound_linprobe,42,Messidor-2,0.8469,0.3938,0.4531
+retfound_linprobe,42,IDRiD,0.8469,0.6258,0.2211
+retfound_linprobe,43,Messidor-2,0.8648,0.4027,0.4621
+retfound_linprobe,43,IDRiD,0.8648,0.6047,0.2601
+retfound_linprobe,44,Messidor-2,0.8518,0.4078,0.444
+retfound_linprobe,44,IDRiD,0.8518,0.6303,0.2215
+retfound_linprobe,45,Messidor-2,0.8583,0.374,0.4843
+retfound_linprobe,45,IDRiD,0.8583,0.631,0.2273

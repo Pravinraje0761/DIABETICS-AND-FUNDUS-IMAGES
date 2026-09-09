@@ -1,9 +1,15 @@
 # Cross-Dataset External Validation of a Retinal Foundation Model for Diabetic Retinopathy Grading: Performance, Explainability, and Uncertainty
 
-_Readable companion to `paper/main.tex` (the authoritative source). Numbers here
+_Readable companion. **Authoritative source is now `paper/main_standalone.tex`**
+(IEEEtran, 10 figures, 8 tables, Phases 2–16); this render predates the
+peer-review-response expansion and is abridged — it omits the calibration /
+recalibration, controlled-degradation-ablation, leakage, embedding-dedup and
+training-seed sections that the .tex carries, and some table/figure numbers
+differ. Where this file and the .tex disagree, the .tex is correct. Numbers here
 are from `outputs/phase6/` and `outputs/phase9/`. RETFound full-fine-tune values
-marked **[p]** are from an epoch-6 checkpoint (run stopped early — see
-Limitations); a completed run refreshes only those values._
+marked **[p]** are from an epoch-6 checkpoint at its converged validation QWK
+(run stopped early — see Limitations); a completed run refreshes only those
+values._
 
 ---
 
@@ -269,12 +275,27 @@ internally. Unchanged under T = 30 MC-dropout (Supplement).
   Cross-population degradation of DR models is known to be substantial; this
   extends the observation to a retinal foundation model under a matched protocol.
 - **Limitations.** (i) RETFound full fine-tune stopped at epoch 6/30 (hardware
-  throttling); values marked **[p]**; conclusion robust (linear probe concordant;
-  Messidor-2 deficit large). (ii) retrospective, public data; no prospective
-  claim. (iii) IDRiD 455/516 subset (external test — no development bias; reduced
-  precision). (iv) rare-grade precision limited externally. (v) automated
-  plausibility proxy, 20 images/cell, no blinded expert rater. (vi) one
-  foundation model, one task. (vii) calibration not formally assessed.
+  throttling), at its converged validation QWK; values marked **[p]**; conclusion
+  robust (linear probe concordant; Messidor-2 deficit large). (ii) retrospective,
+  public data; no prospective claim. (iii) IDRiD 455/516 subset (external test —
+  no development bias; reduced precision). (iv) rare-grade precision limited
+  externally. (v) automated plausibility proxy (40 correct + 25 incorrect per
+  model per external set), no blinded expert rater. (vi) one foundation model,
+  one task. (vii) calibration assessed (ECE/MCE/Brier/NLL + reliability
+  diagrams): RETFound is better-calibrated than the CNNs under shift, but a
+  single in-domain temperature does not repair external miscalibration and its
+  sign differs between Messidor-2 and IDRiD.
+- **Sensitivity analyses.** Ranking stable to: ResNet-50 backbone; linear-probe
+  vs full fine-tune; single-pass vs T=20 MC-dropout entropy; independent
+  recompute of all 60 cells; temperature-scaling calibration source; inference-
+  time CLAHE / colour-transfer (both worsen RETFound, so the gap is not a
+  preprocessing artefact); and four training seeds each for EfficientNet-B3 and
+  RETFound linear probing — internal QWK SD 0.003 / 0.008, external QWK SD 0.024
+  / 0.015 (EffNet) vs 0.015 / 0.012 (RETFound-LP) on Messidor-2 / IDRiD; the
+  per-model seed ranges do not overlap on either external set (Messidor-2
+  0.469–0.527 vs 0.374–0.408), Messidor-2 drop 0.379 +/- 0.025 vs 0.461 +/- 0.017,
+  so neither direction nor magnitude of the gap is seed noise; RETFound-full's
+  +0.124 excess drop is ~5x the baseline seed SD.
 - **Implications.** Internal test performance is a poor guide to behaviour on new
   data; external validation and, ideally, a validated uncertainty-aware referral
   mechanism should precede screening deployment — and neither retinal pretraining
