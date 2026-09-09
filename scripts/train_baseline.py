@@ -106,6 +106,10 @@ def main() -> int:
                     help="early stop after N epochs with no val-QWK improvement")
     ap.add_argument("--num-workers", type=int, default=4)
     ap.add_argument("--seed", type=int, default=42)
+    ap.add_argument("--tag", default="",
+                    help="suffix for all output filenames, e.g. --tag seed43 -> "
+                         "efficientnet_b3_seed43_best.pt. Keeps multi-seed / "
+                         "ablation runs from overwriting the primary checkpoint.")
     ap.add_argument("--no-class-weights", action="store_true")
     ap.add_argument("--no-amp", action="store_true")
     ap.add_argument("--device", default="auto", choices=["auto", "cpu", "cuda"])
@@ -115,6 +119,7 @@ def main() -> int:
 
     set_seed(args.seed)
     OUT_DIR.mkdir(parents=True, exist_ok=True)
+    stem = args.arch + (f"_{args.tag}" if args.tag else "")
 
     if args.device == "cpu" or (args.device == "auto" and not torch.cuda.is_available()):
         device = torch.device("cpu")
@@ -171,7 +176,7 @@ def main() -> int:
         "val_n": len(val_loader.dataset),
         "started_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }
-    (OUT_DIR / f"{args.arch}_hyperparams.json").write_text(
+    (OUT_DIR / f"{stem}_hyperparams.json").write_text(
         json.dumps(hyperparams, indent=2), encoding="utf-8"
     )
     print(json.dumps(hyperparams, indent=2))
@@ -180,7 +185,7 @@ def main() -> int:
     best_qwk = -np.inf
     best_epoch = -1
     epochs_since_best = 0
-    best_path = OUT_DIR / f"{args.arch}_best.pt"
+    best_path = OUT_DIR / f"{stem}_best.pt"
 
     for epoch in range(1, args.epochs + 1):
         t0 = time.time()
@@ -203,7 +208,7 @@ def main() -> int:
             "seconds": round(dt, 1),
         }
         history.append(row)
-        pd.DataFrame(history).to_csv(OUT_DIR / f"{args.arch}_history.csv", index=False)
+        pd.DataFrame(history).to_csv(OUT_DIR / f"{stem}_history.csv", index=False)
         print(f"epoch {epoch:2d}/{args.epochs}  train_loss={train_loss:.4f}  "
               f"val_loss={val_loss:.4f}  val_QWK={row['val_qwk']:.4f}  "
               f"val_acc={row['val_acc']:.4f}  lr={lr_now:.2e}  {dt:.0f}s")
@@ -241,7 +246,7 @@ def main() -> int:
                                    train=False, num_workers=args.num_workers, shuffle=False)
     res = infer(model, test_loader, device)
     preds_path, metrics_path = save_predictions(
-        res, OUT_DIR / f"{args.arch}_internal_test"
+        res, OUT_DIR / f"{stem}_internal_test"
     )
     test_m = json.loads(metrics_path.read_text())
     print("\n" + format_metrics(test_m, title=f"{args.arch} - APTOS internal TEST"))
@@ -258,7 +263,7 @@ def main() -> int:
         },
         "finished_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }
-    (OUT_DIR / f"{args.arch}_summary.json").write_text(
+    (OUT_DIR / f"{stem}_summary.json").write_text(
         json.dumps(summary, indent=2), encoding="utf-8"
     )
     return 0

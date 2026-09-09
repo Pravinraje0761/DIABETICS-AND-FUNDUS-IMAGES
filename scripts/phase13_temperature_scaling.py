@@ -135,6 +135,17 @@ def _fit_temperature(prob: np.ndarray, y_true: np.ndarray) -> float:
     return float(np.exp(res.x))
 
 
+def _bootstrap_temperature(prob: np.ndarray, y_true: np.ndarray, b: int, seed: int = 42):
+    """Refit T on `b` bootstrap resamples of the calibration set -> (median, lo, hi)."""
+    rng = np.random.default_rng(seed)
+    n = len(y_true)
+    ts = np.empty(b)
+    for i in range(b):
+        idx = rng.integers(0, n, n)
+        ts[i] = _fit_temperature(prob[idx], y_true[idx])
+    return float(np.median(ts)), float(np.percentile(ts, 2.5)), float(np.percentile(ts, 97.5))
+
+
 # --------------------------------------------------------------------------- #
 def _load(preds_csv: Path) -> tuple[np.ndarray, np.ndarray]:
     df = pd.read_csv(preds_csv)
@@ -165,6 +176,9 @@ def main() -> int:
                     help="dataset tag inside --calib-preds filenames")
     ap.add_argument("--out-dir", default="outputs/phase13")
     ap.add_argument("--n-bins", type=int, default=15)
+    ap.add_argument("--bootstrap-T", type=int, default=0,
+                    help="if >0, also refit T on this many bootstrap resamples of "
+                         "the calibration set and report the 95%% interval")
     args = ap.parse_args()
 
     preds_dir = (PROJECT_DIR / args.preds_dir).resolve()
@@ -200,6 +214,7 @@ def main() -> int:
 
     rows: list[dict] = []
     fitted_T: dict[str, float] = {}
+    boot_T: dict[str, tuple] = {}
     for model in models:
         if model not in calib_index:
             print(f"skip {model}: no calibration preds")
@@ -207,6 +222,8 @@ def main() -> int:
         cprob, cy = _load(calib_index[model])
         T = _fit_temperature(cprob, cy)
         fitted_T[model] = T
+        if args.bootstrap_T > 0:
+            boot_T[model] = _bootstrap_temperature(cprob, cy, args.bootstrap_T)
         for (m, ds), p in sorted(eval_index.items(),
                                  key=lambda kv: (kv[0][0], DATASET_ORDER.get(kv[0][1], 9))):
             if m != model:
@@ -222,6 +239,8 @@ def main() -> int:
                 "n": int(len(y)),
                 "calib_mode": calib_mode,
                 "temperature": round(T, 4),
+                "T_boot_lo": round(boot_T[model][1], 4) if model in boot_T else "",
+                "T_boot_hi": round(boot_T[model][2], 4) if model in boot_T else "",
                 "ECE_raw": round(raw_ece, 4), "ECE_scaled": round(sc_ece, 4),
                 "MCE_raw": round(raw_mce, 4), "MCE_scaled": round(sc_mce, 4),
                 "Brier_raw": round(_brier(prob, y), 4),
@@ -258,7 +277,9 @@ def main() -> int:
         rd = ("well-scaled already" if abs(T - 1) < 0.05
               else "over-confident -> softened (T>1)" if T > 1
               else "under-confident -> sharpened (T<1)")
-        lines.append(f"| {MODEL_LABELS.get(model, model)} | {T:.3f} | {rd} |")
+        bt = (f" (bootstrap 95% CI {boot_T[model][1]:.2f}-{boot_T[model][2]:.2f})"
+              if model in boot_T else "")
+        lines.append(f"| {MODEL_LABELS.get(model, model)} | {T:.3f}{bt} | {rd} |")
     lines += [
         "",
         "## ECE before -> after, by dataset",

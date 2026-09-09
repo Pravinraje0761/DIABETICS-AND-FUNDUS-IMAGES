@@ -135,6 +135,10 @@ def main() -> int:
                     help="write <mode>_best.pt here instead of outputs/phase5_retfound/ "
                          "(use a path OUTSIDE OneDrive - the 1.2 GB ViT-L checkpoint "
                          "re-synced every epoch is what stalled the first full run)")
+    ap.add_argument("--tag", default="",
+                    help="extra suffix for output filenames, e.g. --tag seed43 -> "
+                         "full_seed43_best.pt. Keeps multi-seed / ablation runs from "
+                         "overwriting the primary linprobe_/full_ checkpoints.")
     args = ap.parse_args()
 
     epochs = args.epochs or (40 if args.mode == "linprobe" else 30)
@@ -145,7 +149,7 @@ def main() -> int:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     ckpt_dir = Path(args.ckpt_dir) if args.ckpt_dir else OUT_DIR
     ckpt_dir.mkdir(parents=True, exist_ok=True)
-    tag = args.mode
+    tag = args.mode + (f"_{args.tag}" if args.tag else "")
 
     if args.device == "cpu" or (args.device == "auto" and not torch.cuda.is_available()):
         device = torch.device("cpu")
