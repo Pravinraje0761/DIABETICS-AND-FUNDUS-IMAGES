@@ -967,6 +967,33 @@ are in the supplement (\texttt{outputs/phase11/per\_class\_ci.csv}).}
 \label{fig:perclassci}
 \end{figure}
 
+\subsection{Controlled degradation ablation}
+\label{sec:results-ablation}
+
+To probe \emph{why} the foundation model degrades, external inference was re-run
+(no retraining) for EfficientNet-B3 and the RETFound full fine-tune under two
+inference-time input perturbations: CLAHE contrast equalisation, and a
+colour-transfer that maps each image's fundus-pixel channel statistics to the
+APTOS training distribution (\texttt{scripts/phase15\_ablation.py}). Neither
+recovered RETFound's external ordinal agreement; both reduced it further, and the
+foundation model was far more fragile than the CNN. The colour-transfer left
+EfficientNet-B3 close to unchanged (Messidor-2 QWK $0.499\to0.512$, IDRiD
+$0.760\to0.689$) but pushed the RETFound full fine-tune down on every set,
+including the internal one (APTOS-internal $0.869\to0.751$, Messidor-2
+$0.368\to0.122$, IDRiD $0.720\to0.545$). CLAHE was worse still for RETFound
+(APTOS-internal $0.869\to0.599$, Messidor-2 $0.368\to0.065$) while only mildly
+affecting the CNN ($0.876\to0.807$ internal, $0.499\to0.458$ on Messidor-2).
+Because the perturbations are applied at inference to models trained on
+unperturbed images, this measures sensitivity to an input-distribution shift, not
+the value of training with these normalisations. It shows that the fully
+fine-tuned ViT's representation is tightly coupled to the exact APTOS
+acquisition and colour distribution --- consistent with the peripheral saliency
+(Section~\ref{sec:results-explain}) and the calibration behaviour
+(Section~\ref{sec:results-calib}) --- whereas the ImageNet CNN absorbs the same
+perturbations. A colour- and resolution-normalised \emph{retraining} comparison
+is the definitive test and remains future work (Section~\ref{sec:limitations};
+\texttt{outputs/phase15/}).
+
 
 \section{Discussion}
 \label{sec:discussion}
@@ -1038,9 +1065,9 @@ The Messidor-2 adjudicated grades \cite{krause2018} are a stricter target than t
 single-grader APTOS labels, which likely contributes to the size of the drop for
 every model.
 
-\textbf{Why the foundation model degrades.} We did not run a controlled
-mechanistic ablation, so the following is an interpretation constrained by the
-data we do have. The Messidor-2 and IDRiD shifts differ
+\textbf{Why the foundation model degrades.} A full retraining-based ablation is
+still outstanding, so the following is an interpretation constrained by the
+inference-time evidence. The Messidor-2 and IDRiD shifts differ
 (Table~\ref{tab:shift}): Messidor-2 keeps APTOS's macula-centred geometry and
 low-severity skew but applies a stricter adjudicated-consensus reference standard
 \cite{krause2018}, while IDRiD differs on resolution, mydriasis, and disease
@@ -1053,10 +1080,15 @@ saliency moves off the retina and onto the image periphery
 comparatively calibrated externally while its discrimination collapses
 (Section~\ref{sec:results-calib}) --- consistent with a large ViT that, when fully
 fine-tuned on $\approx$2.6k images, has fitted APTOS-specific acquisition
-statistics rather than lesion morphology. A controlled colour-/resolution-
-normalisation ablation and an APTOS-only-versus-multi-dataset training comparison
-(Section~\ref{sec:limitations}) are the direct tests of this and are the
-priority follow-up.
+statistics rather than lesion morphology. A third observation reinforces this: in
+an inference-time ablation (Section~\ref{sec:results-ablation}) the RETFound full
+fine-tune was far more fragile than the CNN to \emph{any} perturbation of the
+input distribution --- CLAHE or a colour-transfer toward the APTOS statistics
+each degraded it sharply on every dataset, internal included, whereas the CNN
+absorbed both. An APTOS-only-versus-multi-dataset training comparison and a
+colour-/resolution-normalised \emph{retraining} ablation
+(Section~\ref{sec:limitations}) are the direct tests of the mechanism and remain
+the priority follow-up.
 
 \textbf{Clinical significance.} A QWK fall from $\approx 0.87$ to $0.37$--$0.50$
 is not a marginal loss of accuracy: on Messidor-2 every model reduces, in
@@ -1142,14 +1174,19 @@ byte-duplicate of an APTOS image (Section~\ref{sec:methods-split}).
 above, the ranking was stable to: (i) the secondary CNN backbone (ResNet-50
 mirrors EfficientNet-B3); (ii) the RETFound adaptation regime (linear probing and
 full fine-tuning agree); (iii) single-pass versus $T=20$ Monte-Carlo-dropout
-entropy for the uncertainty analysis ($\Delta$AUROC $\leq 0.02$); and (iv)
-recomputation of every headline metric by an independent script. Not yet run, and
-listed below: alternative preprocessing (with/without CLAHE), multiple training
-seeds, and alternative class-weighting.
+entropy for the uncertainty analysis ($\Delta$AUROC $\leq 0.02$); (iv)
+recomputation of every headline metric by an independent script; and (v) the
+calibration-source choice for temperature scaling (APTOS validation versus a
+disjoint APTOS-train subset; Section~\ref{sec:results-calib}). The inference-time
+CLAHE / colour-transfer ablation (Section~\ref{sec:results-ablation}) further
+showed the direction of the RETFound--CNN gap is not an artefact of the specific
+preprocessing choice. Not yet run: the same normalisations applied at
+\emph{training} time, multiple training seeds, and alternative class-weighting.
 
 \textbf{Highest-value next experiments}, in priority order:
-(1) a \emph{controlled mechanistic ablation} of the degradation --- colour- and
-resolution-normalisation transfer, an input-resolution sweep, a training-set-size
+(1) extending the mechanistic ablation from inference-time perturbation
+(Section~\ref{sec:results-ablation}) to \emph{retraining} --- colour- and
+resolution-normalised fine-tuning, an input-resolution sweep, a training-set-size
 sweep, and APTOS-only versus multi-dataset (APTOS + one other) fine-tuning ---
 to move from documenting the failure to explaining it;
 (2) a completed RETFound full fine-tuning run in a resource-unconstrained
@@ -1222,6 +1259,8 @@ Stats (Tables~\ref{tab:master}--\ref{tab:delong}) & \texttt{scripts/phase9\_stat
 Verification, per-class CIs, calibration, ROC/PR, multiplicity, domain-shift, split counts (Tables~\ref{tab:calib}, \ref{tab:shift}, \ref{tab:counts}) & \texttt{scripts/phase11\_review\_response.py} \\
 Duplicate / leakage check (Section~\ref{sec:methods-split}) & \texttt{scripts/phase12\_leakage.py} \\
 Temperature scaling (Section~\ref{sec:results-calib}) & \texttt{scripts/phase13\_temperature\_scaling.py --calib-preds \ldots} \\
+Embedding near-duplicate check (Section~\ref{sec:methods-split}) & \texttt{scripts/phase14\_embedding\_dedup.py} \\
+Degradation ablation (Section~\ref{sec:results-ablation}) & \texttt{scripts/phase15\_ablation.py} \\
 Figs.~\ref{fig:forest}, \ref{fig:confusion}, \ref{fig:perclass}, \ref{fig:grades} & \texttt{scripts/phase10\_figures.py}, \texttt{phase10b\_figures.py} \\
 Figs.~\ref{fig:reliability}, \ref{fig:rocpr}, \ref{fig:perclassci} & \texttt{scripts/phase11\_figures.py} \\
 Fig.~\ref{fig:pipeline} & hand-drawn (TikZ, in this file) \\

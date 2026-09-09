@@ -20,7 +20,8 @@ torch==2.11.0
 torchvision==0.26.0
 torchmetrics==1.9.0
 
-# Added in later phases (uncomment when reached):
-#   Phase 5    timm                                  (baseline CNN backbones / RETFound helpers)
-#   Phase 7    grad-cam  (pytorch-grad-cam)          (explainability)
-#   Phase 9    statsmodels                           (DeLong / bootstrap helpers)
+# Added in later phases:
+timm==1.0.29                    # Phase 5   RETFound ViT-L backbone
+pytorch-grad-cam                # Phase 7   Grad-CAM++ / ViT Grad-CAM explainability
+opencv-python-headless          # Phase 15  CLAHE ablation variant
+#   Phase 9  DeLong / bootstrap are self-contained in scripts/phase9_stats.py (no statsmodels)
