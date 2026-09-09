@@ -101,7 +101,8 @@ $0.84$ internally); referring the most-uncertain $10\%$ of external predictions
 captures only $9$--$18\%$ of the errors. In a partial counterpoint, RETFound's
 label-smoothed probabilities stay closer to calibrated under shift (external
 expected calibration error $\approx 0.10$--$0.16$) than the CNNs', which become
-over-confident ($\approx 0.26$--$0.29$). Fine-tuning a retinal foundation model
+over-confident ($\approx 0.26$--$0.29$); post-hoc temperature scaling fitted
+in-distribution does not fix the external miscalibration and on IDRiD worsens it. Fine-tuning a retinal foundation model
 on APTOS~2019 did not improve, and by several measures worsened, cross-dataset
 discrimination for DR grading relative to a standard ImageNet-pretrained CNN.
 External validation, not internal test performance, should govern claims of
@@ -553,10 +554,14 @@ calibration error (MCE), the multi-class Brier score, and the negative
 log-likelihood from the stored class probabilities, with a $95\%$ bootstrap CI on
 ECE, and drew reliability diagrams
 (\texttt{scripts/phase11\_review\_response.py}). Calibration is reported
-separately for the internal APTOS test set and the two external sets. Post-hoc
-temperature scaling was not applied because a held-out probability-calibration
-split distinct from the internal test set was not retained; fitting a temperature
-on any of the sets scored here would bias its own ECE downward.
+separately for the internal APTOS test set and the two external sets. As a
+recalibration check we also fitted a single scalar temperature per model by
+minimising the negative log-likelihood on the APTOS \emph{validation} split
+(used for early stopping, never for test or external scoring), applied that
+temperature unchanged to the internal-test and both external sets, and recomputed
+every calibration metric (\texttt{scripts/phase13\_temperature\_scaling.py}).
+Temperature scaling is monotonic in the logits, so it leaves accuracy and the
+quadratic-weighted kappa unchanged.
 
 \subsection{Statistical analysis}
 \label{sec:methods-stats}
@@ -915,6 +920,19 @@ degraded less --- a partial, and honest, counterpoint to the negative headline.
 This does not make RETFound's external predictions safe: an ECE near $0.15$ with a
 QWK near $0.37$ still means confident, wrong grades.
 
+\textbf{Recalibration.} Post-hoc temperature scaling did not repair the external
+miscalibration. Temperatures fitted on the APTOS validation split were $T>1$ for
+the over-confident CNNs (EfficientNet-B3 $1.52$, ResNet-50 $1.16$) and
+$T\approx 0.50$ for the under-confident, label-smoothed RETFound variants.
+Applied externally, the fitted temperature roughly halved the RETFound full
+fine-tune's Messidor-2 ECE ($0.16\to0.08$) and lowered the CNNs' external ECE
+(EfficientNet-B3 $0.28\to0.21$ on Messidor-2, $0.29\to0.19$ on IDRiD), but the
+CNNs stayed clearly over-confident and on IDRiD the single global temperature
+\emph{worsened} both RETFound variants' ECE (full fine-tune $0.10\to0.21$; linear
+probe $0.13\to0.30$), because IDRiD's shift runs opposite in sign to
+Messidor-2's. A recalibration constant learned in-domain is therefore not a
+dependable external safeguard (\texttt{outputs/phase13/temperature\_scaling.csv}).
+
 \begin{figure*}[!t]
 \centering
 \includegraphics[width=\textwidth,height=0.44\textheight,keepaspectratio]{figures/fig_roc_pr.pdf}
@@ -1080,10 +1098,11 @@ transparent automated proxy, not by a blinded expert grader, and the proxy canno
 exclude vessel-centred activation; $65$ images were rated per model per external
 dataset. A blinded two-rater assessment with Cohen's~$\kappa$ would strengthen
 RQ2. Calibration was assessed with the expected and maximum calibration error,
-the multi-class Brier score, and reliability diagrams
-(Section~\ref{sec:results-calib}), but without post-hoc temperature scaling: that
-requires a probability-calibration split held out separately from the internal
-test set, which was not retained (Section~\ref{sec:methods-calib}).
+the multi-class Brier score, reliability diagrams, and per-model temperature
+scaling fitted on the APTOS validation split
+(Sections~\ref{sec:methods-calib}, \ref{sec:results-calib}); a temperature fitted
+on a dedicated in-distribution calibration set separate from the early-stopping
+split, or a full multi-parameter recalibrator, was not attempted.
 
 \textbf{Statistical-conclusion validity.} The confirmatory DeLong family (nine
 referable-DR comparisons against the baseline) is reported both uncorrected and
@@ -1131,8 +1150,9 @@ Disease-Grading subset used here --- with inter-rater agreement (Cohen's
 $\kappa$), to replace the automated location proxy;
 (4) the full $516$-image IDRiD Disease-Grading set and a patient-partitioned
 external dataset;
-(5) domain-specific out-of-distribution detection and post-hoc temperature
-scaling on a dedicated calibration split;
+(5) domain-specific out-of-distribution detection and adaptive recalibration
+(single-temperature scaling was tested and did not repair the external
+miscalibration, Section~\ref{sec:results-calib});
 (6) a second downstream task (referable-DR triage) and a second retinal
 foundation model.
 
@@ -1188,6 +1208,7 @@ Uncertainty (Fig.~\ref{fig:uncertainty}) & \texttt{scripts/phase8\_uncertainty.p
 Stats (Tables~\ref{tab:master}--\ref{tab:delong}) & \texttt{scripts/phase9\_stats.py --boot 2000 --seed 42} \\
 Verification, per-class CIs, calibration, ROC/PR, multiplicity, domain-shift, split counts (Tables~\ref{tab:calib}, \ref{tab:shift}, \ref{tab:counts}) & \texttt{scripts/phase11\_review\_response.py} \\
 Duplicate / leakage check (Section~\ref{sec:methods-split}) & \texttt{scripts/phase12\_leakage.py} \\
+Temperature scaling (Section~\ref{sec:results-calib}) & \texttt{scripts/phase13\_temperature\_scaling.py --calib-preds \ldots} \\
 Figs.~\ref{fig:forest}, \ref{fig:confusion}, \ref{fig:perclass}, \ref{fig:grades} & \texttt{scripts/phase10\_figures.py}, \texttt{phase10b\_figures.py} \\
 Figs.~\ref{fig:reliability}, \ref{fig:rocpr}, \ref{fig:perclassci} & \texttt{scripts/phase11\_figures.py} \\
 Fig.~\ref{fig:pipeline} & hand-drawn (TikZ, in this file) \\
@@ -1206,7 +1227,9 @@ $95\%$ CIs for every model $\times$ dataset
 (\texttt{outputs/phase11/multiplicity.csv}); full calibration table and
 reliability-diagram bin data (\texttt{outputs/phase11/reliability\_*.csv});
 $T=20$ Monte-Carlo-dropout uncertainty
-(\texttt{outputs/phase8/uncertainty\_mc.csv}); the deduplicated-internal
+(\texttt{outputs/phase8/uncertainty\_mc.csv}); the full per-model
+temperature-scaling table, raw versus recalibrated
+(\texttt{outputs/phase13/temperature\_scaling.csv}); the deduplicated-internal
 sensitivity analysis (\texttt{outputs/phase12/dedup\_internal\_metrics.csv});
 attention-rollout saliency maps and per-image plausibility scores
 (\texttt{outputs/phase7/}); hyperparameter JSONs; the split image-ID lists; and
