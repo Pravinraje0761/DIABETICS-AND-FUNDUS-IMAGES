@@ -1,0 +1,7 @@
+family,dataset,n_seeds,qwk_mean,qwk_sd,qwk_min,qwk_max,qwk_range
+efficientnet_b3,APTOS-internal,4,0.8793,0.0028,0.876,0.8827,0.0067
+efficientnet_b3,Messidor-2,4,0.5004,0.0238,0.4693,0.5268,0.0575
+efficientnet_b3,IDRiD,4,0.7492,0.0154,0.7318,0.7644,0.0326
+retfound_linprobe,APTOS-internal,4,0.8554,0.0078,0.8469,0.8648,0.0179
+retfound_linprobe,Messidor-2,4,0.3946,0.0149,0.374,0.4078,0.0338
+retfound_linprobe,IDRiD,4,0.623,0.0124,0.6047,0.631,0.0263

@@ -1,0 +1,5 @@
+family,external,n_seeds,drop_mean,drop_sd,drop_min,drop_max
+efficientnet_b3,Messidor-2,4,0.379,0.0252,0.3532,0.4134
+efficientnet_b3,IDRiD,4,0.1301,0.0154,0.1163,0.1482
+retfound_linprobe,Messidor-2,4,0.4609,0.0173,0.444,0.4843
+retfound_linprobe,IDRiD,4,0.2325,0.0186,0.2211,0.2601
