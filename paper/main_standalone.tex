@@ -431,7 +431,13 @@ duplicated images were slightly harder than average, so the leakage marginally
 \emph{understates} internal performance rather than inflating it); the direction
 of every internal comparison is unchanged
 (\texttt{outputs/phase12/dedup\_internal\_metrics.csv}). All external numbers,
-which are the paper's focus, are unaffected.
+which are the paper's focus, are unaffected. A semantic near-duplicate check
+(ImageNet-pretrained EfficientNet-B3 features, $1536$-d, cosine similarity over
+all cross-dataset image pairs; \texttt{scripts/phase14\_embedding\_dedup.py})
+supports the byte-level result: no cross-dataset pair exceeded cosine $0.965$ and
+none reached $0.98$, with no cluster near $1.0$, i.e.\ no evidence of
+semantically duplicated images across datasets
+(\texttt{outputs/phase14/}).
 
 \begin{table}[!t]
 \centering\small
