@@ -30,16 +30,22 @@ def build_retfound_backbone(
     num_classes: int = 5,
     drop_path: float = 0.2,
     global_pool: bool = True,
+    img_size: int | None = None,
 ) -> nn.Module:
     import timm  # local import: heavy, and only Phase 5 needs it
 
-    model = timm.create_model(
-        TIMM_MODEL,
+    kwargs = dict(
         pretrained=False,
         num_classes=num_classes,
         drop_path_rate=drop_path,
         global_pool="avg" if global_pool else "token",
     )
+    if img_size is not None:
+        # Non-native input size: timm resizes the model's own pos_embed grid on
+        # build; loading a 224-trained checkpoint then needs _interpolate_pos_embed
+        # (Phase 15 Variant C - input-resolution sensitivity, not a fair retrain).
+        kwargs["img_size"] = img_size
+    model = timm.create_model(TIMM_MODEL, **kwargs)
     return model
 
 

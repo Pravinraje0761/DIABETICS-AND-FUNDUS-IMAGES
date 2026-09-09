@@ -50,7 +50,22 @@ Hypothesis: if colour transfer recovers external QWK, RETFound fitted APTOS
 colour/illumination statistics rather than lesion morphology (this is the
 mechanism the Discussion currently argues for -- Variant B is its direct test).
 
-## Variant C -- input resolution 224 vs 384  (most work)
+## Variant C -- input resolution 224 vs 384  (DONE, commit pending)
+
+**Executed** by `scripts/phase15c_resolution.py` (not `phase15_ablation.py`).
+Re-preprocessed all three test sets from source at 384 px
+(`data_processed_res384/`, `data_splits/*_manifest_res384.csv`), re-ran EffNet-B3
+and RETFound-full at 224 (recomputed, asserted == `outputs/phase6/` <5e-4) and
+384. RETFound built with `build_retfound_backbone(..., img_size=384)` (new kwarg)
++ `_interpolate_pos_embed` -> pos_embed (1,197,1024)->(1,577,1024), all blocks
+load, forward on (1,3,384,384)->(1,5) OK. **Result: 384 does NOT recover external
+QWK.** RETFound Messidor-2 0.368->0.393 (still << EffNet 0.499/0.425 at any res),
+IDRiD 0.720->0.683; internal ~unchanged 0.869->0.872. EffNet loses internal QWK
+at 384 (0.876->0.824). Delta-drop-vs-224 small and inconsistent-sign for both
+(+0.022/-0.024 EffNet, -0.022/+0.040 RETFound on Messidor-2/IDRiD). Outputs in
+`outputs/phase15c/`. Folded into Results sec:results-ablation + Limitations +
+repro table + supplement list. Original plan below (superseded by the actual
+script, which recomputes 224 rather than trusting the cache):
 
 Real resolution needs re-preprocessing from **originals** at 384 (the committed
 PNGs are 224 -> upscaling adds no information). Steps:

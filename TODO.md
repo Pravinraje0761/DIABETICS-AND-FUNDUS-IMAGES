@@ -79,12 +79,15 @@ Then in `paper/main_standalone.tex`:
 
 ## 3. Analyses worth adding before submission (paper's "highest-value next experiments")
 
-1. [ ] **Controlled degradation ablation** -- the "why RETFound fails" experiment.
-   Re-run external inference for RETFound-full with (a) CLAHE on/off
-   (`phase3_preprocess.py --clahe`), (b) input resolution 224 vs 384,
-   (c) colour-transfer normalisation matching external channel stats to APTOS.
-   Report which recovers external QWK. New script `scripts/phase13_ablation.py`
-   (not written).
+1. [x] **Controlled degradation ablation** -- the "why RETFound fails" experiment.
+   DONE. (a)+(c) CLAHE + colour-transfer: `scripts/phase15_ablation.py`
+   (`outputs/phase15/`). (b) input resolution 224 vs 384:
+   `scripts/phase15c_resolution.py` (`outputs/phase15c/`) -- re-preprocess from
+   source at 384, RETFound ViT built at img_size=384 w/ interpolated pos_embed.
+   Verdict: NONE recover RETFound external QWK; 384 leaves RETFound far below the
+   CNN at any resolution. All folded into Results sec:results-ablation +
+   Limitations + repro table. Retraining-based colour/resolution/training-size
+   ablations remain future work (needs sustained GPU).
 2. [ ] **APTOS-only vs APTOS + one-other-set training** for RETFound-full; tests
    whether single-source training is the cause.
 3. [ ] **Blinded ophthalmologist rating** of >=60 saliency maps vs lesion masks,
