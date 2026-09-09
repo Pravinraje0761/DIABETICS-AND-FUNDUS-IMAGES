@@ -288,8 +288,10 @@ internally. Unchanged under T = 30 MC-dropout (Supplement).
 - **Sensitivity analyses.** Ranking stable to: ResNet-50 backbone; linear-probe
   vs full fine-tune; single-pass vs T=20 MC-dropout entropy; independent
   recompute of all 60 cells; temperature-scaling calibration source; inference-
-  time CLAHE / colour-transfer (both worsen RETFound, so the gap is not a
-  preprocessing artefact); and four training seeds each for EfficientNet-B3 and
+  time CLAHE / colour-transfer / 224-vs-384 resolution (none recover RETFound's
+  external QWK — 384 leaves it far below the CNN at any resolution, delta-drop
+  small and inconsistent-sign — so the gap is not a preprocessing or working-
+  resolution artefact); and four training seeds each for EfficientNet-B3 and
   RETFound linear probing — internal QWK SD 0.003 / 0.008, external QWK SD 0.024
   / 0.015 (EffNet) vs 0.015 / 0.012 (RETFound-LP) on Messidor-2 / IDRiD; the
   per-model seed ranges do not overlap on either external set (Messidor-2

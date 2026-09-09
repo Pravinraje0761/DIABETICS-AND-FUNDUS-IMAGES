@@ -990,9 +990,28 @@ fine-tuned ViT's representation is tightly coupled to the exact APTOS
 acquisition and colour distribution --- consistent with the peripheral saliency
 (Section~\ref{sec:results-explain}) and the calibration behaviour
 (Section~\ref{sec:results-calib}) --- whereas the ImageNet CNN absorbs the same
-perturbations. A colour- and resolution-normalised \emph{retraining} comparison
-is the definitive test and remains future work (Section~\ref{sec:limitations};
-\texttt{outputs/phase15/}).
+perturbations.
+
+A third variant tested input resolution: all three test sets were
+re-preprocessed from their source images at $384$~px (upscaling the committed
+$224$~px images would add no information) and both models were re-run without
+retraining, the RETFound ViT-L built at $384$~px with its $224$-trained
+positional embedding bicubically interpolated onto the $24{\times}24$ token grid
+(\texttt{scripts/phase15c\_resolution.py}). Higher resolution did not recover
+external agreement. RETFound's Messidor-2 QWK rose marginally
+($0.368 \to 0.393$) but stayed far below EfficientNet-B3 at \emph{either}
+resolution ($0.499$ at $224$, $0.425$ at $384$), and its IDRiD QWK fell
+($0.720 \to 0.683$); its internal QWK was essentially unchanged
+($0.869 \to 0.872$), confirming the positional-embedding interpolation is benign
+in-domain. EfficientNet-B3, trained at $224$, lost internal QWK at $384$
+($0.876 \to 0.824$) and did not improve externally (Messidor-2 $0.499 \to 0.425$,
+IDRiD $0.760 \to 0.731$). The change in internal-to-external QWK drop from
+switching to $384$~px was small for both models and of inconsistent sign
+($+0.022$ / $-0.024$ for EfficientNet-B3 on Messidor-2 / IDRiD; $-0.022$ /
+$+0.040$ for RETFound), so the RETFound--CNN gap is not an artefact of the
+$224$~px working resolution (\texttt{outputs/phase15c/}). A colour- and
+resolution-normalised \emph{retraining} comparison remains the definitive test
+and is future work (Section~\ref{sec:limitations}; \texttt{outputs/phase15/}).
 
 
 \section{Discussion}
@@ -1195,19 +1214,21 @@ Table~\ref{tab:drop}) is roughly five times the baseline's seed standard
 deviation, so neither the direction nor the magnitude of the RETFound--CNN gap
 is attributable to training-seed variance
 (\texttt{scripts/phase16\_seed\_sweep.py}, \texttt{outputs/phase16/}). The
-inference-time CLAHE / colour-transfer ablation
-(Section~\ref{sec:results-ablation}) further showed the direction of the
-RETFound--CNN gap is not an artefact of the specific preprocessing choice. Not
-yet run: the same normalisations applied at \emph{training} time, matched
-multi-seed retraining of the RETFound full fine-tune (the seed sweep above
-covers the linear-probe regime only), and alternative class-weighting.
+inference-time CLAHE, colour-transfer and $224$-versus-$384$ resolution
+ablations (Section~\ref{sec:results-ablation}) further showed the direction of
+the RETFound--CNN gap is not an artefact of the specific preprocessing choice or
+working resolution. Not yet run: the same normalisations and resolution applied
+at \emph{training} time, matched multi-seed retraining of the RETFound full
+fine-tune (the seed sweep above covers the linear-probe regime only), and
+alternative class-weighting.
 
 \textbf{Highest-value next experiments}, in priority order:
 (1) extending the mechanistic ablation from inference-time perturbation
-(Section~\ref{sec:results-ablation}) to \emph{retraining} --- colour- and
-resolution-normalised fine-tuning, an input-resolution sweep, a training-set-size
-sweep, and APTOS-only versus multi-dataset (APTOS + one other) fine-tuning ---
-to move from documenting the failure to explaining it;
+(Section~\ref{sec:results-ablation}, which covered CLAHE, colour-transfer and
+$224$-versus-$384$ resolution) to \emph{retraining} --- colour- and
+resolution-normalised fine-tuning, a training-set-size sweep, and APTOS-only
+versus multi-dataset (APTOS + one other) fine-tuning --- to move from documenting
+the failure to explaining it;
 (2) a completed RETFound full fine-tuning run in a resource-unconstrained
 environment (the results here use an epoch-6 checkpoint that has reached its
 converged validation QWK; see Internal validity), and $\geq 2$ checkpoints per
@@ -1279,7 +1300,8 @@ Verification, per-class CIs, calibration, ROC/PR, multiplicity, domain-shift, sp
 Duplicate / leakage check (Section~\ref{sec:methods-split}) & \texttt{scripts/phase12\_leakage.py} \\
 Temperature scaling (Section~\ref{sec:results-calib}) & \texttt{scripts/phase13\_temperature\_scaling.py --calib-preds \ldots} \\
 Embedding near-duplicate check (Section~\ref{sec:methods-split}) & \texttt{scripts/phase14\_embedding\_dedup.py} \\
-Degradation ablation (Section~\ref{sec:results-ablation}) & \texttt{scripts/phase15\_ablation.py} \\
+Degradation ablation --- CLAHE, colour-transfer (Section~\ref{sec:results-ablation}) & \texttt{scripts/phase15\_ablation.py} \\
+Degradation ablation --- input resolution $224$/$384$ (Section~\ref{sec:results-ablation}) & \texttt{scripts/phase15c\_resolution.py} \\
 Training-seed sensitivity (Limitations) & \texttt{scripts/phase16\_seed\_sweep.py} \\
 Figs.~\ref{fig:forest}, \ref{fig:confusion}, \ref{fig:perclass}, \ref{fig:grades} & \texttt{scripts/phase10\_figures.py}, \texttt{phase10b\_figures.py} \\
 Figs.~\ref{fig:reliability}, \ref{fig:rocpr}, \ref{fig:perclassci} & \texttt{scripts/phase11\_figures.py} \\
@@ -1305,7 +1327,8 @@ temperature-scaling table, raw versus recalibrated
 sensitivity analysis (\texttt{outputs/phase12/dedup\_internal\_metrics.csv});
 the four-seed training-seed sweep for EfficientNet-B3 and RETFound linear
 probing, per-seed and aggregated (\texttt{outputs/phase16/seed\_master.csv},
-\texttt{seed\_summary.md});
+\texttt{seed\_summary.md}); the $224$-versus-$384$ input-resolution ablation
+(\texttt{outputs/phase15c/resolution\_master.csv});
 attention-rollout saliency maps and per-image plausibility scores
 (\texttt{outputs/phase7/}); hyperparameter JSONs; the split image-ID lists; and
 the TRIPOD+AI checklist (\texttt{paper/TRIPOD-AI\_checklist.md}).
