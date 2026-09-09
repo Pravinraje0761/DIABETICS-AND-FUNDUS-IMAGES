@@ -565,9 +565,11 @@ recalibration check we also fitted a single scalar temperature per model by
 minimising the negative log-likelihood on the APTOS \emph{validation} split
 (used for early stopping, never for test or external scoring), applied that
 temperature unchanged to the internal-test and both external sets, and recomputed
-every calibration metric (\texttt{scripts/phase13\_temperature\_scaling.py}).
-Temperature scaling is monotonic in the logits, so it leaves accuracy and the
-quadratic-weighted kappa unchanged.
+every calibration metric (\texttt{scripts/phase13\_temperature\_scaling.py}). The
+fitted temperature was bootstrapped ($1000$ resamples) for a $95\%$ interval, and
+the fit was repeated on a disjoint stratified subset of the APTOS training split
+as a calibration-source robustness check. Temperature scaling is monotonic in the
+logits, so it leaves accuracy and the quadratic-weighted kappa unchanged.
 
 \subsection{Statistical analysis}
 \label{sec:methods-stats}
@@ -928,16 +930,21 @@ QWK near $0.37$ still means confident, wrong grades.
 
 \textbf{Recalibration.} Post-hoc temperature scaling did not repair the external
 miscalibration. Temperatures fitted on the APTOS validation split were $T>1$ for
-the over-confident CNNs (EfficientNet-B3 $1.52$, ResNet-50 $1.16$) and
-$T\approx 0.50$ for the under-confident, label-smoothed RETFound variants.
+the over-confident CNNs (EfficientNet-B3 $1.52$, bootstrap $95\%$ CI
+$[1.33,1.71]$; ResNet-50 $1.16$, $[1.02,1.31]$) and $T\approx 0.50$
+($[0.43,0.58]$) for the under-confident, label-smoothed RETFound variants.
 Applied externally, the fitted temperature roughly halved the RETFound full
 fine-tune's Messidor-2 ECE ($0.16\to0.08$) and lowered the CNNs' external ECE
 (EfficientNet-B3 $0.28\to0.21$ on Messidor-2, $0.29\to0.19$ on IDRiD), but the
 CNNs stayed clearly over-confident and on IDRiD the single global temperature
 \emph{worsened} both RETFound variants' ECE (full fine-tune $0.10\to0.21$; linear
 probe $0.13\to0.30$), because IDRiD's shift runs opposite in sign to
-Messidor-2's. A recalibration constant learned in-domain is therefore not a
-dependable external safeguard (\texttt{outputs/phase13/temperature\_scaling.csv}).
+Messidor-2's. Refitting $T$ on a disjoint stratified subset of the APTOS
+\emph{training} split left RETFound's temperature essentially unchanged
+($\approx 0.48$) and every external conclusion identical
+(\texttt{outputs/phase13/traincalib/}). A recalibration constant learned
+in-domain is therefore not a dependable external safeguard
+(\texttt{outputs/phase13/temperature\_scaling.csv}).
 
 \begin{figure*}[!t]
 \centering

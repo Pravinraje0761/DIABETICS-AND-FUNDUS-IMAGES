@@ -8,10 +8,10 @@ Eval predictions: `outputs/phase6`
 
 | Model | T | reading |
 |---|--:|---|
-| EfficientNet-B3 (baseline) | 1.523 | over-confident -> softened (T>1) |
-| ResNet-50 (baseline) | 1.160 | over-confident -> softened (T>1) |
-| RETFound (linear probe) | 0.503 | under-confident -> sharpened (T<1) |
-| RETFound (full fine-tune) | 0.496 | under-confident -> sharpened (T<1) |
+| EfficientNet-B3 (baseline) | 1.523 (bootstrap 95% CI 1.33-1.71) | over-confident -> softened (T>1) |
+| ResNet-50 (baseline) | 1.160 (bootstrap 95% CI 1.02-1.31) | over-confident -> softened (T>1) |
+| RETFound (linear probe) | 0.503 (bootstrap 95% CI 0.43-0.58) | under-confident -> sharpened (T<1) |
+| RETFound (full fine-tune) | 0.496 (bootstrap 95% CI 0.43-0.57) | under-confident -> sharpened (T<1) |
 
 ## ECE before -> after, by dataset
 
