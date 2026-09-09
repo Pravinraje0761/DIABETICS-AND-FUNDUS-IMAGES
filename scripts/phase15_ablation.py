@@ -114,14 +114,28 @@ def _colour_xfer(arr: np.ndarray, ref_mean: np.ndarray, ref_std: np.ndarray) -> 
     return np.clip(out, 0, 255).astype(np.uint8)
 
 
+class _ClaheOp:
+    """Picklable (needed for Py3.14 spawn/forkserver DataLoader workers)."""
+
+    def __call__(self, im: Image.Image) -> Image.Image:
+        return Image.fromarray(_clahe(np.asarray(im)))
+
+
+class _ColourXferOp:
+    def __init__(self, ref_mean, ref_std):
+        self.ref_mean = np.asarray(ref_mean)
+        self.ref_std = np.asarray(ref_std)
+
+    def __call__(self, im: Image.Image) -> Image.Image:
+        return Image.fromarray(_colour_xfer(np.asarray(im), self.ref_mean, self.ref_std))
+
+
 def make_transform(variant: str, ref):
     ops: list = []
     if variant == "clahe":
-        ops.append(transforms.Lambda(lambda im: Image.fromarray(_clahe(np.asarray(im)))))
+        ops.append(_ClaheOp())
     elif variant == "colour_xfer":
-        rm, rs = ref
-        ops.append(transforms.Lambda(
-            lambda im: Image.fromarray(_colour_xfer(np.asarray(im), rm, rs))))
+        ops.append(_ColourXferOp(ref[0], ref[1]))
     ops += [transforms.Resize((224, 224)), transforms.ToTensor(),
             transforms.Normalize(IMAGENET_MEAN, IMAGENET_STD)]
     return transforms.Compose(ops)

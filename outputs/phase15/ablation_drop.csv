@@ -1,0 +1,13 @@
+model,external,variant,qwk_external,qwk_drop,delta_drop_vs_baseline_variant
+baseline_efficientnet_b3,Messidor-2,baseline,0.4988,0.3772,0.0
+baseline_efficientnet_b3,Messidor-2,clahe,0.4577,0.3493,-0.0279
+baseline_efficientnet_b3,Messidor-2,colour_xfer,0.5122,0.3042,-0.073
+baseline_efficientnet_b3,IDRiD,baseline,0.7597,0.1163,0.0
+baseline_efficientnet_b3,IDRiD,clahe,0.6968,0.1102,-0.0061
+baseline_efficientnet_b3,IDRiD,colour_xfer,0.6892,0.1272,0.0109
+retfound_full,Messidor-2,baseline,0.3679,0.5014,0.0
+retfound_full,Messidor-2,clahe,0.0645,0.5342,0.0328
+retfound_full,Messidor-2,colour_xfer,0.1225,0.6282,0.1268
+retfound_full,IDRiD,baseline,0.7195,0.1498,0.0
+retfound_full,IDRiD,clahe,0.2968,0.3019,0.1521
+retfound_full,IDRiD,colour_xfer,0.5453,0.2054,0.0556
