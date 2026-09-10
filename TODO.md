@@ -129,8 +129,19 @@ Then in `paper/main_standalone.tex`:
    Limitations "Sensitivity analyses" (vi) + repro table + supplement list +
    `manuscript_rendered.md`. RETFound-full x3 seeds still blocked by laptop
    throttle (needs Colab/Kaggle) -- noted as remaining in "Not yet run".
-6. [ ] **Class-weighting sensitivity** (focal loss / no weights) as a robustness
-   check (currently inverse-frequency CE only).
+6. [x] **Class-weighting / loss-function sensitivity.** DONE (Phase 17,
+   `scripts/phase17_loss_sensitivity.py` + `scripts/losses.py`; trainers gained
+   `--loss {ce,focal}`). EfficientNet-B3 and RETFound linear probe re-trained
+   with plain CE / no class weights and with focal loss (gamma=2), scored
+   unmodified on the 3 datasets -> `outputs/phase17/`. Internal QWK loss-invariant
+   (EffNet 0.876-0.881, RETFound-LP 0.847-0.858). On Messidor-2 the CNN keeps the
+   higher QWK and smaller drop under every loss (EffNet 0.499-0.549 vs RETFound-LP
+   0.316-0.404; drop 0.33-0.38 vs 0.45-0.54) -> the headline gap is not a
+   class-weighting artefact. IDRiD is more loss-sensitive (unweighted CE lifts
+   RETFound-LP to 0.751, lowers EffNet to 0.706), consistent with IDRiD being the
+   smaller set where the contrast is already marginal. RETFound-full not
+   re-trained (laptop GPU wall). Folded into Limitations "Sensitivity analyses" +
+   repro table + supplement list.
 7. [ ] **Post-hoc temperature scaling** on a dedicated calibration split
    (`predict.py --split val` for APTOS val logits); re-report ECE post-scaling in
    the calibration table.

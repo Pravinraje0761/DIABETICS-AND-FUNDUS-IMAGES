@@ -1,0 +1,15 @@
+{
+  "arch": "retfound_vit_large_patch16",
+  "mode": "linprobe",
+  "best_epoch": 7,
+  "val_qwk": 0.9092800834164801,
+  "internal_test": {
+    "n": 733,
+    "accuracy": 0.7762619372442019,
+    "quadratic_weighted_kappa": 0.85880880283547,
+    "macro_f1": 0.6147127672908489,
+    "balanced_accuracy": 0.6202149754589775,
+    "auc_ovr_macro": 0.9126645875831197
+  },
+  "finished_utc": "2026-09-10T06:27:01+00:00"
+}
