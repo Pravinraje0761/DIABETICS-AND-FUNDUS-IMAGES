@@ -1,0 +1,13 @@
+family,loss,external,qwk_internal,qwk_external,qwk_drop
+efficientnet_b3,weighted_ce,Messidor-2,0.876,0.4988,0.3772
+efficientnet_b3,weighted_ce,IDRiD,0.876,0.7597,0.1163
+efficientnet_b3,ce_noweight,Messidor-2,0.8811,0.5495,0.3316
+efficientnet_b3,ce_noweight,IDRiD,0.8811,0.7064,0.1747
+efficientnet_b3,focal_g2,Messidor-2,0.8768,0.543,0.3338
+efficientnet_b3,focal_g2,IDRiD,0.8768,0.7687,0.1081
+retfound_linprobe,weighted_ce,Messidor-2,0.8469,0.3938,0.4531
+retfound_linprobe,weighted_ce,IDRiD,0.8469,0.6258,0.2211
+retfound_linprobe,ce_noweight,Messidor-2,0.8514,0.316,0.5354
+retfound_linprobe,ce_noweight,IDRiD,0.8514,0.7514,0.1
+retfound_linprobe,focal_g2,Messidor-2,0.8579,0.4038,0.4541
+retfound_linprobe,focal_g2,IDRiD,0.8579,0.6363,0.2216

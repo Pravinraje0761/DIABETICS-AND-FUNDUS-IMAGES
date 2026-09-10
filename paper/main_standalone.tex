@@ -1276,10 +1276,23 @@ is attributable to training-seed variance
 inference-time CLAHE, colour-transfer and $224$-versus-$384$ resolution
 ablations (Section~\ref{sec:results-ablation}) further showed the direction of
 the RETFound--CNN gap is not an artefact of the specific preprocessing choice or
-working resolution. Not yet run: the same normalisations and resolution applied
-at \emph{training} time, matched multi-seed retraining of the RETFound full
-fine-tune (the seed sweep above covers the linear-probe regime only), and
-alternative class-weighting.
+working resolution. Re-training EfficientNet-B3 and the RETFound linear probe
+with plain (unweighted) cross-entropy and with focal loss ($\gamma=2$) in place
+of the inverse-frequency weighting left internal-test QWK essentially unchanged
+for both families ($0.876$--$0.881$ and $0.847$--$0.858$); on Messidor-2 the
+convolutional baseline kept the higher QWK and the smaller internal-to-external
+drop under every loss (EfficientNet-B3 QWK $0.499$--$0.549$ versus RETFound
+linear probe $0.316$--$0.404$; Messidor-2 drop $0.33$--$0.38$ versus
+$0.45$--$0.54$), so the Messidor-2 gap is not an artefact of the class-weighting
+scheme. IDRiD was more loss-sensitive --- unweighted cross-entropy raised the
+RETFound linear probe to QWK $0.751$ and lowered EfficientNet-B3 to $0.706$ ---
+consistent with IDRiD being the smaller external set on which the
+RETFound--baseline contrast is already marginal (Table~\ref{tab:drop});
+the full fine-tune was not re-trained for this check
+(\texttt{scripts/phase17\_loss\_sensitivity.py}, \texttt{outputs/phase17/}).
+Not yet run: the same normalisations and resolution applied at \emph{training}
+time, and matched multi-seed retraining of the RETFound full fine-tune (the seed
+sweep and the loss ablation above both cover the linear-probe regime only).
 
 \textbf{Highest-value next experiments}, in priority order:
 (1) extending the mechanistic ablation from inference-time perturbation
@@ -1364,6 +1377,7 @@ Embedding near-duplicate check (Section~\ref{sec:methods-split}) & \texttt{scrip
 Degradation ablation --- CLAHE, colour-transfer (Section~\ref{sec:results-ablation}) & \texttt{scripts/phase15\_ablation.py} \\
 Degradation ablation --- input resolution $224$/$384$ (Section~\ref{sec:results-ablation}) & \texttt{scripts/phase15c\_resolution.py} \\
 Training-seed sensitivity (Limitations) & \texttt{scripts/phase16\_seed\_sweep.py} \\
+Loss-function / class-weighting sensitivity (Limitations) & \texttt{scripts/phase17\_loss\_sensitivity.py} (variants via \texttt{train\_baseline.py} / \texttt{train\_retfound.py --loss \{ce,focal\}}) \\
 Figs.~\ref{fig:forest}, \ref{fig:confusion}, \ref{fig:perclass}, \ref{fig:grades} & \texttt{scripts/phase10\_figures.py}, \texttt{phase10b\_figures.py} \\
 Figs.~\ref{fig:reliability}, \ref{fig:rocpr}, \ref{fig:perclassci} & \texttt{scripts/phase11\_figures.py} \\
 Fig.~\ref{fig:pipeline} & hand-drawn (TikZ, in this file) \\
@@ -1393,7 +1407,10 @@ sensitivity analysis (\texttt{outputs/phase12/dedup\_internal\_metrics.csv});
 the four-seed training-seed sweep for EfficientNet-B3 and RETFound linear
 probing, per-seed and aggregated (\texttt{outputs/phase16/seed\_master.csv},
 \texttt{seed\_summary.md}); the $224$-versus-$384$ input-resolution ablation
-(\texttt{outputs/phase15c/resolution\_master.csv});
+(\texttt{outputs/phase15c/resolution\_master.csv}); the loss-function /
+class-weighting ablation --- EfficientNet-B3 and the RETFound linear probe
+re-trained with plain cross-entropy and with focal loss
+(\texttt{outputs/phase17/loss\_master.csv}, \texttt{loss\_drop.csv});
 attention-rollout saliency maps and per-image plausibility scores
 (\texttt{outputs/phase7/}); the blinded expert-rating packet --- $160$ clean
 saliency overlays, rating sheet, rubric, and withheld key

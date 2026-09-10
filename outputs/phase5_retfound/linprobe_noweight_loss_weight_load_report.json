@@ -1,0 +1,11 @@
+{
+  "weights_file": "weights\\RETFound_mae_natureCFP.pth",
+  "n_ckpt_tensors": 294,
+  "n_model_tensors": 296,
+  "n_loaded": 294,
+  "missing_keys": [
+    "head.weight",
+    "head.bias"
+  ],
+  "unexpected_keys": []
+}
