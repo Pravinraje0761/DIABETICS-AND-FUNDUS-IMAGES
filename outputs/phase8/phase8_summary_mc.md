@@ -1,6 +1,6 @@
 # Phase 8 - Predictive uncertainty (mc)
 
-_Generated 2026-09-08T15:32:13+00:00. Source: `outputs\phase8\mc`._
+_Generated 2026-09-10T04:42:30+00:00. Source: `outputs\phase8\mc`._
 
 Uncertainty score = predictive entropy of the mean softmax. Mann-Whitney U is one-sided (incorrect > correct); rank-biserial positive = incorrect predictions are more uncertain.
 
@@ -20,3 +20,25 @@ Uncertainty score = predictive entropy of the mean softmax. Mann-Whitney U is on
 | retfound_full | APTOS-internal | 733 | 0.775 | 1.199 | 1.270 | 1.05e-07 | +0.265 | 0.633 | 0.800 | 0.200 |
 
 Selective-prediction curve (all coverages): `outputs/phase8/selective_prediction_mc.csv`; figure: `outputs/phase8/fig_uncertainty_mc.png`.
+
+## Per-class predictive uncertainty
+
+Mean predictive entropy (nats) and accuracy per ICDR grade on the external sets. `H` = mean entropy; accuracy in brackets; grouped by **true** grade. Full breakdown (incl. grouping by predicted grade, median entropy, correct/incorrect split): `outputs/phase8/uncertainty_by_class_mc.csv`; figure: `outputs/phase8/fig_uncertainty_byclass_mc.png`.
+
+### Messidor-2 (by true grade)
+
+| Model | No DR | Mild | Moderate | Severe | Proliferative |
+|---|---|---|---|---|---|
+| baseline_efficientnet_b3 | H=0.201 (0.97, n=1017) | H=0.239 (0.01, n=270) | H=0.645 (0.21, n=347) | H=0.959 (0.09, n=75) | H=0.914 (0.51, n=35) |
+| baseline_resnet50 | H=0.247 (0.95, n=1017) | H=0.260 (0.01, n=270) | H=0.600 (0.20, n=347) | H=0.902 (0.28, n=75) | H=0.981 (0.29, n=35) |
+| retfound_linprobe | H=1.410 (0.88, n=1017) | H=1.425 (0.00, n=270) | H=1.475 (0.17, n=347) | H=1.387 (0.40, n=75) | H=1.139 (0.69, n=35) |
+| retfound_full | H=1.452 (0.95, n=1017) | H=1.463 (0.03, n=270) | H=1.513 (0.07, n=347) | H=1.525 (0.33, n=75) | H=1.494 (0.43, n=35) |
+
+### IDRiD (by true grade)
+
+| Model | No DR | Mild | Moderate | Severe | Proliferative |
+|---|---|---|---|---|---|
+| baseline_efficientnet_b3 | H=0.579 (0.50, n=129) | H=0.689 (0.77, n=22) | H=0.680 (0.68, n=156) | H=0.782 (0.27, n=84) | H=0.691 (0.31, n=64) |
+| baseline_resnet50 | H=0.565 (0.50, n=129) | H=0.550 (0.86, n=22) | H=0.827 (0.53, n=156) | H=0.909 (0.38, n=84) | H=0.868 (0.12, n=64) |
+| retfound_linprobe | H=1.454 (0.29, n=129) | H=1.459 (0.45, n=22) | H=1.390 (0.19, n=156) | H=1.234 (0.71, n=84) | H=1.049 (0.48, n=64) |
+| retfound_full | H=1.462 (0.41, n=129) | H=1.450 (0.86, n=22) | H=1.403 (0.23, n=156) | H=1.339 (0.60, n=84) | H=1.198 (0.28, n=64) |

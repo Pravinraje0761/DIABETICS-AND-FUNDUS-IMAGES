@@ -24,6 +24,13 @@ Produces:
 Run:
   .venv/Scripts/python.exe scripts/phase9_stats.py            # B=2000, seed=42
   .venv/Scripts/python.exe scripts/phase9_stats.py --boot 5000
+
+Monte-Carlo-dropout sensitivity (re-runs the whole analysis - bootstrap CIs,
+drop CIs, difference-in-drop, and the DeLong paired-AUC test - on the T-pass
+MC-dropout predictive distributions from scripts/phase8_mc_dropout.py instead of
+the single forward pass). Outputs are written with an "_mc" suffix so the
+primary single-pass files are left untouched:
+  .venv/Scripts/python.exe scripts/phase9_stats.py --preds-dir outputs/phase8/mc --tag mc
 """
 from __future__ import annotations
 
@@ -43,6 +50,20 @@ PROJECT_DIR = Path(__file__).resolve().parents[1]
 PHASE6_DIR = PROJECT_DIR / "outputs" / "phase6"
 OUT_DIR = PROJECT_DIR / "outputs" / "phase9"
 
+# Prediction source + output label. Reassigned by main() when --preds-dir / --tag
+# are given (e.g. the MC-dropout run). Default = Phase 6 single forward pass.
+PREDS_DIR = PHASE6_DIR
+TAG = "singlepass"
+
+
+def tagged(fname: str) -> Path:
+    """Output path for `fname`, suffixed with the run tag unless it is the
+    default single-pass run (keeps the committed primary files untouched)."""
+    if TAG in ("", "singlepass"):
+        return OUT_DIR / fname
+    stem, _, ext = fname.rpartition(".")
+    return OUT_DIR / f"{stem}_{TAG}.{ext}"
+
 MODELS = ["baseline_efficientnet_b3", "baseline_resnet50",
           "retfound_linprobe", "retfound_full"]
 DATASETS = ["APTOS-internal", "Messidor-2", "IDRiD"]
@@ -58,7 +79,7 @@ ALPHA = 0.05
 # IO
 # --------------------------------------------------------------------------- #
 def load_preds(model: str, dataset: str) -> pd.DataFrame | None:
-    p = PHASE6_DIR / f"{model}__{dataset}_preds.csv"
+    p = PREDS_DIR / f"{model}__{dataset}_preds.csv"
     if not p.is_file():
         return None
     df = pd.read_csv(p)
@@ -355,9 +376,16 @@ def write_summary(ci: pd.DataFrame, drop: pd.DataFrame,
                   ddiff: pd.DataFrame, delong: pd.DataFrame,
                   B: int, seed: int) -> None:
     ts = datetime.now(timezone.utc).isoformat(timespec="seconds")
-    L = ["# Phase 9 - Statistical analysis", "",
+    src = PREDS_DIR.relative_to(PROJECT_DIR)
+    src_note = (" Predictions: single forward pass (`outputs/phase6/`)."
+                if TAG in ("", "singlepass")
+                else f" Predictions: **{TAG}** - mean softmax over T MC-dropout "
+                     f"passes (`{src}/`); compare against the single-pass "
+                     f"`phase9_summary.md`.")
+    L = [f"# Phase 9 - Statistical analysis"
+         + ("" if TAG in ("", "singlepass") else f" ({TAG})"), "",
          f"_Generated {ts}. Percentile bootstrap, B={B}, seed={seed}, "
-         f"two-sided alpha={ALPHA}._", ""]
+         f"two-sided alpha={ALPHA}.{src_note}_", ""]
 
     L += ["## 1. Headline metrics with 95% CI", "",
           "| Model | Dataset | Accuracy | QWK | Macro-F1 | Bal-Acc | AUC(OvR) |",
@@ -402,8 +430,9 @@ def write_summary(ci: pd.DataFrame, drop: pd.DataFrame,
                  f"{r.delong_z:.2f} | {r.delong_p:.3f} | "
                  f"{'*' if r.significant_at_0_05 else 'ns'} |")
 
-    L += ["", "Full per-grade one-vs-rest DeLong results: `outputs/phase9/delong.csv`.", ""]
-    (OUT_DIR / "phase9_summary.md").write_text("\n".join(L), encoding="utf-8")
+    L += ["", "Full per-grade one-vs-rest DeLong results: "
+          f"`{tagged('delong.csv').relative_to(PROJECT_DIR)}`.", ""]
+    tagged("phase9_summary.md").write_text("\n".join(L), encoding="utf-8")
 
 
 def write_methods_paragraph(B: int, seed: int) -> None:
@@ -428,45 +457,60 @@ small pre-specified family of confirmatory contrasts (foundation model vs.
 EfficientNet-B3 baseline on each external dataset); secondary per-grade tests are
 reported as exploratory. Analyses used Python 3.14, NumPy, pandas, SciPy and
 scikit-learn; the bootstrap and DeLong code is released with the study
-(`scripts/phase9_stats.py`).
+(`scripts/phase9_stats.py`). As a sensitivity analysis the entire procedure was
+repeated on the Monte-Carlo-dropout predictive distributions (mean softmax over
+T stochastic forward passes; see Uncertainty quantification), which leaves the
+substantive conclusions unchanged (`outputs/phase9/*_mc.csv`).
 """
-    (OUT_DIR / "stats_methods_paragraph.md").write_text(txt, encoding="utf-8")
+    tagged("stats_methods_paragraph.md").write_text(txt, encoding="utf-8")
 
 
 def main() -> int:
+    global PREDS_DIR, TAG
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--boot", type=int, default=2000)
     ap.add_argument("--seed", type=int, default=42)
+    ap.add_argument("--preds-dir", default="outputs/phase6",
+                    help="directory of <model>__<dataset>_preds.csv files "
+                         "(default: Phase 6 single forward pass; pass "
+                         "outputs/phase8/mc for the MC-dropout sensitivity run)")
+    ap.add_argument("--tag", default="singlepass",
+                    help="output label; anything other than 'singlepass' suffixes "
+                         "every output file (e.g. --tag mc -> delong_mc.csv)")
     args = ap.parse_args()
 
+    PREDS_DIR = (PROJECT_DIR / args.preds_dir).resolve()
+    TAG = args.tag
+    if not PREDS_DIR.is_dir():
+        print(f"preds dir not found: {PREDS_DIR}")
+        return 1
+
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    print(f"Phase 9: bootstrap B={args.boot}, seed={args.seed}")
+    print(f"Phase 9: bootstrap B={args.boot}, seed={args.seed}  "
+          f"source={PREDS_DIR.relative_to(PROJECT_DIR)}  tag={TAG}")
 
     print("  [1/4] bootstrap CIs for the master table ...")
     ci = run_bootstrap_ci(args.boot, args.seed)
-    ci.to_csv(OUT_DIR / "bootstrap_ci.csv", index=False)
+    ci.to_csv(tagged("bootstrap_ci.csv"), index=False)
 
     print("  [2/4] internal->external drop CIs ...")
     drop = run_drop_ci(args.boot, args.seed)
-    drop.to_csv(OUT_DIR / "drop_ci.csv", index=False)
+    drop.to_csv(tagged("drop_ci.csv"), index=False)
 
     print("  [3/4] difference-in-drop CIs (paired) ...")
     ddiff = run_drop_difference_ci(args.boot, args.seed)
-    ddiff.to_csv(OUT_DIR / "drop_difference_ci.csv", index=False)
+    ddiff.to_csv(tagged("drop_difference_ci.csv"), index=False)
 
     print("  [4/4] DeLong paired-AUC tests ...")
     delong = run_delong()
-    delong.to_csv(OUT_DIR / "delong.csv", index=False)
+    delong.to_csv(tagged("delong.csv"), index=False)
 
     write_summary(ci, drop, ddiff, delong, args.boot, args.seed)
     write_methods_paragraph(args.boot, args.seed)
 
-    print(f"\nwrote {OUT_DIR}/bootstrap_ci.csv")
-    print(f"wrote {OUT_DIR}/drop_ci.csv")
-    print(f"wrote {OUT_DIR}/drop_difference_ci.csv")
-    print(f"wrote {OUT_DIR}/delong.csv")
-    print(f"wrote {OUT_DIR}/phase9_summary.md")
-    print(f"wrote {OUT_DIR}/stats_methods_paragraph.md")
+    for f in ("bootstrap_ci.csv", "drop_ci.csv", "drop_difference_ci.csv",
+              "delong.csv", "phase9_summary.md", "stats_methods_paragraph.md"):
+        print(f"wrote {tagged(f).relative_to(PROJECT_DIR)}")
 
     print("\n=== QWK drop difference vs EfficientNet-B3 (95% CI) ===")
     for r in ddiff.itertuples():
