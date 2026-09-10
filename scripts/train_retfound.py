@@ -39,6 +39,7 @@ import torch.nn as nn
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from dataset import FundusDataset, build_dataloader  # noqa: E402
+from losses import build_criterion  # noqa: E402
 from metrics import compute_metrics, format_metrics  # noqa: E402
 from predict import infer, save_predictions  # noqa: E402
 from retfound import ARCH_NAME, build_retfound_backbone, load_retfound_weights  # noqa: E402
@@ -129,6 +130,11 @@ def main() -> int:
     ap.add_argument("--num-workers", type=int, default=4)
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--no-class-weights", action="store_true")
+    ap.add_argument("--loss", default="ce", choices=["ce", "focal"],
+                    help="'ce' (primary) or 'focal' (Phase 17 loss-sensitivity "
+                         "ablation); focal keeps the class-weight alpha and the "
+                         "--label-smoothing value.")
+    ap.add_argument("--focal-gamma", type=float, default=2.0)
     ap.add_argument("--no-amp", action="store_true")
     ap.add_argument("--device", default="auto", choices=["auto", "cpu", "cuda"])
     ap.add_argument("--ckpt-dir", default=None,
@@ -183,12 +189,10 @@ def main() -> int:
                                   train=False, num_workers=args.num_workers, shuffle=False)
     train_ds: FundusDataset = train_loader.dataset  # type: ignore[assignment]
 
-    if args.no_class_weights:
-        class_weights = None
-    else:
-        class_weights = train_ds.class_weights().to(device)
-    criterion = nn.CrossEntropyLoss(weight=class_weights,
-                                    label_smoothing=args.label_smoothing)
+    class_weights = None if args.no_class_weights else train_ds.class_weights().to(device)
+    criterion = build_criterion(args.loss, class_weights,
+                                label_smoothing=args.label_smoothing,
+                                focal_gamma=args.focal_gamma)
 
     # -- optimiser ------------------------------------------------------------ #
     if args.mode == "full":
@@ -223,7 +227,9 @@ def main() -> int:
         "label_smoothing": args.label_smoothing,
         "warmup_epochs": args.warmup_epochs,
         "lr_schedule": "linear warmup + cosine decay",
-        "loss": "CrossEntropy" + ("" if args.no_class_weights else " (inverse-freq class weights)"),
+        "loss": (("CrossEntropy" if args.loss == "ce"
+                  else f"Focal(gamma={args.focal_gamma})")
+                 + ("" if args.no_class_weights else " (inverse-freq class weights)")),
         "early_stopping": f"val quadratic-weighted kappa, patience={args.patience}",
         "augmentation": "resize224, H/V flip, +/-15deg rotation, brightness/contrast jitter 0.1",
         "normalisation": "ImageNet mean/std",
