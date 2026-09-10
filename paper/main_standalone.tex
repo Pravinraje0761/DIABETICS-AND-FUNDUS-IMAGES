@@ -98,7 +98,9 @@ being statistically indistinguishable from every model internally
 periphery on Messidor-2, most markedly for its errors. Predictive entropy is a
 weak external error detector for every model (AUROC $0.55$--$0.68$ versus up to
 $0.84$ internally); referring the most-uncertain $10\%$ of external predictions
-captures only $9$--$18\%$ of the errors. In a partial counterpoint, RETFound's
+captures only $9$--$18\%$ of the errors, and RETFound's entropy is elevated and
+essentially flat across DR grades irrespective of its per-grade accuracy, so it
+does not localise its own errors. In a partial counterpoint, RETFound's
 label-smoothed probabilities stay closer to calibrated under shift (external
 expected calibration error $\approx 0.10$--$0.16$) than the CNNs', which become
 over-confident ($\approx 0.26$--$0.29$); post-hoc temperature scaling fitted
@@ -184,11 +186,15 @@ protocol are applied identically to an ImageNet CNN baseline and to RETFound. We
     standard referable-DR binarisation, internally and externally;
   \item assess explainability with method-matched class-activation mapping
     (Grad-CAM++ for the CNN, patch-token Grad-CAM for the ViT) against an
-    a-priori plausibility rubric scored by a transparent automated proxy, and
-    show the foundation model's saliency degrades under the harder shift;
+    a-priori plausibility rubric scored by a transparent automated proxy, show
+    the foundation model's saliency degrades under the harder shift, and release
+    a blinded expert-rating packet and scorer for a two-rater confirmation of
+    that proxy;
   \item quantify predictive uncertainty (predictive entropy; $T=20$ Monte-Carlo
-    dropout as a sensitivity analysis) as an error detector and as a
-    selective-prediction operating characteristic;
+    dropout as a sensitivity analysis, applied both to the uncertainty analysis
+    and to a full re-run of the statistical pipeline) as an error detector and as
+    a selective-prediction operating characteristic, with a per-ICDR-grade
+    breakdown;
   \item release all code, split image-ID lists, and per-image prediction logs, so
     that every number in this paper can be regenerated from the public data
     (Section~\ref{sec:repro}).
@@ -529,7 +535,17 @@ the fundus, outside an automatically estimated optic-disc region and outside the
 outer border annulus, with at least half of the top-decile saliency mass in that
 same lesion-eligible zone. The proxy cannot exclude vessel-centred activation; the
 absence of blinded expert rating is a stated limitation
-(Section~\ref{sec:limitations}). Code: \texttt{scripts/phase7\_explainability.py}.
+(Section~\ref{sec:limitations}). To make that assessment executable without
+re-deriving the sample, we additionally release a blinded rating packet
+(\texttt{scripts/phase7\_rating\_packet.py}): $160$ maps ($10$ per model per
+external dataset per correctness stratum, grade-stratified, seed $42$), each
+re-rendered as a two-panel image (fundus and heatmap only, with no disc marker,
+peak marker, or identifying text), a shuffled blind identifier, a rating sheet
+and rubric, and a withheld key; the companion scorer computes the expert
+plausible-focus rate, the expert-versus-proxy Cohen's $\kappa$, and the
+inter-rater $\kappa$ per cell. Code:
+\texttt{scripts/phase7\_explainability.py},
+\texttt{scripts/phase7\_rating\_packet.py}.
 
 \subsection{Uncertainty quantification}
 \label{sec:methods-unc}
@@ -548,7 +564,11 @@ computed the AUROC of predictive entropy used directly as a binary error
 detector. We then plotted selective-prediction curves: images were ranked by
 entropy and the most uncertain fraction referred out, and the accuracy,
 quadratic-weighted kappa, and fraction of all errors captured among the referred
-images were recorded as a function of retained coverage. Code:
+images were recorded as a function of retained coverage. Predictive entropy and
+accuracy were also broken down by ICDR grade --- stratified both by the reference
+grade and by the predicted grade --- to test whether a model reserved its
+uncertainty for the rarer sight-threatening grades and whether the many grade-0
+predictions it issued on the external sets were made confidently. Code:
 \texttt{scripts/phase8\_uncertainty.py}, \texttt{scripts/phase8\_mc\_dropout.py}.
 
 \subsection{Calibration}
@@ -592,7 +612,12 @@ comparisons of every non-baseline model against EfficientNet-B3 on the three
 datasets; $p$-values within it are additionally reported after Holm--Bonferroni
 correction (\texttt{outputs/phase11/multiplicity.csv}), and every claim of
 significance in Section~\ref{sec:results-ext} survives it. Secondary per-grade
-one-vs-rest tests are exploratory and not corrected. Analyses used \texttt{numpy},
+one-vs-rest tests are exploratory and not corrected. As a sensitivity analysis
+the entire procedure --- bootstrap CIs, the internal-to-external drop, the paired
+difference in drop, and the DeLong referable-DR test --- was re-run on the
+$T=20$ Monte-Carlo-dropout predictive distributions in place of the single
+forward pass (\texttt{scripts/phase9\_stats.py --preds-dir outputs/phase8/mc
+--tag mc}; \texttt{outputs/phase9/*\_mc.csv}). Analyses used \texttt{numpy},
 \texttt{pandas}, \texttt{scipy}, and \texttt{scikit-learn} in Python~3.14; the
 bootstrap, DeLong, and calibration implementations are released
 (\texttt{scripts/phase9\_stats.py}, \texttt{scripts/phase11\_review\_response.py}).
@@ -828,7 +853,10 @@ more pronounced on RETFound's \emph{incorrect} Messidor-2 predictions ($36\%$
 proxy-plausible) than its correct ones ($70\%$). Figure~\ref{fig:explain} shows representative panels; per-cell rates are in
 the supplement (\texttt{outputs/phase7/plausibility\_rates.csv}). These figures
 come from a single automated location proxy, not blinded expert grading or
-lesion-mask overlap (Section~\ref{sec:limitations}).
+lesion-mask overlap (Section~\ref{sec:limitations}); a blinded rating packet and
+scorer for a two-rater expert assessment against this proxy are released with the
+code (Section~\ref{sec:methods-explain}) but were not yet completed by a
+clinician.
 
 \subsection{Uncertainty}
 \label{sec:results-unc}
@@ -863,6 +891,25 @@ changed every error-detection AUROC by $\leq 0.02$ and did not alter any of thes
 conclusions --- the RETFound full fine-tune on IDRiD still showed no error signal
 (AUROC $0.51$, $p=0.37$) (supplement,
 \texttt{outputs/phase8/uncertainty\_mc.csv}).
+
+Breaking predictive entropy down by ICDR grade
+(\texttt{outputs/phase8/uncertainty\_by\_class\_singlepass.csv}) exposes why the
+foundation model's uncertainty is uninformative. For the convolutional baselines,
+mean external entropy tracked difficulty: EfficientNet-B3 on Messidor-2 rose from
+$0.15$ nats on grade-0 images (where it was $97\%$ accurate) to $0.83$ nats on
+grade-3 images (where it was $13\%$ accurate). The RETFound full fine-tune instead
+sat at $1.39$--$1.50$ nats across every grade on Messidor-2 and $1.11$--$1.41$ on
+IDRiD --- close to the $\ln 5 \approx 1.61$ maximum for five classes, and
+essentially flat regardless of whether its per-grade accuracy was $0.97$ or
+$0.07$. Its entropy therefore encodes a near-uniform posterior everywhere rather
+than a data-dependent confidence, consistent with the low fitted temperature of
+the label-smoothed RETFound head (Section~\ref{sec:results-calib}); the linear
+probe behaved the same way at a slightly lower level. This also holds when the
+breakdown is taken over the predicted rather than the reference grade: the large
+block of grade-0 predictions RETFound issued on Messidor-2 ($n=1586$, wrong $38\%$
+of the time) carried $\approx 1.4$-nat entropy, essentially the same as its
+predictions of every other grade ($1.4$--$1.6$ nats), so those errors were not
+flagged as low-confidence.
 
 \subsection{Calibration}
 \label{sec:results-calib}
@@ -1161,7 +1208,11 @@ other retinal foundation models or tasks without direct testing.
 transparent automated proxy, not by a blinded expert grader, and the proxy cannot
 exclude vessel-centred activation; $65$ images were rated per model per external
 dataset. A blinded two-rater assessment with Cohen's~$\kappa$ would strengthen
-RQ2. Calibration was assessed with the expected and maximum calibration error,
+RQ2; the rating packet, rubric, and scorer for exactly this assessment are
+released (\texttt{scripts/phase7\_rating\_packet.py};
+Section~\ref{sec:methods-explain}), and completing it with practising
+ophthalmologists --- ideally against the pixel-level lesion masks of the IDRiD
+Segmentation subset --- remains outstanding. Calibration was assessed with the expected and maximum calibration error,
 the multi-class Brier score, reliability diagrams, and per-model temperature
 scaling fitted on the APTOS validation split
 (Sections~\ref{sec:methods-calib}, \ref{sec:results-calib}); a temperature fitted
@@ -1193,8 +1244,16 @@ byte-duplicate of an APTOS image (Section~\ref{sec:methods-split}).
 above, the ranking was stable to: (i) the secondary CNN backbone (ResNet-50
 mirrors EfficientNet-B3); (ii) the RETFound adaptation regime (linear probing and
 full fine-tuning agree); (iii) single-pass versus $T=20$ Monte-Carlo-dropout
-entropy for the uncertainty analysis ($\Delta$AUROC $\leq 0.02$); (iv)
-recomputation of every headline metric by an independent script; (v) the
+predictive distributions --- for the uncertainty analysis ($\Delta$AUROC
+$\leq 0.02$) and for the full statistical pipeline (bootstrap CIs, the
+internal-to-external drop, the paired difference in drop, and the DeLong
+referable-DR test): every RETFound-versus-baseline DeLong verdict is unchanged
+(both external sets significant, internal not), and the Messidor-2 excess drop of
+each non-baseline model still excludes $0$; the only movement is the RETFound
+full fine-tune's marginal IDRiD excess-drop interval, which is
+$[-0.022, 0.089]$ single-pass and $[0.000, 0.114]$ under Monte-Carlo dropout, and
+is not relied on for any claim (\texttt{outputs/phase9/*\_mc.csv});
+(iv) recomputation of every headline metric by an independent script; (v) the
 calibration-source choice for temperature scaling (APTOS validation versus a
 disjoint APTOS-train subset; Section~\ref{sec:results-calib}); and (vi) three
 additional training seeds each for EfficientNet-B3 and for RETFound linear
@@ -1237,7 +1296,9 @@ pretraining family to support a paradigm-level rather than checkpoint-level clai
 lesion masks --- using the IDRiD \emph{Segmentation} subset, which ships
 pixel-level microaneurysm/haemorrhage/exudate masks and is not part of the
 Disease-Grading subset used here --- with inter-rater agreement (Cohen's
-$\kappa$), to replace the automated location proxy;
+$\kappa$), to replace the automated location proxy (the blinded packet and
+scorer are built and released, \texttt{scripts/phase7\_rating\_packet.py};
+the ratings and mask overlap are the remaining work);
 (4) the full $516$-image IDRiD Disease-Grading set and a patient-partitioned
 external dataset;
 (5) domain-specific out-of-distribution detection and adaptive recalibration
@@ -1293,9 +1354,9 @@ Split (Table~\ref{tab:datasets}) & \texttt{scripts/phase3\_split\_aptos.py}, \te
 Baselines (Table~\ref{tab:master}) & \texttt{scripts/train\_baseline.py --arch \{efficientnet\_b3,resnet50\}} \\
 RETFound (Table~\ref{tab:master}) & \texttt{scripts/train\_retfound.py --mode \{linprobe,full\}} \\
 External eval (Tables~\ref{tab:master}, \ref{tab:drop}) & \texttt{scripts/phase6\_external\_eval.py} \\
-Explainability (Fig.~\ref{fig:explain}) & \texttt{scripts/phase7\_explainability.py} \\
-Uncertainty (Fig.~\ref{fig:uncertainty}) & \texttt{scripts/phase8\_uncertainty.py}, \texttt{phase8\_mc\_dropout.py} \\
-Stats (Tables~\ref{tab:master}--\ref{tab:delong}) & \texttt{scripts/phase9\_stats.py --boot 2000 --seed 42} \\
+Explainability (Fig.~\ref{fig:explain}); blinded-rating packet + scorer & \texttt{scripts/phase7\_explainability.py}; \texttt{scripts/phase7\_rating\_packet.py} \\
+Uncertainty (Fig.~\ref{fig:uncertainty}); per-grade entropy breakdown & \texttt{scripts/phase8\_uncertainty.py}, \texttt{phase8\_mc\_dropout.py} \\
+Stats (Tables~\ref{tab:master}--\ref{tab:delong}); MC-dropout re-run & \texttt{scripts/phase9\_stats.py --boot 2000 --seed 42} \newline (\texttt{--preds-dir outputs/phase8/mc --tag mc} for the MC sensitivity variant) \\
 Verification, per-class CIs, calibration, ROC/PR, multiplicity, domain-shift, split counts (Tables~\ref{tab:calib}, \ref{tab:shift}, \ref{tab:counts}) & \texttt{scripts/phase11\_review\_response.py} \\
 Duplicate / leakage check (Section~\ref{sec:methods-split}) & \texttt{scripts/phase12\_leakage.py} \\
 Temperature scaling (Section~\ref{sec:results-calib}) & \texttt{scripts/phase13\_temperature\_scaling.py --calib-preds \ldots} \\
@@ -1321,7 +1382,11 @@ $95\%$ CIs for every model $\times$ dataset
 (\texttt{outputs/phase11/multiplicity.csv}); full calibration table and
 reliability-diagram bin data (\texttt{outputs/phase11/reliability\_*.csv});
 $T=20$ Monte-Carlo-dropout uncertainty
-(\texttt{outputs/phase8/uncertainty\_mc.csv}); the full per-model
+(\texttt{outputs/phase8/uncertainty\_mc.csv}) and the whole statistical pipeline
+re-run on those distributions (\texttt{outputs/phase9/*\_mc.csv}); predictive
+entropy and accuracy broken down by reference and by predicted ICDR grade
+(\texttt{outputs/phase8/uncertainty\_by\_class\_\{singlepass,mc\}.csv},
+\texttt{fig\_uncertainty\_byclass\_*.png}); the full per-model
 temperature-scaling table, raw versus recalibrated
 (\texttt{outputs/phase13/temperature\_scaling.csv}); the deduplicated-internal
 sensitivity analysis (\texttt{outputs/phase12/dedup\_internal\_metrics.csv});
@@ -1330,8 +1395,11 @@ probing, per-seed and aggregated (\texttt{outputs/phase16/seed\_master.csv},
 \texttt{seed\_summary.md}); the $224$-versus-$384$ input-resolution ablation
 (\texttt{outputs/phase15c/resolution\_master.csv});
 attention-rollout saliency maps and per-image plausibility scores
-(\texttt{outputs/phase7/}); hyperparameter JSONs; the split image-ID lists; and
-the TRIPOD+AI checklist (\texttt{paper/TRIPOD-AI\_checklist.md}).
+(\texttt{outputs/phase7/}); the blinded expert-rating packet --- $160$ clean
+saliency overlays, rating sheet, rubric, and withheld key
+(\texttt{outputs/phase7/rating\_packet/}); hyperparameter JSONs; the split
+image-ID lists; and the TRIPOD+AI checklist
+(\texttt{paper/TRIPOD-AI\_checklist.md}).
 
 
 \section*{Declarations}

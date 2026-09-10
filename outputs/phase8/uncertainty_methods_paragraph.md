@@ -13,6 +13,11 @@ predictive entropy used directly as a binary error detector. To translate this
 into an operating characteristic we plotted selective-prediction curves: images
 were ranked by entropy and the most uncertain fraction referred out, and the
 accuracy, quadratic-weighted kappa and fraction of all errors captured among the
-referred images were recorded as a function of retained coverage. Analyses used
-SciPy and scikit-learn; code is released as scripts/phase8_uncertainty.py and
+referred images were recorded as a function of retained coverage. Predictive
+entropy was additionally broken down by International Clinical Diabetic
+Retinopathy grade, stratified both by the reference grade and by the predicted
+grade, to check whether the models expressed greater uncertainty on the rarer
+sight-threatening grades and whether the large number of grade-0 predictions on
+the external sets were confidently made. Analyses used SciPy and scikit-learn;
+code is released as scripts/phase8_uncertainty.py and
 scripts/phase8_mc_dropout.py.

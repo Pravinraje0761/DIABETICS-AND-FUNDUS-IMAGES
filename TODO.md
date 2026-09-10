@@ -90,10 +90,29 @@ Then in `paper/main_standalone.tex`:
    ablations remain future work (needs sustained GPU).
 2. [ ] **APTOS-only vs APTOS + one-other-set training** for RETFound-full; tests
    whether single-source training is the cause.
-3. [ ] **Blinded ophthalmologist rating** of >=60 saliency maps vs lesion masks,
-   2 raters, Cohen's kappa. Use the **IDRiD Segmentation subset** (ships
-   pixel-level MA/HE/EX masks; download from IEEE DataPort) for true
-   saliency-lesion IoU/Dice -- replaces the automated location proxy for RQ2.
+3. [~] **Blinded ophthalmologist rating** of >=60 saliency maps vs lesion masks,
+   2 raters, Cohen's kappa. **Packet + scorer built** (`scripts/phase7_rating_packet.py`):
+   `outputs/phase7/rating_packet/` has 160 clean blinded overlays (10 per
+   model x dataset x correct/incorrect, grade-stratified, seed 42, NO disc
+   circle / peak marker / text), `rating_sheet_BLANK.csv`, `INSTRUCTIONS.md`
+   and a withheld `KEY.csv`. `--score rater_*.csv` joins ratings to the key and
+   reports expert-plausible rate + expert-vs-proxy Cohen's kappa + inter-rater
+   kappa per cell (`outputs/phase7/rating_agreement.csv`,
+   `phase7_rating_summary.md`); `--demo-score` exercises it on a synthetic sheet.
+   **Still outstanding:** >=2 real clinician raters, and the **IDRiD Segmentation
+   subset** (pixel-level MA/HE/EX masks; IEEE DataPort) for true
+   saliency-lesion IoU/Dice to replace the automated location proxy for RQ2.
+9. [x] **Per-class predictive uncertainty (Phase 8).** `phase8_uncertainty.py`
+   now emits `uncertainty_by_class_<tag>.csv` + `fig_uncertainty_byclass_<tag>.png`
+   (entropy/accuracy by true grade AND by predicted grade, singlepass + mc).
+   Finding: RETFound's entropy is high and flat across grades on the external
+   sets and barely separates its own errors (retfound_full IDRiD MWU p=0.52,
+   error-AUROC 0.50), whereas the CNN entropy rises steeply with grade.
+10. [x] **MC-dropout sensitivity for Phase 9 (incl. DeLong).**
+   `phase9_stats.py --preds-dir outputs/phase8/mc --tag mc` re-runs bootstrap CIs,
+   drop CIs, difference-in-drop and the DeLong paired-AUC test on the T-pass
+   MC-dropout distributions -> `outputs/phase9/*_mc.csv`, `phase9_summary_mc.md`
+   (primary single-pass files untouched).
 4. [ ] **Full IDRiD 516** Disease-Grading set: re-download, re-run
    `phase6_external_eval.py` + `phase9_stats.py` + `phase11_review_response.py`,
    confirm the drop is unchanged; identify + characterise the 61 missing images.

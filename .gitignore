@@ -32,6 +32,14 @@ checkpoints/
 # Pretrained foundation-model weights - licence: link to source, never commit
 /weights/
 
+# Phase 7 blinded-rating packet: the 160 clean overlay PNGs are regenerable
+# (scripts/phase7_rating_packet.py); keep the CSVs / instructions / key. The
+# DEMO_* synthetic sheet and *_DEMO analysis are a local pipeline check, not
+# results.
+outputs/phase7/rating_packet/img/
+outputs/phase7/rating_packet/DEMO_*
+outputs/phase7/*_DEMO.*
+
 # Local scratch
 .ipynb_checkpoints/
 *.log
