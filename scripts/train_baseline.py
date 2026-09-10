@@ -36,6 +36,7 @@ import torch.nn as nn
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from dataset import FundusDataset, build_dataloader  # noqa: E402
+from losses import build_criterion  # noqa: E402
 from metrics import compute_metrics, format_metrics  # noqa: E402
 from models import ARCHS, build_model  # noqa: E402
 from predict import infer, save_predictions  # noqa: E402
@@ -111,6 +112,11 @@ def main() -> int:
                          "efficientnet_b3_seed43_best.pt. Keeps multi-seed / "
                          "ablation runs from overwriting the primary checkpoint.")
     ap.add_argument("--no-class-weights", action="store_true")
+    ap.add_argument("--loss", default="ce", choices=["ce", "focal"],
+                    help="'ce' (primary) or 'focal' (Phase 17 loss-sensitivity "
+                         "ablation). Focal keeps the same class-weight vector as "
+                         "alpha unless --no-class-weights is also given.")
+    ap.add_argument("--focal-gamma", type=float, default=2.0)
     ap.add_argument("--no-amp", action="store_true")
     ap.add_argument("--device", default="auto", choices=["auto", "cpu", "cuda"])
     ap.add_argument("--limit-train-batches", type=int, default=0,
@@ -141,12 +147,9 @@ def main() -> int:
 
     model = build_model(args.arch, pretrained=True).to(device)
 
-    if args.no_class_weights:
-        criterion = nn.CrossEntropyLoss()
-        class_weights = None
-    else:
-        class_weights = train_ds.class_weights().to(device)
-        criterion = nn.CrossEntropyLoss(weight=class_weights)
+    class_weights = None if args.no_class_weights else train_ds.class_weights().to(device)
+    criterion = build_criterion(args.loss, class_weights,
+                                focal_gamma=args.focal_gamma)
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr,
                                   weight_decay=args.weight_decay)
@@ -164,7 +167,9 @@ def main() -> int:
         "lr": args.lr,
         "weight_decay": args.weight_decay,
         "lr_schedule": "CosineAnnealingLR",
-        "loss": "CrossEntropy" + ("" if args.no_class_weights else " (inverse-freq class weights)"),
+        "loss": (("CrossEntropy" if args.loss == "ce"
+                  else f"Focal(gamma={args.focal_gamma})")
+                 + ("" if args.no_class_weights else " (inverse-freq class weights)")),
         "class_weights": None if class_weights is None else [round(float(w), 4) for w in class_weights],
         "early_stopping": f"val quadratic-weighted kappa, patience={args.patience}",
         "augmentation": "resize224, H/V flip, +/-15deg rotation, brightness/contrast jitter 0.1",
