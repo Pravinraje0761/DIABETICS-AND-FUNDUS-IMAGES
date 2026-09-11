@@ -1,0 +1,4 @@
+family,train_frac_pct,dataset,n,qwk,accuracy,macro_f1,referable_auc
+efficientnet_b3,100,APTOS-internal,733,0.876,0.8035,0.6442,0.9799
+efficientnet_b3,100,Messidor-2,1744,0.4988,0.6256,0.3596,0.8416
+efficientnet_b3,100,IDRiD,455,0.7597,0.4967,0.441,0.9623

@@ -86,6 +86,8 @@ class FundusDataset(Dataset):
         train: bool = False,
         size: int = RETFOUND_INPUT_SIZE,
         transform: transforms.Compose | None = None,
+        train_frac: float | None = None,
+        frac_seed: int = 42,
     ) -> None:
         self.manifest_csv = Path(manifest_csv)
         df = pd.read_csv(self.manifest_csv)
@@ -95,6 +97,14 @@ class FundusDataset(Dataset):
             if "split" not in df.columns:
                 raise ValueError(f"{self.manifest_csv} has no 'split' column")
             df = df[df["split"] == split]
+        if train_frac is not None and split == "train":
+            # Training-data-size sensitivity: stratified subsample of the train
+            # split only (val/test/external are never touched). Fixed seed ->
+            # reproducible; fractions are independently re-sampled, not nested.
+            if not (0.0 < train_frac <= 1.0):
+                raise ValueError(f"train_frac must be in (0, 1], got {train_frac}")
+            df = df.groupby("diagnosis", group_keys=False).sample(
+                frac=train_frac, random_state=frac_seed)
         df = df.reset_index(drop=True)
         if df.empty:
             raise ValueError(
@@ -145,8 +155,11 @@ def build_dataloader(
     num_workers: int = 0,
     shuffle: bool | None = None,
     size: int = RETFOUND_INPUT_SIZE,
+    train_frac: float | None = None,
+    frac_seed: int = 42,
 ) -> DataLoader:
-    ds = FundusDataset(manifest_csv, split=split, train=train, size=size)
+    ds = FundusDataset(manifest_csv, split=split, train=train, size=size,
+                       train_frac=train_frac, frac_seed=frac_seed)
     if shuffle is None:
         shuffle = train
     return DataLoader(

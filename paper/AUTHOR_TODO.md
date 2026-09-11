@@ -154,9 +154,25 @@ a fact only you hold. Ordered by how much they block submission.
     the mirror used here.
 18. **Retraining-based mechanistic ablations** — colour- and
     resolution-normalised *fine-tuning* (the Phase 15 ablations apply the
-    transforms at inference only), a training-set-size sweep, and a second
-    downstream task or a second retinal foundation model. All need sustained
-    ViT-L training, i.e. the same clean environment as item 7.
+    transforms at inference only) and a training-set-size sweep. Data
+    preparation and the `train_baseline.py` / `train_retfound.py --manifest
+    ... --img-size ... --train-frac ...` support are now built and released
+    (`scripts/phase18_retrain_variants_prep.py`,
+    `scripts/phase21_training_size_sensitivity.py`); only the actual training
+    runs remain, in the same clean environment as item 7 — see
+    `COLAB_RETRAIN_GUIDE.md` for exact commands.
+19. **A second retinal foundation model**, so any future claim could be made
+    at the pretraining-paradigm level rather than about this one checkpoint.
+    Deliberately out of scope for this submission (stated as such throughout
+    the manuscript) rather than attempted and abandoned.
+
+    Two items previously listed here are now done: a standalone referable-DR
+    secondary task (`scripts/phase19_referable_dr.py`,
+    Section~\ref{sec:results-referable}) confirms the same generalisation gap
+    under a binary clinical decision; and a domain-shift OOD detector
+    (`scripts/phase20_ood_detection.py`, Section~\ref{sec:results-ood}) did not
+    outperform predictive entropy as an external error detector (negative
+    result, reported as such).
 
 ---
 

@@ -145,6 +145,22 @@ def main() -> int:
                     help="extra suffix for output filenames, e.g. --tag seed43 -> "
                          "full_seed43_best.pt. Keeps multi-seed / ablation runs from "
                          "overwriting the primary linprobe_/full_ checkpoints.")
+    ap.add_argument("--manifest", default=None,
+                    help="override the APTOS manifest CSV (default: "
+                         "data_splits/aptos_manifest.csv). Use a variant manifest "
+                         "for Phase 18 training-time ablations, e.g. "
+                         "data_splits/aptos_manifest_res384_full.csv or "
+                         "data_splits/aptos_manifest_clahe224.csv")
+    ap.add_argument("--img-size", type=int, default=224,
+                    help="input resolution AND ViT pos_embed grid to build at "
+                         "(default 224, RETFound's native size). A 224-trained "
+                         "checkpoint's pos_embed is bicubically interpolated onto "
+                         "any other size automatically (retfound.py); pair with "
+                         "--manifest pointing at images preprocessed at this size.")
+    ap.add_argument("--train-frac", type=float, default=None,
+                    help="Phase 18 training-data-size sensitivity: stratified "
+                         "subsample of the TRAIN split only (e.g. 0.25/0.5/0.75); "
+                         "val/test always use the full split. Fixed seed = --seed.")
     args = ap.parse_args()
 
     epochs = args.epochs or (40 if args.mode == "linprobe" else 30)
@@ -166,7 +182,8 @@ def main() -> int:
         torch.backends.cudnn.benchmark = True
 
     # -- model -------------------------------------------------------------- #
-    model = build_retfound_backbone(num_classes=5, drop_path=drop_path)
+    img_size = args.img_size if args.img_size != 224 else None
+    model = build_retfound_backbone(num_classes=5, drop_path=drop_path, img_size=img_size)
     report = load_retfound_weights(model, args.weights)
     (OUT_DIR / f"{tag}_weight_load_report.json").write_text(
         json.dumps(report, indent=2), encoding="utf-8"
@@ -183,10 +200,14 @@ def main() -> int:
         print(f"linear probe - training only: {trainable}")
 
     # -- data -------------------------------------------------------------- #
-    train_loader = build_dataloader(APTOS_MANIFEST, "train", args.batch_size,
-                                    train=True, num_workers=args.num_workers, shuffle=True)
-    val_loader = build_dataloader(APTOS_MANIFEST, "val", max(args.batch_size, 32),
-                                  train=False, num_workers=args.num_workers, shuffle=False)
+    manifest = Path(args.manifest) if args.manifest else APTOS_MANIFEST
+    train_loader = build_dataloader(manifest, "train", args.batch_size,
+                                    train=True, num_workers=args.num_workers, shuffle=True,
+                                    size=args.img_size, train_frac=args.train_frac,
+                                    frac_seed=args.seed)
+    val_loader = build_dataloader(manifest, "val", max(args.batch_size, 32),
+                                  train=False, num_workers=args.num_workers, shuffle=False,
+                                  size=args.img_size)
     train_ds: FundusDataset = train_loader.dataset  # type: ignore[assignment]
 
     class_weights = None if args.no_class_weights else train_ds.class_weights().to(device)
@@ -217,6 +238,9 @@ def main() -> int:
         "arch": ARCH_NAME,
         "backbone": "ViT-Large/16, RETFound MAE-pretrained (retinal)",
         "mode": args.mode,
+        "manifest": str(manifest.relative_to(PROJECT_DIR)) if manifest.is_relative_to(PROJECT_DIR) else str(manifest),
+        "img_size": args.img_size,
+        "train_frac": args.train_frac,
         "epochs_max": epochs,
         "batch_size": args.batch_size,
         "optimizer": "AdamW",
@@ -339,8 +363,9 @@ def main() -> int:
     ckpt = torch.load(best_path, map_location=device, weights_only=False)
     model.load_state_dict(ckpt["model_state"])
     model.to(device).eval()
-    test_loader = build_dataloader(APTOS_MANIFEST, "test", max(args.batch_size, 32),
-                                   train=False, num_workers=args.num_workers, shuffle=False)
+    test_loader = build_dataloader(manifest, "test", max(args.batch_size, 32),
+                                   train=False, num_workers=args.num_workers, shuffle=False,
+                                   size=args.img_size)
     res = infer(model, test_loader, device)
     preds_path, metrics_path = save_predictions(res, OUT_DIR / f"{tag}_internal_test")
     test_m = json.loads(metrics_path.read_text())

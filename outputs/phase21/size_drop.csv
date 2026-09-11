@@ -1,0 +1,3 @@
+family,train_frac_pct,external,qwk_internal,qwk_external,qwk_drop
+efficientnet_b3,100,Messidor-2,0.876,0.4988,0.3772
+efficientnet_b3,100,IDRiD,0.876,0.7597,0.1163

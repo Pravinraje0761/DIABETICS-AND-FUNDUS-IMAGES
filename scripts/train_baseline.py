@@ -40,6 +40,7 @@ from losses import build_criterion  # noqa: E402
 from metrics import compute_metrics, format_metrics  # noqa: E402
 from models import ARCHS, build_model  # noqa: E402
 from predict import infer, save_predictions  # noqa: E402
+from preprocessing import RETFOUND_INPUT_SIZE  # noqa: E402
 
 PROJECT_DIR = Path(__file__).resolve().parents[1]
 APTOS_MANIFEST = PROJECT_DIR / "data_splits" / "aptos_manifest.csv"
@@ -99,6 +100,20 @@ def validate(model, loader, criterion, device):
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--arch", default="resnet50", choices=ARCHS)
+    ap.add_argument("--manifest", default=None,
+                    help="override the APTOS manifest CSV (default: "
+                         "data_splits/aptos_manifest.csv). Use a variant manifest "
+                         "for Phase 18 training-time ablations, e.g. "
+                         "data_splits/aptos_manifest_res384_full.csv or "
+                         "data_splits/aptos_manifest_clahe224.csv")
+    ap.add_argument("--img-size", type=int, default=RETFOUND_INPUT_SIZE,
+                    help="input resolution for train/val/test loaders (default "
+                         "224). Pair with --manifest pointing at a manifest whose "
+                         "processed_path images were preprocessed at this size.")
+    ap.add_argument("--train-frac", type=float, default=None,
+                    help="Phase 18 training-data-size sensitivity: stratified "
+                         "subsample of the TRAIN split only (e.g. 0.25/0.5/0.75); "
+                         "val/test always use the full split. Fixed seed = --seed.")
     ap.add_argument("--epochs", type=int, default=30)
     ap.add_argument("--batch-size", type=int, default=32)
     ap.add_argument("--lr", type=float, default=1e-4)
@@ -135,14 +150,18 @@ def main() -> int:
     if device.type == "cuda":
         torch.backends.cudnn.benchmark = True
 
-    if not APTOS_MANIFEST.is_file():
-        print(f"missing {APTOS_MANIFEST} - run phase3 scripts first")
+    manifest = Path(args.manifest) if args.manifest else APTOS_MANIFEST
+    if not manifest.is_file():
+        print(f"missing {manifest} - run phase3 scripts first")
         return 1
 
-    train_loader = build_dataloader(APTOS_MANIFEST, "train", args.batch_size,
-                                    train=True, num_workers=args.num_workers, shuffle=True)
-    val_loader = build_dataloader(APTOS_MANIFEST, "val", max(args.batch_size, 64),
-                                  train=False, num_workers=args.num_workers, shuffle=False)
+    train_loader = build_dataloader(manifest, "train", args.batch_size,
+                                    train=True, num_workers=args.num_workers, shuffle=True,
+                                    size=args.img_size, train_frac=args.train_frac,
+                                    frac_seed=args.seed)
+    val_loader = build_dataloader(manifest, "val", max(args.batch_size, 64),
+                                  train=False, num_workers=args.num_workers, shuffle=False,
+                                  size=args.img_size)
     train_ds: FundusDataset = train_loader.dataset  # type: ignore[assignment]
 
     model = build_model(args.arch, pretrained=True).to(device)
@@ -159,6 +178,9 @@ def main() -> int:
     hyperparams = {
         "phase": 4,
         "arch": args.arch,
+        "manifest": str(manifest.relative_to(PROJECT_DIR)) if manifest.is_relative_to(PROJECT_DIR) else str(manifest),
+        "img_size": args.img_size,
+        "train_frac": args.train_frac,
         "pretrained": "ImageNet (torchvision default weights)",
         "fine_tuning": "full (all layers unfrozen)",
         "epochs_max": args.epochs,
@@ -247,8 +269,9 @@ def main() -> int:
     ckpt = torch.load(best_path, map_location=device, weights_only=False)
     model.load_state_dict(ckpt["model_state"])
     model.to(device).eval()
-    test_loader = build_dataloader(APTOS_MANIFEST, "test", max(args.batch_size, 64),
-                                   train=False, num_workers=args.num_workers, shuffle=False)
+    test_loader = build_dataloader(manifest, "test", max(args.batch_size, 64),
+                                   train=False, num_workers=args.num_workers, shuffle=False,
+                                   size=args.img_size)
     res = infer(model, test_loader, device)
     preds_path, metrics_path = save_predictions(
         res, OUT_DIR / f"{stem}_internal_test"
