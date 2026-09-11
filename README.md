@@ -1,10 +1,20 @@
 # Cross-Dataset External Validation of a Retinal Foundation Model for DR Grading
 
 Reproducibility repository for the study described in
-`../option_A_methodology_1.txt`. Compares an ImageNet-pretrained CNN baseline
-against a fine-tuned retinal foundation model (RETFound) on 5-class diabetic
-retinopathy grading, with the emphasis on **external generalisation**,
-explainability, and predictive uncertainty.
+`option_A_methodology_1.txt` (the pre-registered analysis plan). Compares an
+ImageNet-pretrained CNN baseline against a fine-tuned retinal foundation model
+(RETFound) on 5-class diabetic retinopathy grading, with the emphasis on
+**external generalisation**, explainability, and predictive uncertainty.
+
+**Manuscript:** `paper/main_standalone.tex` (IEEEtran). Headline finding: under
+a matched preprocessing/fine-tuning/evaluation protocol, RETFound did not
+generalise better than a standard ImageNet-pretrained CNN for cross-dataset DR
+grading — on the pre-specified contrasts it generalised *worse* — and this
+holds under a five-class ordinal metric, a binary referable-DR secondary task,
+several training-choice sensitivity analyses (seed, loss function, resolution,
+colour normalisation), and a domain-shift out-of-distribution check. See the
+manuscript's Results/Discussion for the full picture, including a partial
+counterpoint on calibration.
 
 ## Design in one line
 
@@ -46,9 +56,28 @@ to this repo's parent folder:
 | 8 | Predictive-entropy uncertainty; correct-vs-incorrect (Mann-Whitney U); selective prediction; MC-dropout sensitivity | **done** -- `scripts/phase8_uncertainty.py`, `scripts/phase8_mc_dropout.py`, `outputs/phase8/` |
 | 9 | Bootstrap 95% CIs, internal->external drop CIs, difference-in-drop CIs, DeLong AUC test, stats methods paragraph | **done** -- `scripts/phase9_stats.py`, `outputs/phase9/` |
 | 10 | Figures (study design, forest plot; Phase 7/8 emit their own) | **done** -- `scripts/phase10_figures.py`, `outputs/figures/` |
-| 11-13 | Manuscript, TRIPOD+AI checklist, cover letter, submission package | manuscript + checklist + cover letter drafted (`paper/`); author-only items in `paper/AUTHOR_TODO.md` |
+| 11 | Independent recompute/verification of every headline number, per-class CIs, calibration, ROC/PR, multiplicity correction, domain-shift table, split counts | **done** -- `scripts/phase11_review_response.py`, `scripts/phase11_figures.py`, `outputs/phase11/` |
+| 12 | Duplicate / leakage check (MD5 exact + embedding near-duplicate) | **done** -- `scripts/phase12_leakage.py`, `outputs/phase12/` |
+| 13 | Post-hoc temperature-scaling recalibration + robustness (bootstrap CI, disjoint calibration-source check) | **done** -- `scripts/phase13_temperature_scaling.py`, `outputs/phase13/` |
+| 14 | Embedding-based cross-dataset near-duplicate check (frozen ImageNet features, cosine) | **done** -- `scripts/phase14_embedding_dedup.py`, `outputs/phase14/` |
+| 15 | Controlled degradation ablation: CLAHE / colour-transfer (Variants A/B) + input resolution 224 vs 384 (Variant C), inference-time only | **done** -- `scripts/phase15_ablation.py`, `scripts/phase15c_resolution.py`, `outputs/phase15{,c}/` |
+| 16 | Training-seed sensitivity (EfficientNet-B3 + RETFound linear probe, seeds 43-45) | **done** -- `scripts/phase16_seed_sweep.py`, `outputs/phase16/` |
+| 17 | Loss-function / class-weighting sensitivity (plain CE, focal loss) | **done** -- `scripts/phase17_loss_sensitivity.py`, `outputs/phase17/` |
+| 18 | Training-time retraining-ablation data prep (CLAHE/colour-transfer/384px baked into APTOS, all splits, from source) | **done** (data prep; training itself needs a cloud GPU) -- `scripts/phase18_retrain_variants_prep.py`, `COLAB_RETRAIN_GUIDE.md` |
+| 19 | Referable-DR (ICDR grade >=2) as a standalone binary secondary task, with its own internal->external AUROC-drop table | **done** -- `scripts/phase19_referable_dr.py`, `outputs/phase19/` |
+| 20 | Domain-shift out-of-distribution detection (Mahalanobis distance) vs. predictive entropy as an external error detector | **done** -- `scripts/phase20_ood_detection.py`, `outputs/phase20/` |
+| 21 | Training-set-size sensitivity scorer (pairs with Phase 18 prep; training needs a cloud GPU) | scorer **done**, training pending -- `scripts/phase21_training_size_sensitivity.py`, `outputs/phase21/` |
+
+Manuscript, TRIPOD+AI checklist, cover letter, and submission package are
+drafted in `paper/`; remaining author-only items (identity, ORCID, ethics
+wording, a clean 30-epoch RETFound full fine-tune, etc.) are tracked in
+`paper/AUTHOR_TODO.md` and `TODO.md`.
 
 ## Scripts
+
+Phases 2-10 (initial pipeline through first figures) below; every script for
+Phases 11-21 is listed in the "Progress by phase" table above and documented
+in its own module docstring (`--help` for the exact CLI).
 
 | Script | Phase | Run |
 |---|---|---|

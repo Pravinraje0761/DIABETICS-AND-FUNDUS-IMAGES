@@ -63,56 +63,39 @@ datasets, one gated pretrained checkpoint (RETFound), and a single consumer GPU.
 \maketitle
 
 \begin{abstract}
-Retinal foundation models such as RETFound are increasingly reused for retinal
-image analysis and are promoted as improving generalisation, yet independent,
-protocol-matched external validation for diabetic retinopathy (DR) severity
-grading remains scarce. We report a controlled cross-dataset study in which a
-single preprocessing pipeline, a single fine-tuning protocol, and a single
-evaluation protocol are applied identically to an ImageNet-pretrained
-convolutional baseline (EfficientNet-B3, primary; ResNet-50, secondary) and to
-RETFound (ViT-Large/16, masked-autoencoder pretraining on $\approx$1.6\,M colour
-fundus images), fine-tuned on APTOS~2019 ($n=3662$; stratified $70/10/20$ split)
-and then evaluated \emph{unchanged} on two fully independent external datasets,
-Messidor-2 ($n=1744$, adjudicated reference standard) and IDRiD ($n=455$). The
-primary metric is the quadratic-weighted kappa (QWK); the primary inferential
-quantity is the internal-to-external drop in QWK and, between models, the
-difference in that drop, each with a bootstrap $95\%$ confidence interval
-($B=2000$). Paired areas under the ROC curve are compared with DeLong's test.
-Explainability is assessed with method-matched class-activation mapping against a
-pre-registered plausibility rubric; predictive uncertainty is assessed with
-predictive entropy (single-pass primary; $T=20$ Monte-Carlo dropout as a
-sensitivity analysis), error detection, and selective prediction. On the internal
-APTOS test set the CNN baseline and RETFound are comparable (EfficientNet-B3 QWK
-$0.876$, $95\%$ CI $[0.849,0.901]$; RETFound full fine-tune \pv{$0.869$}). On
-external validation \emph{every} model degrades substantially, most on Messidor-2
-(EfficientNet-B3 QWK $0.499$, drop $0.377$, $95\%$ CI $[0.323,0.433]$). RETFound
-does not generalise better; on the pre-specified contrasts it generalises
-\emph{worse}: its internal-to-external QWK drop on Messidor-2 is significantly
-larger than the baseline's (difference \pv{$+0.124$}, $95\%$ CI $[0.074,0.175]$
-for full fine-tuning; $+0.076$, $[0.019,0.132]$ for linear probing), and the
-EfficientNet-B3 baseline has a significantly higher referable-DR (ICDR grade
-$\geq 2$) AUC on both external datasets by DeLong's test (all $p<0.001$) despite
-being statistically indistinguishable from every model internally
-($p\geq 0.47$); the same directional gap holds when referable-DR is scored as a
-standalone binary secondary task with its own internal-to-external AUROC drop,
-and a domain-shift-specific out-of-distribution detector (Mahalanobis distance
-in an ImageNet feature space) did not identify external errors better than
-predictive entropy for any model. Convolutional saliency stays lesion-focused on external images
-($90$--$100\%$ proxy-plausible) whereas RETFound's saliency shifts to the image
-periphery on Messidor-2, most markedly for its errors. Predictive entropy is a
-weak external error detector for every model (AUROC $0.55$--$0.68$ versus up to
-$0.84$ internally); referring the most-uncertain $10\%$ of external predictions
-captures only $9$--$18\%$ of the errors, and RETFound's entropy is elevated and
-essentially flat across DR grades irrespective of its per-grade accuracy, so it
-does not localise its own errors. In a partial counterpoint, RETFound's
-label-smoothed probabilities stay closer to calibrated under shift (external
-expected calibration error $\approx 0.10$--$0.16$) than the CNNs', which become
-over-confident ($\approx 0.26$--$0.29$); post-hoc temperature scaling fitted
-in-distribution does not fix the external miscalibration and on IDRiD worsens it. Fine-tuning a retinal foundation model
-on APTOS~2019 did not improve, and by several measures worsened, cross-dataset
-discrimination for DR grading relative to a standard ImageNet-pretrained CNN.
-External validation, not internal test performance, should govern claims of
-clinical readiness.
+Retinal foundation models such as RETFound are promoted as improving
+generalisation, yet protocol-matched external validation for diabetic
+retinopathy (DR) grading remains scarce. We report a controlled cross-dataset
+study applying one preprocessing, fine-tuning, and evaluation protocol
+identically to an ImageNet-pretrained CNN baseline (EfficientNet-B3) and to
+RETFound (ViT-Large/16, masked-autoencoder pretraining on $\approx$1.6\,M
+fundus images), fine-tuned on APTOS~2019 ($n=3662$) and evaluated
+\emph{unchanged} on Messidor-2 ($n=1744$, adjudicated reference standard) and
+IDRiD ($n=455$). The primary metric is the quadratic-weighted kappa (QWK),
+reported as its internal-to-external drop and the between-model difference in
+that drop, each with a bootstrap $95\%$ CI. Internally the CNN baseline and
+RETFound are comparable (QWK $0.876$ vs.\ \pv{$0.869$}). Externally
+\emph{every} model degrades substantially, most on Messidor-2 (baseline QWK
+$0.499$, drop $0.377$). RETFound does not generalise better; on the
+pre-specified contrasts it generalises \emph{worse}: its Messidor-2 QWK drop
+exceeds the baseline's by \pv{$+0.124$} ($95\%$ CI $[0.074,0.175]$), and the
+baseline has significantly higher referable-DR AUC on both external sets
+(DeLong $p<0.001$) despite parity internally ($p\geq0.47$). Convolutional
+saliency stays lesion-focused externally ($90$--$100\%$ proxy-plausible);
+RETFound's shifts to the image periphery on Messidor-2, most for its errors.
+Predictive entropy is a weak external error detector for every model (AUROC
+$0.55$--$0.68$ vs.\ up to $0.84$ internally, capturing only $9$--$18\%$ of
+errors at $10\%$ referral), and RETFound's entropy is uninformatively flat
+across DR grades. In partial counterpoint, RETFound's label-smoothed
+probabilities remain better calibrated under shift (ECE $\approx0.10$--$0.16$
+vs.\ CNN $\approx0.26$--$0.29$) than its discrimination would suggest, though
+temperature scaling does not fix this. The RETFound--CNN gap held as a
+standalone binary referable-DR task, and a domain-shift out-of-distribution
+detector fared no better than entropy at flagging external errors.
+Fine-tuning a retinal foundation model on APTOS did not improve, and by
+several measures worsened, cross-dataset DR-grading discrimination relative
+to a standard ImageNet CNN; external validation, not internal performance,
+should govern claims of clinical readiness.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -833,9 +816,9 @@ drop analysis (Section~\ref{sec:results-ext}) was repeated on AUROC in place of
 QWK, with $95\%$ bootstrap CIs ($B=2000$; \texttt{scripts/phase19\_referable\_dr.py}).
 It does. On Messidor-2 the EfficientNet-B3 baseline's AUROC fell by $0.138$
 ($95\%$ CI $[0.115,0.161]$; internal $0.980\to$ external $0.842$) versus
-$0.188$--$0.195$ for the three RETFound-adjacent and secondary comparisons
-(ResNet-50 $0.189\ [0.162,0.215]$; RETFound linear probe $0.195\ [0.169,0.223]$;
-RETFound full fine-tune \pv{$0.188$} $[0.161,0.215]$). The gap is starker on
+$0.188$--$0.195$ for the other three models (ResNet-50 $0.189\ [0.162,0.215]$;
+RETFound linear probe $0.195\ [0.169,0.223]$; RETFound full fine-tune
+\pv{$0.188$} $[0.161,0.215]$). The gap is starker on
 IDRiD, where the baseline's AUROC barely moved ($0.018\ [0.001,0.036]$) while
 RETFound's fell substantially more (linear probe $0.074\ [0.045,0.103]$; full
 fine-tune \pv{$0.105$} $[0.073,0.139]$) --- a $\geq 4\times$ larger drop than the
@@ -1440,11 +1423,15 @@ model did not outperform --- and by the pre-specified comparisons underperformed
 grading. All models lost substantial ordinal agreement on independent data, most
 severely on Messidor-2; predictive uncertainty was a weak safeguard under that
 shift; and the foundation model's saliency became peripheral rather than
-lesion-centred. These results argue for external validation, on an independent
-adjudicated reference standard where possible, as the primary evidence standard
-for retinal AI, and show that neither retinal-domain pretraining nor an
-uncertainty threshold can be assumed to deliver deployment-ready robustness on its
-own.
+lesion-centred. The RETFound--CNN gap was consistent across the five-class
+ordinal task and a binary referable-DR reformulation, across training seeds,
+loss functions, and CNN backbone, and a domain-shift out-of-distribution
+detector did not close it either --- so the finding is not an artefact of any
+single metric or design choice tested. These results argue for external
+validation, on an independent adjudicated reference standard where possible,
+as the primary evidence standard for retinal AI, and show that neither
+retinal-domain pretraining nor an uncertainty threshold can be assumed to
+deliver deployment-ready robustness on its own.
 
 
 \section{Reproducibility}

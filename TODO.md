@@ -1,8 +1,12 @@
 # TODO -- diabetic-fundus external-validation paper
 
-Status snapshot (2026-09-08, evening): manuscript = `paper/main_standalone.tex`
-(IEEEtran, 10 figures, 8 tables, all refs/cites resolve). Analyses Phases 2-12
-done. What was done vs. blocked: `REVIEW_RESPONSE_STATUS.md`.
+Status snapshot (2026-09-11): manuscript = `paper/main_standalone.tex`
+(IEEEtran, 10 figures, 8 tables, all refs/cites resolve; bibliography's 24
+entries all verified against publisher DOI records; abstract trimmed to 336
+words). Analyses Phases 2-21 done or (for the Colab-bound training-time
+ablations, Phase 18/21) prepared and ready to run. What was done vs. blocked
+through Phase 12: `REVIEW_RESPONSE_STATUS.md` (a snapshot of that point, not
+kept current); Phases 13-21 status: this file, items 1-13 below.
 
 RETFound full fine-tune v3 was **paused at epoch 7** to free the machine. Best
 weights saved: `C:\dr_ckpts_full\full_best.pt` = epoch 6, val QWK **0.930**
