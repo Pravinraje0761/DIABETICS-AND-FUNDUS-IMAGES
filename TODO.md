@@ -149,6 +149,42 @@ Then in `paper/main_standalone.tex`:
    EfficientNet-B3 features + cosine sim); the perceptual dhash in
    `phase12_leakage.py` is noisy on cropped fundus frames, MD5 catches only exact
    copies.
+11. [x] **Referable-DR secondary task.** DONE (`scripts/phase19_referable_dr.py`,
+   `outputs/phase19/`). Elevates the existing referable-DR AUC (DeLong table) to a
+   full standalone binary secondary task: decision-based sens/spec/PPV/NPV,
+   AUROC/AUPRC with bootstrap CIs, sens/spec at fixed 85% operating points, and an
+   internal->external AUROC-drop table mirroring the primary QWK-drop table.
+   Confirms the finding persists beyond 5-class grading: RETFound (both variants)
+   shows a larger AUROC drop than EfficientNet-B3 on both external sets, most
+   starkly on IDRiD (RETFound-full 0.105 [0.073,0.139] vs baseline 0.018
+   [0.001,0.036]). Folded into Results (new `sec:results-referable` subsection),
+   Discussion RQ1, abstract, repro table + supplement list.
+12. [x] **Domain-specific OOD detection.** DONE (`scripts/phase20_ood_detection.py`,
+   `outputs/phase20/`). Mahalanobis distance-to-class-centroid in a frozen
+   ImageNet EfficientNet-B3 feature space (Ledoit-Wolf shared covariance, fit on
+   APTOS-train), compared against entropy as an error detector via paired
+   bootstrap. **Negative result:** never significantly better than entropy on any
+   external dataset for any model; significantly worse in 6/8 external cells.
+   Folded into Results (new `sec:results-ood` subsection), Discussion RQ3,
+   abstract, repro table + supplement list.
+13. [~] **Retraining-time ablation + training-size sensitivity + RETFound-full
+   loss sensitivity -- infrastructure DONE, execution still Colab/Kaggle-blocked.**
+   `scripts/phase18_retrain_variants_prep.py` bakes CLAHE / colour-transfer / 384px
+   into APTOS train+val+test from source (new, all-splits, vs. the test-only Phase
+   15/15c inference ablations). `train_baseline.py` / `train_retfound.py` gained
+   `--manifest` (point at a variant manifest), `--img-size` (RETFound backbone
+   auto-interpolates the pretrained pos_embed via the existing
+   `retfound.py:load_retfound_weights` path), and `--train-frac` (stratified
+   train-split subsample, `dataset.py`, fixed seed) -- all smoke-tested this
+   session (CPU, real RETFound ViT-L run with `--img-size 256 --train-frac 0.02`
+   completed correctly). `scripts/phase21_training_size_sensitivity.py` (new)
+   scores the train-frac variants once trained. `phase17_loss_sensitivity.py`
+   gained a `retfound_full` CKPTS entry (weighted_ce = the existing primary
+   checkpoint, already verified scoring correctly; ce_noweight/focal_g2 pending
+   training). Full run recipe: `COLAB_RETRAIN_GUIDE.md`. **Still needs:** actually
+   running these trainings on a cloud GPU (this laptop cannot sustain RETFound-full
+   fine-tuning -- see item 1 above / `AUTHOR_TODO.md`), then re-running the
+   corresponding scorer.
 
 ---
 

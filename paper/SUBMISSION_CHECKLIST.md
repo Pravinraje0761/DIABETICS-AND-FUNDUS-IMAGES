@@ -214,9 +214,14 @@ Before committing to any target:
 >   linear-probe row (which always ran to completion), the four-seed sweep, the
 >   CLAHE / colour-transfer / 224-vs-384 resolution ablations, and the
 >   loss-function / class-weighting ablation.
-> - *"Only one foundation model / one task."* — Acknowledged and scoped
->   explicitly in Limitations; [add a second checkpoint or task, or retain the
->   scoped claim].
+> - *"Only one foundation model / one task."* — The one-task concern is
+>   addressed: a standalone referable-DR secondary task
+>   (`scripts/phase19_referable_dr.py`, Section on the referable-DR secondary
+>   task) shows the same generalisation gap under a binary clinical decision as
+>   under the five-class ordinal one. The one-foundation-model scope is
+>   acknowledged explicitly in Limitations and the Conclusion is deliberately
+>   checkpoint-level, not paradigm-level, as a result; [add a second foundation
+>   model, or retain the scoped claim].
 > - *"Single-rater / automated explainability proxy."* — The proxy is a
 >   transparent location screen, stated as such. We release a complete blinded
 >   two-rater packet, rubric, and scorer (`scripts/phase7_rating_packet.py`);

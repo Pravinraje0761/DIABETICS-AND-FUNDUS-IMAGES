@@ -15,17 +15,24 @@ Variants per family (each a `train_*.py --tag <...>` run):
 
 Families:
   efficientnet_b3     (the selected CNN baseline; full fine-tune)
-  retfound_linprobe   (RETFound linear probe; full fine-tune of RETFound-full
-                       thermally/memory-throttles on this laptop -- see
-                       AUTHOR_TODO.md B7 -- so the full regime is out of scope
-                       here and the linear probe stands in for it, as in the
-                       Phase 16 seed sweep)
+  retfound_linprobe   (RETFound linear probe; fast enough for this laptop)
+  retfound_full       (RETFound full fine-tune; thermally/memory-throttles on
+                       this laptop -- see AUTHOR_TODO.md B7 -- so these two
+                       variants are Colab/Kaggle-bound, same as the Phase 18
+                       training-time ablations. Until they are trained,
+                       retfound_linprobe stands in as the loss-sensitivity
+                       check for the RETFound family, as in the Phase 16 seed
+                       sweep.)
 
 This script only SCORES. Train the variant checkpoints first:
   .venv/Scripts/python.exe scripts/train_baseline.py --arch efficientnet_b3 --tag noweight_loss --no-class-weights
   .venv/Scripts/python.exe scripts/train_baseline.py --arch efficientnet_b3 --tag focal_loss --loss focal --focal-gamma 2
   .venv/Scripts/python.exe scripts/train_retfound.py --mode linprobe --weights weights/RETFound_mae_natureCFP.pth --tag noweight_loss --no-class-weights
   .venv/Scripts/python.exe scripts/train_retfound.py --mode linprobe --weights weights/RETFound_mae_natureCFP.pth --tag focal_loss --loss focal --focal-gamma 2
+  # Colab/Kaggle (GPU with more headroom than this laptop) -- closes the
+  # "loss sensitivity only checked for linear probe" gap:
+  .venv/Scripts/python.exe scripts/train_retfound.py --mode full --weights weights/RETFound_mae_natureCFP.pth --tag noweight_loss --no-class-weights
+  .venv/Scripts/python.exe scripts/train_retfound.py --mode full --weights weights/RETFound_mae_natureCFP.pth --tag focal_loss --loss focal --focal-gamma 2
 then:
   .venv/Scripts/python.exe scripts/phase17_loss_sensitivity.py --device cuda
 
@@ -73,6 +80,11 @@ CKPTS = {
         "weighted_ce": P5 / "linprobe_best.pt",
         "ce_noweight": P5 / "linprobe_noweight_loss_best.pt",
         "focal_g2": P5 / "linprobe_focal_loss_best.pt",
+    },
+    "retfound_full": {
+        "weighted_ce": P5 / "full_best.pt",
+        "ce_noweight": P5 / "full_noweight_loss_best.pt",
+        "focal_g2": P5 / "full_focal_loss_best.pt",
     },
 }
 

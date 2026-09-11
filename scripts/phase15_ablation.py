@@ -37,10 +37,11 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import torch
-from PIL import Image
 from torchvision import transforms
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from colour_ops import ClaheOp, ColourXferOp  # noqa: E402
+from colour_ops import aptos_reference_stats as _aptos_reference_stats  # noqa: E402
 from dataset import FundusDataset  # noqa: E402
 from metrics import compute_metrics  # noqa: E402
 from predict import infer, load_checkpoint, pick_device  # noqa: E402
@@ -49,7 +50,6 @@ from preprocessing import IMAGENET_MEAN, IMAGENET_STD  # noqa: E402
 PROJECT_DIR = Path(__file__).resolve().parents[1]
 SPLIT_DIR = PROJECT_DIR / "data_splits"
 OUT_DIR = PROJECT_DIR / "outputs" / "phase15"
-FUNDUS_TOL = 7  # mean channel value > tol == fundus (matches preprocessing.crop_borders)
 
 CKPTS = {
     "baseline_efficientnet_b3": PROJECT_DIR / "outputs/phase4_baseline/efficientnet_b3_best.pt",
@@ -64,78 +64,16 @@ VARIANTS = ("baseline", "clahe", "colour_xfer")
 
 
 # --------------------------------------------------------------------------- #
-def _fundus_mask(arr: np.ndarray) -> np.ndarray:
-    return arr.mean(axis=2) > FUNDUS_TOL
-
-
-def _channel_stats(arr: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    m = _fundus_mask(arr)
-    if m.sum() < 16:
-        m = np.ones(arr.shape[:2], dtype=bool)
-    px = arr[m].astype(np.float64)
-    return px.mean(axis=0), px.std(axis=0) + 1e-6
-
-
 def aptos_reference_stats(cache: Path) -> tuple[np.ndarray, np.ndarray]:
-    if cache.is_file():
-        d = json.loads(cache.read_text())
-        return np.array(d["mean"]), np.array(d["std"])
-    df = pd.read_csv(SPLIT_DIR / "aptos_manifest.csv")
-    df = df[(df["split"] == "train") & df["processed_path"].astype(bool)]
-    s1 = np.zeros(3); s2 = np.zeros(3); n = 0
-    for rel in df["processed_path"]:
-        p = PROJECT_DIR / rel
-        if not p.is_file():
-            continue
-        arr = np.asarray(Image.open(p).convert("RGB"))
-        px = arr[_fundus_mask(arr)].astype(np.float64)
-        s1 += px.sum(axis=0); s2 += (px ** 2).sum(axis=0); n += len(px)
-    mean = s1 / n
-    std = np.sqrt(np.maximum(s2 / n - mean ** 2, 1e-6))
-    cache.write_text(json.dumps({"mean": mean.tolist(), "std": std.tolist(),
-                                 "n_pixels": int(n), "n_images": int(len(df))}, indent=2))
-    return mean, std
-
-
-# --------------------------------------------------------------------------- #
-def _clahe(arr: np.ndarray) -> np.ndarray:
-    import cv2
-
-    lab = cv2.cvtColor(arr, cv2.COLOR_RGB2LAB)
-    c = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-    lab[..., 0] = c.apply(lab[..., 0])
-    return cv2.cvtColor(lab, cv2.COLOR_LAB2RGB)
-
-
-def _colour_xfer(arr: np.ndarray, ref_mean: np.ndarray, ref_std: np.ndarray) -> np.ndarray:
-    mean, std = _channel_stats(arr)
-    out = (arr.astype(np.float64) - mean) / std * ref_std + ref_mean
-    out[~_fundus_mask(arr)] = 0.0                        # keep the black frame black
-    return np.clip(out, 0, 255).astype(np.uint8)
-
-
-class _ClaheOp:
-    """Picklable (needed for Py3.14 spawn/forkserver DataLoader workers)."""
-
-    def __call__(self, im: Image.Image) -> Image.Image:
-        return Image.fromarray(_clahe(np.asarray(im)))
-
-
-class _ColourXferOp:
-    def __init__(self, ref_mean, ref_std):
-        self.ref_mean = np.asarray(ref_mean)
-        self.ref_std = np.asarray(ref_std)
-
-    def __call__(self, im: Image.Image) -> Image.Image:
-        return Image.fromarray(_colour_xfer(np.asarray(im), self.ref_mean, self.ref_std))
+    return _aptos_reference_stats(cache, PROJECT_DIR, SPLIT_DIR)
 
 
 def make_transform(variant: str, ref):
     ops: list = []
     if variant == "clahe":
-        ops.append(_ClaheOp())
+        ops.append(ClaheOp())
     elif variant == "colour_xfer":
-        ops.append(_ColourXferOp(ref[0], ref[1]))
+        ops.append(ColourXferOp(ref[0], ref[1]))
     ops += [transforms.Resize((224, 224)), transforms.ToTensor(),
             transforms.Normalize(IMAGENET_MEAN, IMAGENET_STD)]
     return transforms.Compose(ops)

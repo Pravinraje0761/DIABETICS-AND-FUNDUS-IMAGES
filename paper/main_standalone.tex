@@ -93,7 +93,11 @@ for full fine-tuning; $+0.076$, $[0.019,0.132]$ for linear probing), and the
 EfficientNet-B3 baseline has a significantly higher referable-DR (ICDR grade
 $\geq 2$) AUC on both external datasets by DeLong's test (all $p<0.001$) despite
 being statistically indistinguishable from every model internally
-($p\geq 0.47$). Convolutional saliency stays lesion-focused on external images
+($p\geq 0.47$); the same directional gap holds when referable-DR is scored as a
+standalone binary secondary task with its own internal-to-external AUROC drop,
+and a domain-shift-specific out-of-distribution detector (Mahalanobis distance
+in an ImageNet feature space) did not identify external errors better than
+predictive entropy for any model. Convolutional saliency stays lesion-focused on external images
 ($90$--$100\%$ proxy-plausible) whereas RETFound's saliency shifts to the image
 periphery on Messidor-2, most markedly for its errors. Predictive entropy is a
 weak external error detector for every model (AUROC $0.55$--$0.68$ versus up to
@@ -818,6 +822,35 @@ distribution. Full per-class sensitivity, specificity, precision, and F1 with
 $95\%$ CIs for all four models on all three datasets are in the supplement
 (\texttt{outputs/phase11/per\_class\_ci.csv}).
 
+\subsection{Referable-DR secondary task}
+\label{sec:results-referable}
+
+The five-class result could in principle be an artefact of the ordinal QWK
+metric specifically. To test whether it persists under a coarser, clinically
+common task, every model's five predicted grades were collapsed to the binary
+referable-DR decision (ICDR grade $\geq 2$) and the same internal-to-external
+drop analysis (Section~\ref{sec:results-ext}) was repeated on AUROC in place of
+QWK, with $95\%$ bootstrap CIs ($B=2000$; \texttt{scripts/phase19\_referable\_dr.py}).
+It does. On Messidor-2 the EfficientNet-B3 baseline's AUROC fell by $0.138$
+($95\%$ CI $[0.115,0.161]$; internal $0.980\to$ external $0.842$) versus
+$0.188$--$0.195$ for the three RETFound-adjacent and secondary comparisons
+(ResNet-50 $0.189\ [0.162,0.215]$; RETFound linear probe $0.195\ [0.169,0.223]$;
+RETFound full fine-tune \pv{$0.188$} $[0.161,0.215]$). The gap is starker on
+IDRiD, where the baseline's AUROC barely moved ($0.018\ [0.001,0.036]$) while
+RETFound's fell substantially more (linear probe $0.074\ [0.045,0.103]$; full
+fine-tune \pv{$0.105$} $[0.073,0.139]$) --- a $\geq 4\times$ larger drop than the
+baseline's on the dataset where the five-class RETFound--baseline gap was
+otherwise the narrower of the two (Table~\ref{tab:drop}). Decision-based
+sensitivity at the model's own operating point (grade $\geq 2$) also fell
+furthest for RETFound on Messidor-2 (full fine-tune sensitivity $0.219$ versus
+baseline $0.387$), consistent with the same reversion to majority-class
+prediction seen in the five-class confusion matrices
+(Figure~\ref{fig:confusion}). The RETFound--baseline generalisation gap
+therefore does not depend on the ordinal five-class formulation; full
+per-model operating-point metrics (sensitivity, specificity, PPV, NPV, AUPRC,
+and sensitivity/specificity at fixed $85\%$ operating points) are in the
+supplement (\texttt{outputs/phase19/referable\_dr\_master.csv}).
+
 \subsection{Explainability}
 \label{sec:results-explain}
 
@@ -910,6 +943,35 @@ block of grade-0 predictions RETFound issued on Messidor-2 ($n=1586$, wrong $38\
 of the time) carried $\approx 1.4$-nat entropy, essentially the same as its
 predictions of every other grade ($1.4$--$1.6$ nats), so those errors were not
 flagged as low-confidence.
+
+\subsection{Domain-shift OOD detection}
+\label{sec:results-ood}
+
+Because predictive entropy was a weak external error detector
+(Section~\ref{sec:results-unc}), a domain-shift-specific alternative was tested:
+a Mahalanobis distance-to-nearest-class-centroid score in a frozen, DR-naive
+ImageNet EfficientNet-B3 feature space (class-conditional means and a
+Ledoit--Wolf-shrunk shared covariance fit on APTOS-train only;
+\texttt{scripts/phase20\_ood\_detection.py}), compared against each model's
+own entropy as an error detector via a paired bootstrap on the AUROC
+difference. It did not help. Across the four models and two external datasets ($8$
+model $\times$ dataset cells) the Mahalanobis score was never a significantly
+better error detector than entropy, and was significantly \emph{worse} in
+$6$ of the $8$ (e.g.\ EfficientNet-B3 on Messidor-2: AUROC(OOD) $0.472$ versus
+AUROC(entropy) $0.681$, difference $-0.210$, $95\%$ CI $[-0.244,-0.176]$); the
+remaining two cells (ResNet-50 and the RETFound full fine-tune, both on IDRiD)
+showed no significant difference, and for the RETFound full fine-tune this is
+because entropy itself already carried no error signal there (AUROC $0.50$,
+Section~\ref{sec:results-unc}) rather than the OOD score adding one (AUROC
+$0.50$ also). The same pattern held internally (in-domain, a control condition
+since the detector is fit on APTOS-train): entropy was significantly better
+or not significantly different, never worse. A single
+generic, task-agnostic distributional-distance score therefore does not
+substitute for a task-calibrated confidence signal on these shifts; if an
+out-of-distribution safeguard is wanted operationally, it would need to be
+fitted or validated on the deployment shift itself rather than assumed from a
+generic feature-space distance (full per-cell results in the supplement,
+\texttt{outputs/phase20/ood\_master.csv}).
 
 \subsection{Calibration}
 \label{sec:results-calib}
@@ -1058,7 +1120,17 @@ switching to $384$~px was small for both models and of inconsistent sign
 $+0.040$ for RETFound), so the RETFound--CNN gap is not an artefact of the
 $224$~px working resolution (\texttt{outputs/phase15c/}). A colour- and
 resolution-normalised \emph{retraining} comparison remains the definitive test
-and is future work (Section~\ref{sec:limitations}; \texttt{outputs/phase15/}).
+of the mechanism and is distinct from the inference-time perturbations above,
+which show sensitivity to a shift applied to an already-trained model, not
+whether training under that same transform would change what the model learns.
+The data preparation and \texttt{train\_baseline.py} /
+\texttt{train\_retfound.py --manifest ... --img-size ...} support for this
+retraining comparison, and for a training-set-size sweep, are now released
+(\texttt{scripts/phase18\_retrain\_variants\_prep.py},
+\texttt{scripts/phase21\_training\_size\_sensitivity.py},
+\texttt{COLAB\_RETRAIN\_GUIDE.md}); execution needs sustained GPU time beyond
+this study's single consumer GPU (Section~\ref{sec:limitations}) and remains
+outstanding.
 
 
 \section{Discussion}
@@ -1074,7 +1146,10 @@ and the baseline had a significantly higher referable-DR AUC on both external
 datasets by DeLong's test while being statistically indistinguishable from all
 models internally. The direction was consistent across linear probing --- which
 ran to a clean early stop --- and full fine-tuning, so it is not an artefact of
-the early-stopped full run. This does not contradict RETFound's reported strengths
+the early-stopped full run, and it persisted when the five-class task was
+collapsed to the clinically standard referable-DR decision
+(Section~\ref{sec:results-referable}), so it is not an artefact of the ordinal
+QWK metric either. This does not contradict RETFound's reported strengths
 on other tasks and modalities, but it tempers the expectation that retinal-domain
 self-supervised pretraining automatically confers robustness to the specific
 shifts represented by Messidor-2 and IDRiD (different cameras, acquisition,
@@ -1114,8 +1189,16 @@ signal at all. In operational terms, referring the most-uncertain $10\%$ of
 external predictions would capture only about $9$--$18\%$ of the errors --- barely
 better than referring a random $10\%$. An uncertainty-gated referral step is
 therefore not, on this evidence, a sufficient deployment safeguard for these
-models on these shifts; calibration and out-of-distribution detection tailored to
-the deployment domain would be needed.
+models on these shifts. A natural next safeguard, a generic domain-shift
+out-of-distribution score (Mahalanobis distance in a frozen ImageNet feature
+space), was tested directly and did not do better --- it was never a
+significantly better error detector than entropy on either external dataset,
+and was significantly worse in most model $\times$ dataset cells
+(Section~\ref{sec:results-ood}). So neither the models' own confidence nor a
+generic distributional-distance signal reliably flags external errors here;
+calibration and out-of-distribution detection \emph{tailored to and validated
+on the deployment domain}, rather than assumed from a generic feature space or
+from in-domain confidence, would be needed.
 
 \textbf{Comparison with the literature.} Reported internal QWK for five-class DR
 grading on APTOS is typically $0.88$--$0.93$, matching our internal values
@@ -1132,8 +1215,9 @@ single-grader APTOS labels, which likely contributes to the size of the drop for
 every model.
 
 \textbf{Why the foundation model degrades.} A full retraining-based ablation is
-still outstanding, so the following is an interpretation constrained by the
-inference-time evidence. The Messidor-2 and IDRiD shifts differ
+prepared but not yet executed (Section~\ref{sec:results-ablation};
+Section~\ref{sec:limitations}), so the following is an interpretation
+constrained by the inference-time evidence. The Messidor-2 and IDRiD shifts differ
 (Table~\ref{tab:shift}): Messidor-2 keeps APTOS's macula-centred geometry and
 low-severity skew but applies a stricter adjudicated-consensus reference standard
 \cite{krause2018}, while IDRiD differs on resolution, mydriasis, and disease
@@ -1288,37 +1372,63 @@ scheme. IDRiD was more loss-sensitive --- unweighted cross-entropy raised the
 RETFound linear probe to QWK $0.751$ and lowered EfficientNet-B3 to $0.706$ ---
 consistent with IDRiD being the smaller external set on which the
 RETFound--baseline contrast is already marginal (Table~\ref{tab:drop});
-the full fine-tune was not re-trained for this check
-(\texttt{scripts/phase17\_loss\_sensitivity.py}, \texttt{outputs/phase17/}).
-Not yet run: the same normalisations and resolution applied at \emph{training}
-time, and matched multi-seed retraining of the RETFound full fine-tune (the seed
-sweep and the loss ablation above both cover the linear-probe regime only).
+the full fine-tune was not re-trained for this check at the time of writing,
+though the scoring harness now supports it directly
+(\texttt{scripts/phase17\_loss\_sensitivity.py} recognises
+\texttt{full\_noweight\_loss\_best.pt} / \texttt{full\_focal\_loss\_best.pt}
+checkpoints once trained). Also completed this round: a full standalone
+referable-DR secondary task (Section~\ref{sec:results-referable}), which shows
+the same directional gap under a binary clinical decision as under the ordinal
+five-class one, and a domain-shift out-of-distribution detector
+(Section~\ref{sec:results-ood}), which did not outperform predictive entropy as
+an external error detector. Not yet run: the same normalisations and resolution
+applied at \emph{training} time, matched multi-seed retraining of the RETFound
+full fine-tune, a training-set-size sweep, and the loss-sensitivity check above
+extended to full fine-tuning (the seed sweep and the loss ablation above both
+cover the linear-probe regime only). The data-preparation and training-flag
+support for all of these is prepared and released
+(\texttt{scripts/phase18\_retrain\_variants\_prep.py},
+\texttt{scripts/phase21\_training\_size\_sensitivity.py},
+\texttt{train\_baseline.py} / \texttt{train\_retfound.py --manifest ...
+--img-size ... --train-frac ...}, \texttt{COLAB\_RETRAIN\_GUIDE.md}); running it
+needs sustained GPU time this study's single consumer GPU could not provide for
+the RETFound full fine-tune (Internal validity), so execution is deferred to a
+cloud GPU and remains outstanding.
 
 \textbf{Highest-value next experiments}, in priority order:
-(1) extending the mechanistic ablation from inference-time perturbation
-(Section~\ref{sec:results-ablation}, which covered CLAHE, colour-transfer and
-$224$-versus-$384$ resolution) to \emph{retraining} --- colour- and
-resolution-normalised fine-tuning, a training-set-size sweep, and APTOS-only
-versus multi-dataset (APTOS + one other) fine-tuning --- to move from documenting
-the failure to explaining it;
+(1) executing the now-prepared \emph{retraining} ablation --- colour- and
+resolution-normalised fine-tuning, a training-set-size sweep, matched multi-seed
+and multi-loss retraining of the RETFound full fine-tune, and APTOS-only versus
+multi-dataset (APTOS + one other) fine-tuning --- to move from documenting the
+failure to explaining it (Section~\ref{sec:results-ablation};
+\texttt{COLAB\_RETRAIN\_GUIDE.md});
 (2) a completed RETFound full fine-tuning run in a resource-unconstrained
 environment (the results here use an epoch-6 checkpoint that has reached its
 converged validation QWK; see Internal validity), and $\geq 2$ checkpoints per
 pretraining family to support a paradigm-level rather than checkpoint-level claim;
 (3) blinded expert (ophthalmologist) rating of the saliency maps against
 lesion masks --- using the IDRiD \emph{Segmentation} subset, which ships
-pixel-level microaneurysm/haemorrhage/exudate masks and is not part of the
-Disease-Grading subset used here --- with inter-rater agreement (Cohen's
-$\kappa$), to replace the automated location proxy (the blinded packet and
-scorer are built and released, \texttt{scripts/phase7\_rating\_packet.py};
-the ratings and mask overlap are the remaining work);
-(4) the full $516$-image IDRiD Disease-Grading set and a patient-partitioned
-external dataset;
-(5) domain-specific out-of-distribution detection and adaptive recalibration
-(single-temperature scaling was tested and did not repair the external
-miscalibration, Section~\ref{sec:results-calib});
-(6) a second downstream task (referable-DR triage) and a second retinal
-foundation model.
+pixel-level microaneurysm/haemorrhage/exudate masks, is a separate IEEE
+DataPort sub-challenge from the Disease-Grading subset used here, and was not
+obtained for this study --- with inter-rater agreement (Cohen's $\kappa$), to
+replace the automated location proxy (the blinded packet and scorer are built
+and released, \texttt{scripts/phase7\_rating\_packet.py}; recruiting raters,
+obtaining the masks, and computing the overlap are the remaining work, and are
+deliberately reported here as not attempted rather than approximated);
+(4) the full $516$-image IDRiD Disease-Grading set (the $455$-image mirror used
+here was the best available without a further data-access step) and a
+patient-partitioned external dataset (no dataset used here ships patient
+identifiers; Statistical-conclusion validity above);
+(5) adaptive, deployment-domain-fitted recalibration and out-of-distribution
+detection --- single-temperature scaling (Section~\ref{sec:results-calib}) and a
+generic Mahalanobis out-of-distribution score (Section~\ref{sec:results-ood})
+were both tested and neither repaired external behaviour, so the open question
+is specifically whether a detector fitted \emph{on} a target shift, rather than
+a generic in-domain one, would do better;
+(6) a second retinal foundation model, so that any future claim can be made at
+the pretraining-paradigm level rather than about this one checkpoint; deferred
+in this round by design (single-checkpoint scope stated throughout) rather than
+attempted and dropped.
 
 
 \section{Conclusion}
@@ -1378,6 +1488,10 @@ Degradation ablation --- CLAHE, colour-transfer (Section~\ref{sec:results-ablati
 Degradation ablation --- input resolution $224$/$384$ (Section~\ref{sec:results-ablation}) & \texttt{scripts/phase15c\_resolution.py} \\
 Training-seed sensitivity (Limitations) & \texttt{scripts/phase16\_seed\_sweep.py} \\
 Loss-function / class-weighting sensitivity (Limitations) & \texttt{scripts/phase17\_loss\_sensitivity.py} (variants via \texttt{train\_baseline.py} / \texttt{train\_retfound.py --loss \{ce,focal\}}) \\
+Retraining-ablation data prep --- CLAHE, colour-transfer, $384$~px, all splits (Limitations) & \texttt{scripts/phase18\_retrain\_variants\_prep.py}; run via \texttt{train\_baseline.py} / \texttt{train\_retfound.py --manifest ... --img-size ...} (\texttt{COLAB\_RETRAIN\_GUIDE.md}) \\
+Referable-DR secondary task (Section~\ref{sec:results-referable}) & \texttt{scripts/phase19\_referable\_dr.py} \\
+Domain-shift OOD detection (Section~\ref{sec:results-ood}) & \texttt{scripts/phase20\_ood\_detection.py} \\
+Training-set-size sensitivity scoring (Limitations) & \texttt{scripts/phase21\_training\_size\_sensitivity.py}; variant checkpoints via \texttt{train\_baseline.py} / \texttt{train\_retfound.py --train-frac ...} (\texttt{COLAB\_RETRAIN\_GUIDE.md}) \\
 Figs.~\ref{fig:forest}, \ref{fig:confusion}, \ref{fig:perclass}, \ref{fig:grades} & \texttt{scripts/phase10\_figures.py}, \texttt{phase10b\_figures.py} \\
 Figs.~\ref{fig:reliability}, \ref{fig:rocpr}, \ref{fig:perclassci} & \texttt{scripts/phase11\_figures.py} \\
 Fig.~\ref{fig:pipeline} & hand-drawn (TikZ, in this file) \\
@@ -1414,9 +1528,16 @@ re-trained with plain cross-entropy and with focal loss
 attention-rollout saliency maps and per-image plausibility scores
 (\texttt{outputs/phase7/}); the blinded expert-rating packet --- $160$ clean
 saliency overlays, rating sheet, rubric, and withheld key
-(\texttt{outputs/phase7/rating\_packet/}); hyperparameter JSONs; the split
-image-ID lists; and the TRIPOD+AI checklist
-(\texttt{paper/TRIPOD-AI\_checklist.md}).
+(\texttt{outputs/phase7/rating\_packet/}); the referable-DR secondary-task
+operating-point metrics with $95\%$ CIs
+(\texttt{outputs/phase19/referable\_dr\_master.csv},
+\texttt{referable\_dr\_drop.csv}); the domain-shift OOD-detection-versus-entropy
+comparison (\texttt{outputs/phase20/ood\_master.csv}); the retraining-ablation
+data-preparation script and Colab/Kaggle run recipe for the colour-,
+resolution-, and training-set-size retraining comparisons
+(\texttt{scripts/phase18\_retrain\_variants\_prep.py},
+\texttt{COLAB\_RETRAIN\_GUIDE.md}); hyperparameter JSONs; the split image-ID
+lists; and the TRIPOD+AI checklist (\texttt{paper/TRIPOD-AI\_checklist.md}).
 
 
 \section*{Declarations}
