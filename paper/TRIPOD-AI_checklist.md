@@ -8,14 +8,18 @@ Guideline: Collins GS, Moons KGM, Dhiman P, et al. **TRIPOD+AI statement.** *BMJ
 external validation** (development plus geographically distinct external
 validation, no model updating).
 
-`main.tex` is compiled with `\linenumbers`; locations below give the section and
-paragraph so they remain valid after edits. "SM" = Supplementary Material.
+Manuscript: `paper/main_standalone.tex` (IEEEtran; `paper/main.tex`, an earlier
+`article`-class draft, is superseded and not the submission target). Locations
+below give the section and paragraph so they remain valid after edits, and use
+a line-numbered compile (e.g. `\usepackage{lineno}` + `\linenumbers`, or the
+target journal's own line-numbering) for the final submitted PDF. "SM" =
+Supplementary Material.
 
 | # | TRIPOD+AI item (abridged) | Reported? | Where |
 |---|---|:--:|---|
 | **Title & abstract** | | | |
 | 1 | Title identifies the study as developing/validating a multivariable prediction model, the target population, and the outcome | Yes | Title |
-| 2 | Structured summary: objectives, data, methods, results, conclusions | Yes | Abstract (Background/Objective/Methods/Results/Conclusions) |
+| 2 | Structured summary: objectives, data, methods, results, conclusions | Yes | Abstract (single unstructured paragraph covering objective, data/methods, primary results with effect sizes and CIs, and conclusion, in that order; not divided into headed subsections) |
 | **Introduction** | | | |
 | 3a | Background and rationale, including clinical context and why AI is appropriate | Yes | Introduction para 1-2 |
 | 3b | Objectives / research questions; generalisation specified as the target | Yes | Introduction, "Research questions" (RQ1-RQ3) |
@@ -44,7 +48,7 @@ paragraph so they remain valid after edits. "SM" = Supplementary Material.
 | **Methods - evaluation / analysis** | | | |
 | 13a | Performance measures and rationale (imbalance -> primary = quadratic-weighted kappa; secondary = accuracy, macro-F1, balanced accuracy, per-class sensitivity/specificity, one-vs-rest AUC; internal->external drop) | Yes | Methods, Evaluation metrics |
 | 13b | Model comparison: RETFound vs. ImageNet CNN under a matched protocol; primary contrast = difference in internal->external QWK drop | Yes | Methods, Evaluation metrics; Statistical analysis; Results, RQ1 |
-| 14 | Model calibration assessment | Partial | Predictive-entropy / selective-prediction analysis (Methods, Uncertainty); formal reliability diagrams / ECE flagged as future work in Limitations |
+| 14 | Model calibration assessment | Yes | Methods/Results, Calibration (ECE with 95% CI, MCE, multi-class Brier, NLL, reliability diagrams; internal and both external sets); post-hoc temperature-scaling recalibration check, including a calibration-source robustness check |
 | 15 | Model uncertainty / instability quantification (bootstrap CIs; MC-dropout predictive entropy) | Yes | Methods, Uncertainty; Statistical analysis |
 | 16 | Explainability method and its pre-specified evaluation rubric | Yes | Methods, Explainability; `scripts/phase7_explainability.py` |
 | 17 | Statistical methods: bootstrap (B, seed, percentile), DeLong paired-AUC test, alpha, software | Yes | Methods, Statistical analysis; `outputs/phase9/stats_methods_paragraph.md` (SM) |
@@ -66,16 +70,15 @@ paragraph so they remain valid after edits. "SM" = Supplementary Material.
 | 25b | Overall performance, external (Messidor-2, IDRiD) with 95% CI | Yes | Table 2; Results, External validation; Figure 2 |
 | 25c | Model comparison and internal->external drop with CI on the drop and on the between-model difference in drop | Yes | Table 3; Results, RQ1; `outputs/phase9/drop_ci.csv`, `drop_difference_ci.csv` |
 | 26 | Explainability results against the rubric; uncertainty results (error detection, selective prediction) | Yes | Results, Explainability; Uncertainty; Figures 3-4 |
-| 27 | Post-hoc / additional analyses, flagged as such | Yes | Results / Discussion (per-class advantages; secondary per-grade DeLong tests marked exploratory) |
+| 27 | Post-hoc / additional analyses, flagged as such | Yes | Results / Discussion (per-class advantages; secondary per-grade DeLong tests marked exploratory; a standalone referable-DR binary secondary task with its own internal-to-external drop; a domain-shift out-of-distribution detector versus entropy) |
 | **Discussion** | | | |
 | 28 | Interpretation in context, overall and vs. prior evidence | Yes | Discussion: "Performance", "Nature of the shift", "Comparison with the literature" |
-| 29 | Limitations (retrospective; public data; IDRiD subset; single foundation model / single task; automated plausibility proxy; external precision for rare grades; calibration not formally assessed) | Yes | Discussion, Limitations |
+| 29 | Limitations (retrospective; public data; IDRiD subset; single foundation model / single checkpoint; automated plausibility proxy in place of blinded expert rating; external precision for rare grades; no patient-identifier field in any of the three public releases so a patient-partitioned analysis was not possible) | Yes | Discussion, Limitations |
 | 30 | Usability / clinical implications; recommended safeguards | Yes | Discussion, "Clinical and practical implications"; Conclusions |
-| 31 | Future work | Yes | Discussion, Limitations / implications (second foundation model, prospective validation, formal calibration, blinded expert rating) |
+| 31 | Future work | Yes | Limitations, "Highest-value next experiments" (a second foundation model; blinded expert rating against IDRiD lesion masks; the full 516-image IDRiD set; prospective validation). Training-time colour/resolution/training-size retraining ablations and RETFound-full loss sensitivity are prepared (data + code released) but not yet executed pending cloud-GPU access (`COLAB_RETRAIN_GUIDE.md`) |
 
 ## Items requiring author input before submission
 
 - **4b / access dates** - insert the exact dataset download dates into `DATA_PROVENANCE.md` and cross-reference here.
-- **21a Funding**, **21b COI**, **21c** registry status, **Author Contributions (CRediT)**, **Use of AI tools** - complete in `main.tex` Declarations.
+- **21a Funding**, **21b COI**, **21c** registry status, **Author Contributions (CRediT)**, **Use of AI tools** - complete in `main_standalone.tex` Declarations.
 - **20 Ethics** - replace the placeholder with the target journal's exact required wording for secondary use of fully public, de-identified data.
-- Decide whether to add a formal **calibration** analysis (reliability diagram + ECE) now or cite as future work (item 14).

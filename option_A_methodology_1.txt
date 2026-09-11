@@ -1,0 +1,351 @@
+
+--------------------------------------------------------------------------------
+PHASE 2 — DATA ACQUISITION (Week 1–2, runs in parallel with Phase 1)
+--------------------------------------------------------------------------------
+[ ] Download APTOS 2019 Blindness Detection dataset from Kaggle
+    (~3,662 labeled fundus images, 5-class DR severity: 0-4).
+      kaggle competitions download -c aptos2019-blindness-detection
+[ ] Download Messidor-2 (874 images). Note: labels for Messidor-2 DR grade
+    are distributed separately (via the Messidor website / a companion
+    Kaggle mirror) — confirm you have grade labels, not just images.
+[ ] Download IDRiD (Indian Diabetic Retinopathy Image Dataset, 516 images,
+    disease grading subset) from the IEEE DataPort / official IDRiD site.
+[ ] For every dataset, record and save: source URL, version/date accessed,
+    license terms, exact citation. You need all of this for the Data
+    Availability statement.
+[ ] Check class balance in each dataset (DR severity is almost always
+    imbalanced — grade 0 dominates). Note this now; it affects your metric
+    choice later (prefer quadratic-weighted kappa and per-class
+    sensitivity/specificity over raw accuracy).
+[ ] Set aside APTOS 2019 as TRAIN/INTERNAL-VAL/INTERNAL-TEST only.
+    Messidor-2 and IDRiD are EXTERNAL TEST ONLY — never used in training or
+    hyperparameter tuning. This separation is the entire point of the study;
+    breaking it quietly invalidates the paper.
+
+DELIVERABLE: three raw datasets on disk, a data provenance log (source,
+license, date, citation for each), confirmed class distributions.
+
+
+--------------------------------------------------------------------------------
+PHASE 3 — PREPROCESSING PIPELINE (Week 2–3)
+--------------------------------------------------------------------------------
+[ ] Write one preprocessing script used identically across all three
+    datasets (this consistency is itself a methods point worth stating).
+    Typical fundus preprocessing:
+      1) Crop to circular fundus region / remove black borders
+      2) Resize to 224x224 (RETFound's native input size)
+      3) Normalize using RETFound's expected mean/std (check the repo's
+         config — usually ImageNet-style stats unless stated otherwise)
+      4) Optional: CLAHE contrast enhancement on the green channel (common
+         in DR literature — mention if used, and also report results
+         without it as a small ablation if time allows)
+[ ] Split APTOS 2019: 70% train / 10% internal validation / 20% internal
+    test, stratified by DR grade. Fix the random seed and save the exact
+    split (image IDs to a CSV) — you must be able to reproduce it.
+[ ] Build a PyTorch Dataset/DataLoader class that reads from the split CSVs.
+[ ] Sanity-check: visualize ~20 random preprocessed images per dataset with
+    their labels overlaid. Confirm labels aren't shifted/misaligned — this
+    is the single most common silent bug in medical imaging pipelines.
+[ ] Commit the preprocessing script and split CSVs to your GitHub repo.
+
+DELIVERABLE: preprocessing script, fixed train/val/test split files,
+verified/visualized samples, code committed.
+
+
+--------------------------------------------------------------------------------
+PHASE 4 — BASELINE MODEL (Week 3–4)
+--------------------------------------------------------------------------------
+Goal: a comparison point so "RETFound generalizes better" is a measured claim,
+not an assertion.
+
+[ ] Train an ImageNet-pretrained CNN (ResNet-50 or EfficientNet-B3 via timm)
+    on APTOS 2019 train split, standard fine-tuning (unfreeze all layers,
+    small learning rate, e.g. 1e-4, Adam/AdamW, 20-30 epochs with early
+    stopping on internal validation).
+[ ] Log every hyperparameter (learning rate, batch size, epochs, optimizer,
+    augmentation) in your lab notebook — you'll need a Methods table of
+    these.
+[ ] Evaluate on internal test split: accuracy, quadratic-weighted kappa,
+    macro F1, per-class sensitivity/specificity, AUC (one-vs-rest).
+[ ] Save the trained baseline checkpoint.
+[ ] Do NOT touch Messidor-2 or IDRiD yet — baseline external testing happens
+    in Phase 6, at the same time as RETFound's, so both are evaluated once
+    under identical conditions.
+
+DELIVERABLE: trained baseline checkpoint, internal-test metrics table,
+hyperparameter log.
+
+
+--------------------------------------------------------------------------------
+PHASE 5 — RETFOUND FINE-TUNING (Week 5–6)
+--------------------------------------------------------------------------------
+[ ] From the cloned RETFound repo, select the pretrained checkpoint
+    (ViT-Large, MAE-pretrained recommended for citation stability).
+[ ] Organize your APTOS 2019 split into the folder structure RETFound's
+    fine-tuning script expects (train/val/test, one subfolder per class).
+[ ] Edit train.sh (or main_finetune.py args) to point at:
+      - your dataset path
+      - number of classes = 5 (DR grades 0-4)
+      - the pretrained checkpoint path
+      - batch size appropriate to your GPU memory
+      - a modest learning rate for fine-tuning a large pretrained model
+        (commonly 1e-3 to 5e-5 range with layer-wise LR decay — check the
+        repo's example config for the recommended downstream-task defaults)
+[ ] Run two variants if time allows (this is your strongest ablation):
+      (a) Linear probing — freeze the backbone, train only the classifier
+          head. Fast, tests raw representation quality.
+      (b) Full fine-tuning — unfreeze everything. Usually stronger but
+          slower and more prone to overfitting on ~2,500 training images.
+[ ] Evaluate both on APTOS internal test split using the same metrics as
+    Phase 4. Pick whichever variant wins (or report both — it's a valid
+    finding either way).
+[ ] Save the fine-tuned checkpoint(s).
+
+DELIVERABLE: fine-tuned RETFound checkpoint, internal-test metrics table
+directly comparable to the baseline's.
+
+
+--------------------------------------------------------------------------------
+PHASE 6 — EXTERNAL VALIDATION (Week 7)
+--------------------------------------------------------------------------------
+This is the core experiment. Do it identically for both models.
+
+[ ] Run the baseline CNN and the fine-tuned RETFound model, unmodified and
+    without any further training, on Messidor-2 and on IDRiD separately.
+[ ] Compute the same metric set as before (accuracy, kappa, macro F1,
+    per-class sensitivity/specificity, AUC) for each model x each external
+    dataset (4 result sets total, plus the 2 internal ones = 6 total).
+[ ] Build the master results table now: rows = {Baseline-Internal,
+    Baseline-Messidor2, Baseline-IDRiD, RETFound-Internal, RETFound-
+    Messidor2, RETFound-IDRiD}, columns = your metrics. This table is the
+    spine of your Results section.
+[ ] Note the performance drop (internal -> external) for each model. The
+    size of that drop, compared between the two models, is your headline
+    finding.
+
+DELIVERABLE: master results table (6 rows x N metrics), raw prediction
+CSVs (image ID, true label, predicted label, predicted probabilities) for
+every model/dataset combination — you need these raw predictions for
+Phase 9's statistical tests.
+
+
+--------------------------------------------------------------------------------
+PHASE 7 — EXPLAINABILITY: GRAD-CAM (Week 7–8)
+--------------------------------------------------------------------------------
+[ ] Using captum or pytorch-grad-cam, generate Grad-CAM (or Grad-CAM++)
+    heatmaps for both models on a matched sample of external-set images
+    (suggest: 10-15 correctly classified + 5-10 misclassified images per
+    dataset, covering multiple DR grades).
+[ ] For ViT-based RETFound, use an attention-rollout or attention-map
+    method if standard Grad-CAM doesn't apply cleanly to transformer layers
+    (check pytorch-grad-cam's ViT support, or use the model's own attention
+    weights from the last block).
+[ ] Have a clear, pre-written rubric for judging "clinical plausibility"
+    before you look at the maps, e.g.: "Heatmap overlaps a visible
+    microaneurysm/hemorrhage/exudate region" = plausible; "Heatmap
+    concentrated on optic disc, vessels only, or image border with no
+    visible lesion" = implausible. If possible, have a second person (or a
+    simple annotation pass) rate a subset blind to which model produced
+    which map — this protects the paper from the appearance of cherry-
+    picking favorable examples.
+[ ] Select 4-6 representative heatmap examples (mix of both models, both
+    external datasets, at least one failure case) for the paper's figure.
+
+DELIVERABLE: Grad-CAM/attention maps for both models across external sets,
+a plausibility rating table, 4-6 selected figure panels.
+
+
+--------------------------------------------------------------------------------
+PHASE 8 — UNCERTAINTY QUANTIFICATION (Week 8)
+--------------------------------------------------------------------------------
+[ ] Enable Monte-Carlo dropout at inference time (keep dropout layers
+    active, run each image through the model N=20-30 times) for both
+    models, on both external datasets.
+[ ] Compute predictive entropy (or variance across the MC passes) per image
+    as the uncertainty score.
+[ ] Test the key claim: do misclassified external images have
+    significantly higher uncertainty than correctly classified ones? Plot
+    uncertainty distributions split by correct/incorrect, and run a
+    Mann-Whitney U test.
+[ ] Optional but strengthens the paper: show a simple "selective
+    prediction" curve — accuracy if you only accept predictions below an
+    uncertainty threshold, at several thresholds. This turns uncertainty
+    from a side note into an actionable finding ("flagging the top 10% most
+    uncertain external predictions for human review would catch X% of the
+    errors").
+
+DELIVERABLE: uncertainty scores per image per model per dataset,
+correct-vs-incorrect uncertainty comparison with a statistical test result,
+optional selective-prediction curve.
+
+
+--------------------------------------------------------------------------------
+PHASE 9 — STATISTICAL ANALYSIS (Week 9–10)
+--------------------------------------------------------------------------------
+[ ] For every headline comparison (baseline vs RETFound, on each dataset),
+    compute 95% confidence intervals via bootstrapping (resample the test
+    set with replacement, ~1000-2000 iterations, recompute the metric each
+    time, take the 2.5th/97.5th percentiles).
+[ ] Use DeLong's test to compare AUCs between the two models on the same
+    test set (this is the standard, reviewer-expected test for paired AUC
+    comparison in medical imaging papers).
+[ ] Report the internal-to-external performance drop with its own CI for
+    both models, so you can state whether the difference in "how much they
+    dropped" is itself statistically meaningful.
+[ ] Write a short statistical methods paragraph now (which tests, how many
+    bootstrap iterations, software/package used, alpha level) — this goes
+    directly into your Methods section.
+
+DELIVERABLE: all headline metrics with 95% CIs, DeLong test p-values,
+statistical methods paragraph.
+
+
+--------------------------------------------------------------------------------
+PHASE 10 — FIGURES & TABLES (Week 9–10, overlaps Phase 9)
+--------------------------------------------------------------------------------
+Plan for roughly this set (adjust to journal's figure limit):
+[ ] Figure 1: Study design / pipeline diagram (datasets -> preprocessing ->
+    two models -> internal + external evaluation -> explainability +
+    uncertainty). Make this yourself, it does not need to be fancy.
+[ ] Figure 2: Bar or forest plot of accuracy/kappa/AUC for both models
+    across internal + 2 external datasets, with CI error bars.
+[ ] Figure 3: Grad-CAM/attention panel (the 4-6 selected examples from
+    Phase 7).
+[ ] Figure 4: Uncertainty distribution plot (correct vs incorrect) +
+    selective-prediction curve if included.
+[ ] Table 1: Dataset characteristics (n, camera/source, population,
+    class distribution) for APTOS/Messidor-2/IDRiD.
+[ ] Table 2: Master results table from Phase 6, now with CIs added.
+[ ] Table 3 (optional): Hyperparameters for both models, for
+    reproducibility.
+[ ] Check your target journal's exact figure/table format rules (DPI,
+    file format, color mode) before finalizing — redoing figures later
+    costs real time.
+
+DELIVERABLE: final figure and table files, journal-format-checked.
+
+
+--------------------------------------------------------------------------------
+PHASE 11 — MANUSCRIPT WRITING (Week 10–11)
+--------------------------------------------------------------------------------
+Write in this order (not the order it's read in) — it's faster and keeps
+claims consistent with what you actually found:
+
+[ ] METHODS first, while it's freshest — you already have the protocol
+    (Phase 1) and statistical paragraph (Phase 9) as a skeleton. Cover:
+    datasets (with citations + license statement), preprocessing, both
+    models + fine-tuning details, evaluation metrics, statistical tests,
+    explainability method, uncertainty method, and — required by most Q1
+    imaging journals now — a Reporting Guideline statement (see Phase 12).
+[ ] RESULTS second, directly from your Phase 6/8/9 tables and figures.
+    State numbers plainly with CIs; save interpretation for Discussion.
+[ ] DISCUSSION third:
+      - Answer your 3 research questions explicitly, one paragraph each.
+      - Compare your external-validation drop to what's reported (or not
+        reported) in the papers from your Phase 1 literature table.
+      - State limitations plainly: retrospective public datasets, no
+        prospective/clinical claim, sample sizes of external sets, single
+        annotator's plausibility rating for Grad-CAM if you didn't have a
+        second rater, etc. Reviewers reward honest limitations far more
+        than they punish them.
+      - One paragraph on clinical/practical implication (e.g., how the
+        uncertainty flag could be used in a real triage workflow).
+[ ] INTRODUCTION fourth: background on DR + AI, the gap statement from
+    Phase 1, your 3 research questions, and a one-paragraph summary of
+    your contribution and findings at the very end of the introduction
+    (standard for this kind of paper).
+[ ] ABSTRACT last: background/objective, methods in 2-3 sentences,
+    headline results with numbers, one-sentence conclusion. Match your
+    target journal's exact abstract structure (structured vs. unstructured,
+    word limit).
+[ ] Title: make it specific and honest, e.g. "Cross-Dataset External
+    Validation of a Retinal Foundation Model for Diabetic Retinopathy
+    Grading: Performance, Explainability, and Uncertainty."
+[ ] Have someone else (co-author, colleague, or at minimum a fresh re-read
+    after 24 hours away from it) read the full draft before submission.
+
+DELIVERABLE: complete manuscript draft, all sections, ready for formatting.
+
+
+--------------------------------------------------------------------------------
+PHASE 12 — REPORTING CHECKLIST & REPRODUCIBILITY (Week 11)
+--------------------------------------------------------------------------------
+[ ] Complete a TRIPOD-AI (or CLAIM, if the journal prefers it) reporting
+    checklist — most Q1 imaging/diagnostics journals now ask for this at
+    submission, and reviewers check it. Filling it in also catches
+    anything you forgot to report.
+[ ] Finalize your GitHub repo: preprocessing script, training scripts for
+    both models, evaluation/statistics scripts, split CSVs, README with
+    exact steps to reproduce, environment file (requirements.txt or
+    environment.yml). Do not include the raw datasets themselves if their
+    license prohibits redistribution — link to the source instead.
+[ ] Write the Data Availability and Code Availability statements using the
+    provenance log from Phase 2 and the GitHub link.
+[ ] Write the Ethics statement: public, de-identified, previously
+    consented datasets — no new human-subjects data collected. Check your
+    target journal's exact required wording for secondary-use public data.
+
+DELIVERABLE: completed reporting checklist, public GitHub repo with README,
+Data/Code Availability and Ethics statements drafted.
+
+
+--------------------------------------------------------------------------------
+PHASE 13 — JOURNAL FORMATTING & SUBMISSION (Week 11–12)
+--------------------------------------------------------------------------------
+[ ] Pick your primary target (Diagnostics or Journal of Imaging for
+    speed) and download its current author template / formatting
+    guidelines directly from the journal site — check word count,
+    reference style, and figure requirements exactly.
+[ ] Confirm the current article processing charge on the journal's own
+    page and decide funding/payment before submission, not after
+    acceptance.
+[ ] Prepare the submission package: manuscript file, figures (separate
+    files if required), cover letter (state your contribution and why it
+    fits the journal's scope — mention the special issue on AI/ML medical
+    imaging if one is currently open), reporting checklist, conflict of
+    interest and data availability statements, suggested reviewers if
+    requested.
+[ ] Submit. Note the manuscript ID and expected first-decision date.
+
+DELIVERABLE: submitted manuscript.
+
+
+--------------------------------------------------------------------------------
+PHASE 14 — AFTER SUBMISSION
+--------------------------------------------------------------------------------
+[ ] If desk-rejected: read the editor's stated reason carefully — usually
+    scope or a specific missing element (e.g., no external validation,
+    which you've already covered). Fix and resubmit to your second-choice
+    journal within days, not weeks — your material is already prepared.
+[ ] If sent for review: use the waiting time to prepare a response-to-
+    reviewers template and re-run any analysis you're unsure about, so
+    revisions are fast once comments arrive.
+[ ] On acceptance: check the proof carefully against your submitted figures
+    and tables (numbers get mis-transcribed in typesetting more often than
+    you'd expect).
+
+
+================================================================================
+QUICK REFERENCE — KEY RESOURCES
+================================================================================
+Datasets:
+  APTOS 2019      -> Kaggle: "aptos2019-blindness-detection"
+  Messidor-2       -> messidor.com (image release) + Kaggle mirrors for
+                      grade labels — confirm label source before using
+  IDRiD            -> IEEE DataPort / official IDRiD project page
+
+Model:
+  RETFound repo    -> github.com/rmaphoh/RETFound
+  RETFound weights -> Hugging Face (search "RETFound", request access)
+
+Libraries:
+  torch, torchvision, timm, captum, pytorch-grad-cam, scikit-learn,
+  torchmetrics, statsmodels, scipy
+
+Reporting checklist:
+  TRIPOD-AI (or CLAIM for imaging-specific AI papers)
+
+Target journals (fastest first):
+  Diagnostics (MDPI)        -> ~20 days to first decision
+  Journal of Imaging (MDPI) -> ~21 days to first decision
+================================================================================
