@@ -1,7 +1,7 @@
 # Phase 3 — Preprocessing Pipeline: Completion Report
 
 **Status:** complete. **Date:** 2026-09-08.
-Methodology reference: `../option_A_methodology_1.txt`, Phase 3.
+Methodology reference: `../analysis_plan.txt`, Phase 3.
 
 Reproduce end to end:
 ```

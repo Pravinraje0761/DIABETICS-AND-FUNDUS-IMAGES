@@ -39,7 +39,7 @@ Integrity: every `\ref` resolves, every `\cite` key is in `references.bib`.
   a clean run on other hardware is follow-up #2. `\pv{}` markers stay until that
   run exists (honest, not placeholders). A 5th attempt runs in the background
   (`--num-workers 2 --save-every 2`); if it finishes, run the refresh block in
-  `SESSION_STATUS.md` and delete `\pv{}`.
+  `docs/project_notes/SESSION_STATUS.md` and delete `\pv{}`.
 - **Blinded ophthalmologist assessment + inter-rater kappa.** Needs a human
   expert. Follow-up #3.
 - **IDRiD lesion-mask overlap + full 516 set.** Lesion masks are in the IDRiD

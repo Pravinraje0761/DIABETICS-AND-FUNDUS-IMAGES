@@ -45,3 +45,6 @@ outputs/phase7/*_DEMO.*
 *.log
 .DS_Store
 Thumbs.db
+
+# Test cache
+.pytest_cache/

@@ -1,7 +1,7 @@
 # Phase 4 — Baseline Model: Completion Report
 
 **Status:** complete. **Date:** 2026-09-08.
-Methodology reference: `../option_A_methodology_1.txt`, Phase 4.
+Methodology reference: `../analysis_plan.txt`, Phase 4.
 
 Both candidate backbones from the methodology were trained and evaluated.
 **EfficientNet-B3 is selected as the baseline** — it wins on every internal-test

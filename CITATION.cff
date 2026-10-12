@@ -1,0 +1,27 @@
+cff-version: 1.2.0
+message: "If you use this code or build on its findings, please cite it as below."
+title: "Cross-Dataset External Validation of a Retinal Foundation Model for Diabetic Retinopathy Grading: Performance, Explainability, and Uncertainty (code)"
+type: software
+license: MIT
+repository-code: "https://github.com/Pravinraje0761/DIABETICS-AND-FUNDUS-IMAGES"
+keywords:
+  - diabetic retinopathy
+  - retinal foundation model
+  - RETFound
+  - external validation
+  - domain shift
+  - uncertainty quantification
+  - explainability
+authors:
+  - given-names: "Pravin Raj"
+    family-names: "E"
+    email: "epravinraj0761@gmail.com"
+preferred-citation:
+  type: article
+  status: in-preparation
+  title: "Cross-Dataset External Validation of a Retinal Foundation Model for Diabetic Retinopathy Grading: Performance, Explainability, and Uncertainty"
+  year: 2026
+  authors:
+    - given-names: "Pravin Raj"
+      family-names: "E"
+      email: "epravinraj0761@gmail.com"
