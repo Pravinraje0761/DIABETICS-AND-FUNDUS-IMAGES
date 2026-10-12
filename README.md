@@ -1,123 +1,187 @@
-# Cross-Dataset External Validation of a Retinal Foundation Model for DR Grading
+# Cross-Dataset External Validation of a Retinal Foundation Model for Diabetic Retinopathy Grading
 
-Reproducibility repository for the study described in
-`option_A_methodology_1.txt` (the pre-registered analysis plan). Compares an
-ImageNet-pretrained CNN baseline against a fine-tuned retinal foundation model
-(RETFound) on 5-class diabetic retinopathy grading, with the emphasis on
-**external generalisation**, explainability, and predictive uncertainty.
+**Performance, explainability, and uncertainty under dataset shift**
 
-**Manuscript:** `paper/main_standalone.tex` (IEEEtran). Headline finding: under
-a matched preprocessing/fine-tuning/evaluation protocol, RETFound did not
-generalise better than a standard ImageNet-pretrained CNN for cross-dataset DR
-grading — on the pre-specified contrasts it generalised *worse* — and this
-holds under a five-class ordinal metric, a binary referable-DR secondary task,
-several training-choice sensitivity analyses (seed, loss function, resolution,
-colour normalisation), and a domain-shift out-of-distribution check. See the
-manuscript's Results/Discussion for the full picture, including a partial
-counterpoint on calibration.
+[![CI](https://github.com/Pravinraje0761/DIABETICS-AND-FUNDUS-IMAGES/actions/workflows/ci.yml/badge.svg)](https://github.com/Pravinraje0761/DIABETICS-AND-FUNDUS-IMAGES/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![Reporting: TRIPOD+AI](https://img.shields.io/badge/reporting-TRIPOD%2BAI-informational.svg)
+![Paper: manuscript](https://img.shields.io/badge/paper-manuscript-lightgrey.svg)
 
-## Design in one line
+Retinal foundation models such as **RETFound** are promoted as improving generalisation.
+This study tests that claim for five-class diabetic retinopathy (DR) grading under fully
+matched conditions. One preprocessing pipeline, one fine-tuning protocol and one evaluation
+protocol are applied identically to an ImageNet-pretrained CNN and to RETFound. Both are
+trained on **APTOS 2019** and then evaluated, unchanged and once, on two independent external
+datasets: **Messidor-2** and **IDRiD**.
 
-Train + tune on **APTOS 2019** only, then evaluate **once** on **Messidor-2** and
-**IDRiD** as untouched external test sets. Keeping those two sets out of every
-training/tuning decision is the whole point of the study.
+**Result: RETFound did not generalise better. On the pre-specified contrasts, it generalised
+worse.** Every model degraded sharply on external data. Predictive uncertainty was a weak
+safeguard under that shift.
 
-## Environment
+> **Not for clinical use.** Retrospective study on public datasets; no prospective or
+> clinical validation. See [Limitations](#limitations).
+
+---
+
+## Study design
+
+```mermaid
+flowchart LR
+    A["APTOS 2019<br/>n = 3,662"] -->|"stratified 70 / 10 / 20<br/>seed 42"| B["Train · Validate · Internal test"]
+    B --> C["EfficientNet-B3 / ResNet-50<br/>(ImageNet-pretrained)"]
+    B --> D["RETFound ViT-L/16<br/>linear probe · full fine-tune"]
+    C --> E{"Evaluate once,<br/>no further tuning"}
+    D --> E
+    E --> F["Messidor-2<br/>n = 1,744<br/>adjudicated grades"]
+    E --> G["IDRiD<br/>n = 455"]
+```
+
+Messidor-2 and IDRiD were not used for any modelling or tuning decision before the single
+external evaluation.
+
+## Key findings
+
+1. **No generalisation advantage for the foundation model.** RETFound's internal-to-external
+   QWK drop on Messidor-2 was significantly larger than the CNN baseline's: +0.124 (95% CI
+   0.074–0.175) for full fine-tuning and +0.076 (0.019–0.132) for linear probing.
+2. **The CNN separates referable DR better on external data.** EfficientNet-B3 had a
+   significantly higher referable-DR (ICDR ≥ 2) AUC than every RETFound variant on both
+   external datasets (DeLong *p* < 0.001), despite parity internally (*p* ≥ 0.47).
+3. **Every model collapses on Messidor-2.** QWK fell from about 0.87 internally to 0.37–0.50,
+   with models reverting toward predicting grade 0.
+4. **Uncertainty is a weak safeguard under shift.** Entropy detected errors with AUROC up to
+   0.84 internally but only 0.55–0.68 externally. Referring the 10% most uncertain external
+   cases caught only 9–18% of errors, close to random referral.
+5. **Saliency shifts with the domain.** CNN saliency stayed on retinal tissue externally;
+   RETFound's moved to the image periphery on Messidor-2, most for its errors.
+6. **Partial counterpoint: calibration.** RETFound's probabilities stayed better calibrated
+   under shift (ECE 0.10–0.16 vs. 0.26–0.29 for the CNNs), though temperature scaling did not
+   close the discrimination gap.
+
+## Results
+
+### Master results (manuscript Table 2; 95% bootstrap CIs, B = 2000)
+
+| Model | Dataset | n | QWK | Accuracy | Macro AUC |
+|---|---|--:|---|---|---|
+| **EfficientNet-B3** (baseline) | APTOS internal | 733 | 0.876 (0.849–0.901) | 0.804 | 0.928 |
+| | Messidor-2 | 1,744 | 0.499 (0.452–0.543) | 0.626 | 0.775 |
+| | IDRiD | 455 | 0.760 (0.715–0.798) | 0.497 | 0.830 |
+| ResNet-50 (baseline) | APTOS internal | 733 | 0.875 (0.848–0.898) | 0.789 | 0.924 |
+| | Messidor-2 | 1,744 | 0.435 (0.381–0.481) | 0.614 | 0.754 |
+| | IDRiD | 455 | 0.707 (0.663–0.751) | 0.448 | 0.841 |
+| RETFound, linear probe | APTOS internal | 733 | 0.847 (0.819–0.873) | 0.759 | 0.908 |
+| | Messidor-2 | 1,744 | 0.394 (0.338–0.447) | 0.589 | 0.758 |
+| | IDRiD | 455 | 0.626 (0.572–0.676) | 0.336 | 0.778 |
+| RETFound, full fine-tune † | APTOS internal | 733 | 0.869 (0.842–0.893) | 0.769 | 0.915 |
+| | Messidor-2 | 1,744 | 0.368 (0.311–0.422) | 0.602 | 0.758 |
+| | IDRiD | 455 | 0.720 (0.673–0.759) | 0.420 | 0.821 |
+
+† Provisional: epoch-6 checkpoint (see [Limitations](#limitations)). The conclusion also
+holds for the linear probe, which ran to a clean early stop.
+
+### Internal-to-external QWK drop (manuscript Table 3)
+
+| Model | Messidor-2 drop | Δ vs. baseline | IDRiD drop | Δ vs. baseline |
+|---|---|---|---|---|
+| EfficientNet-B3 | 0.377 (0.323–0.433) | reference | 0.116 (0.068–0.166) | reference |
+| ResNet-50 | 0.440 (0.388–0.499) | +0.063 (0.017–0.109) | 0.167 (0.117–0.222) | +0.051 (0.003–0.102) |
+| RETFound, linear probe | 0.453 (0.393–0.516) | **+0.076 (0.019–0.132)** | 0.221 (0.163–0.285) | **+0.105 (0.038–0.170)** |
+| RETFound, full fine-tune † | 0.501 (0.441–0.563) | **+0.124 (0.074–0.175)** | 0.150 (0.101–0.202) | +0.033 (−0.022–0.089) |
+
+Difference-in-drop intervals are paired at the image level. An interval excluding 0 means a
+significantly larger loss of external agreement than the baseline.
+
+### Robustness of the conclusion
+
+| Check | Outcome | Outputs |
+|---|---|---|
+| Training seed (4 seeds per model) | Messidor-2 drop 0.461 ± 0.017 (RETFound linear probe) vs. 0.379 ± 0.025 (CNN); seed distributions do not overlap | `outputs/phase16/` |
+| Loss function (weighted CE, plain CE, focal) | CNN keeps the smaller Messidor-2 drop under every loss; IDRiD is loss-sensitive and the ordering reverses there under plain CE | `outputs/phase17/` |
+| Referable DR as a binary task | RETFound's AUROC drop exceeds the baseline's on both external sets | `outputs/phase19/` |
+| Inference-time CLAHE, colour transfer, 224 vs. 384 px | Direction of the RETFound–CNN gap unchanged | `outputs/phase15/`, `outputs/phase15c/` |
+| Duplicate / leakage check | 0 byte-identical images across datasets; removing internal APTOS duplicates moves internal QWK by ≤ 0.006 | `outputs/phase12/`, `outputs/phase14/` |
+| Independent recompute | All 60 headline cells re-derived from prediction files, agreeing to < 5 × 10⁻⁴ | `outputs/phase11/verification.csv` |
+
+## Reproducing the results
+
+Per-image predictions for every model × dataset are committed under `outputs/phase6/`, so all
+statistics and figures can be regenerated **without a GPU or the raw images**:
+
+```bash
+git clone https://github.com/Pravinraje0761/DIABETICS-AND-FUNDUS-IMAGES.git
+cd DIABETICS-AND-FUNDUS-IMAGES
+python -m venv .venv && source .venv/bin/activate     # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+
+pytest                                                 # recomputes Table 2 and the DeLong tests
+python scripts/phase9_stats.py --boot 2000 --seed 42   # bootstrap CIs, drop CIs, DeLong
+python scripts/phase10_figures.py                      # figures
+```
+
+Retraining from scratch needs the raw datasets (see [Data](#data)), a GPU, and the gated
+RETFound weights ([`docs/phase_reports/PHASE5_SETUP.md`](docs/phase_reports/PHASE5_SETUP.md)).
+[`docs/PIPELINE.md`](docs/PIPELINE.md) lists every phase with its script and outputs, and the
+manuscript's reproducibility table maps each table and figure to its script.
+
+The original environment was Python 3.14 on Windows with PyTorch 2.11 (CUDA 12.8) on an RTX 5060
+(8 GB); `requirements.txt` pins these versions. CI runs the analysis tests on Python 3.12.
+
+## Repository layout
 
 ```
-python -m venv .venv
-.venv\Scripts\python.exe -m pip install -r requirements.txt
+scripts/        one script per analysis phase, plus shared modules (preprocessing, metrics, models)
+data_splits/    fixed APTOS split and per-dataset manifests (image IDs, no images)
+outputs/        per-image predictions, metrics, statistics and figures for every phase
+paper/          manuscript (main_standalone.tex), references, TRIPOD+AI checklist, figures
+docs/           pipeline guide, analysis plan, phase reports, project notes
+tests/          recompute-the-paper tests and unit tests (run in CI)
+logs/           preprocessing and split configuration
 ```
-
-Python 3.14.7 on Windows. See the note in `requirements.txt` about PyTorch /
-Python 3.14 compatibility before starting Phase 4.
 
 ## Data
 
-Not stored here (licence -- see `DATA_PROVENANCE.md`). Expected layout, relative
-to this repo's parent folder:
+The datasets are third-party and are **not redistributed**. Download them from their sources
+under their own licences; [`DATA_PROVENANCE.md`](DATA_PROVENANCE.md) records the URL, version,
+access date, licence and citation for each.
 
-```
-../aptos2019-blindness-detection/   train.csv, train_images/, test.csv, test_images/
-../archive/                          messidor_data.csv, messidor-2/messidor-2/preprocess/
-../archive (1)/                      idrid_labels.csv, Imagenes/Imagenes/
-```
+| Dataset | n | Role | Source |
+|---|--:|---|---|
+| APTOS 2019 Blindness Detection | 3,662 | Development only | Kaggle |
+| Messidor-2 (adjudicated grades, Krause et al. 2018) | 1,744 | External test | ADCIS |
+| IDRiD, Disease Grading | 455 of 516 | External test | IEEE DataPort |
 
-## Progress by phase
+## Limitations
 
-| Phase | What | Status |
-|---|---|---|
-| 2 | Data acquisition, provenance log, class-balance audit | **done** -- `PHASE2_REPORT.md`, `DATA_PROVENANCE.md` |
-| 3 | Single preprocessing pipeline; stratified APTOS 70/10/20 split; DataLoader; sanity-viz | **done** -- `PHASE3_REPORT.md` |
-| 4 | Baseline CNN (ResNet-50 + EfficientNet-B3), internal-test metrics | **done** -- `PHASE4_REPORT.md`. EfficientNet-B3 selected (test QWK 0.876, acc 0.804) |
-| 5 | RETFound fine-tuning (linear probe + full), internal-test metrics | **done** -- `PHASE5_REPORT.md`. linprobe test QWK 0.847; full (ep6, truncated) 0.869 |
-| 6 | External validation on Messidor-2 + IDRiD; master results table | **done** -- `PHASE6_REPORT.md`. RETFound shows NO generalisation advantage over the CNN baseline |
-| 7 | Grad-CAM++ / attention-rollout maps + automated plausibility proxy | **done** -- `scripts/phase7_explainability.py`, `outputs/phase7/` |
-| 8 | Predictive-entropy uncertainty; correct-vs-incorrect (Mann-Whitney U); selective prediction; MC-dropout sensitivity | **done** -- `scripts/phase8_uncertainty.py`, `scripts/phase8_mc_dropout.py`, `outputs/phase8/` |
-| 9 | Bootstrap 95% CIs, internal->external drop CIs, difference-in-drop CIs, DeLong AUC test, stats methods paragraph | **done** -- `scripts/phase9_stats.py`, `outputs/phase9/` |
-| 10 | Figures (study design, forest plot; Phase 7/8 emit their own) | **done** -- `scripts/phase10_figures.py`, `outputs/figures/` |
-| 11 | Independent recompute/verification of every headline number, per-class CIs, calibration, ROC/PR, multiplicity correction, domain-shift table, split counts | **done** -- `scripts/phase11_review_response.py`, `scripts/phase11_figures.py`, `outputs/phase11/` |
-| 12 | Duplicate / leakage check (MD5 exact + embedding near-duplicate) | **done** -- `scripts/phase12_leakage.py`, `outputs/phase12/` |
-| 13 | Post-hoc temperature-scaling recalibration + robustness (bootstrap CI, disjoint calibration-source check) | **done** -- `scripts/phase13_temperature_scaling.py`, `outputs/phase13/` |
-| 14 | Embedding-based cross-dataset near-duplicate check (frozen ImageNet features, cosine) | **done** -- `scripts/phase14_embedding_dedup.py`, `outputs/phase14/` |
-| 15 | Controlled degradation ablation: CLAHE / colour-transfer (Variants A/B) + input resolution 224 vs 384 (Variant C), inference-time only | **done** -- `scripts/phase15_ablation.py`, `scripts/phase15c_resolution.py`, `outputs/phase15{,c}/` |
-| 16 | Training-seed sensitivity (EfficientNet-B3 + RETFound linear probe, seeds 43-45) | **done** -- `scripts/phase16_seed_sweep.py`, `outputs/phase16/` |
-| 17 | Loss-function / class-weighting sensitivity (plain CE, focal loss) | **done** -- `scripts/phase17_loss_sensitivity.py`, `outputs/phase17/` |
-| 18 | Training-time retraining-ablation data prep (CLAHE/colour-transfer/384px baked into APTOS, all splits, from source) | **done** (data prep; training itself needs a cloud GPU) -- `scripts/phase18_retrain_variants_prep.py`, `COLAB_RETRAIN_GUIDE.md` |
-| 19 | Referable-DR (ICDR grade >=2) as a standalone binary secondary task, with its own internal->external AUROC-drop table | **done** -- `scripts/phase19_referable_dr.py`, `outputs/phase19/` |
-| 20 | Domain-shift out-of-distribution detection (Mahalanobis distance) vs. predictive entropy as an external error detector | **done** -- `scripts/phase20_ood_detection.py`, `outputs/phase20/` |
-| 21 | Training-set-size sensitivity scorer (pairs with Phase 18 prep; training needs a cloud GPU) | scorer **done**, training pending -- `scripts/phase21_training_size_sensitivity.py`, `outputs/phase21/` |
+- The RETFound full fine-tune uses an epoch-6 checkpoint: two full 30-epoch runs were cut short
+  by hardware limits. Its values are marked provisional, and the conclusion also holds for the
+  linear probe. [`COLAB_RETRAIN_GUIDE.md`](COLAB_RETRAIN_GUIDE.md) describes the clean re-run.
+- Retrospective, public data only; no prospective or clinical-deployment claim.
+- The IDRiD mirror used had 455 of the 516 images.
+- Grade-1 (mild) sensitivity is not estimable on Messidor-2; some CIs are wide.
+- Saliency plausibility is scored by an automated location proxy, not by blinded expert graders.
+- One foundation model and one task; results should not be generalised beyond them without testing.
 
-Manuscript, TRIPOD+AI checklist, cover letter, and submission package are
-drafted in `paper/`; remaining author-only items (identity, ORCID, ethics
-wording, a clean 30-epoch RETFound full fine-tune, etc.) are tracked in
-`paper/AUTHOR_TODO.md` and `TODO.md`.
+The manuscript discusses each in full.
 
-## Scripts
+## Citation
 
-Phases 2-10 (initial pipeline through first figures) below; every script for
-Phases 11-21 is listed in the "Progress by phase" table above and documented
-in its own module docstring (`--help` for the exact CLI).
+The manuscript is not yet published. Until it is, please cite the software:
 
-| Script | Phase | Run |
-|---|---|---|
-| `scripts/phase2_data_audit.py` | 2 | `.venv\Scripts\python.exe scripts\phase2_data_audit.py` |
-| `scripts/preprocessing.py` | 3 | importable — the single pipeline + constants |
-| `scripts/phase3_split_aptos.py` | 3 | `.venv\Scripts\python.exe scripts\phase3_split_aptos.py` |
-| `scripts/phase3_preprocess.py` | 3 | `.venv\Scripts\python.exe scripts\phase3_preprocess.py` |
-| `scripts/phase3_sanity_check.py` | 3 | `.venv\Scripts\python.exe scripts\phase3_sanity_check.py` |
-| `scripts/dataset.py` | 3+ | `.venv\Scripts\python.exe scripts\dataset.py` (smoke test) |
-| `scripts/metrics.py` | 4+ | importable — QWK, per-class sens/spec, OvR AUC, confusion |
-| `scripts/models.py` | 4+ | importable — `build_model(arch)` |
-| `scripts/train_baseline.py` | 4 | `.venv\Scripts\python.exe scripts\train_baseline.py --arch efficientnet_b3` |
-| `scripts/predict.py` | 4/6/8 | `.venv\Scripts\python.exe scripts\predict.py --checkpoint ... --manifest ... --split ... --out-prefix ...` |
-| `scripts/retfound.py` | 5+ | importable — ViT-L build + RETFound weight loader |
-| `scripts/train_retfound.py` | 5 | `.venv\Scripts\python.exe scripts\train_retfound.py --mode {linprobe,full} --weights weights\...pth` (`--save-every N` throttles the 1.2 GB checkpoint write; `DR_DATA_ROOT` env relocates `data_processed/` off OneDrive) |
-| `scripts/phase6_external_eval.py` | 6 | `.venv\Scripts\python.exe scripts\phase6_external_eval.py` — master results table |
-| `scripts/phase7_explainability.py` | 7 | `.venv\Scripts\python.exe scripts\phase7_explainability.py [--device cpu]` — Grad-CAM++/attention rollout + plausibility proxy |
-| `scripts/phase8_mc_dropout.py` | 8 | `.venv\Scripts\python.exe scripts\phase8_mc_dropout.py --passes 30` — T=30 MC-dropout preds -> `outputs/phase8/mc/` |
-| `scripts/phase8_uncertainty.py` | 8 | `.venv\Scripts\python.exe scripts\phase8_uncertainty.py [--preds-dir outputs/phase8/mc --tag mc]` |
-| `scripts/phase9_stats.py` | 9 | `.venv\Scripts\python.exe scripts\phase9_stats.py --boot 2000 --seed 42` — bootstrap CIs, drop CIs, DeLong |
-| `scripts/phase10_figures.py` | 10 | `.venv\Scripts\python.exe scripts\phase10_figures.py` — Fig 1 (design) + Fig 2 (forest) |
-
-## Reproducing Phases 2–3
-
-```
-.venv\Scripts\python.exe scripts\phase2_data_audit.py       # audit + class balance
-.venv\Scripts\python.exe scripts\phase3_split_aptos.py      # stratified APTOS split (seed 42)
-.venv\Scripts\python.exe scripts\phase3_preprocess.py       # preprocess all 3 datasets -> data_processed/
-.venv\Scripts\python.exe scripts\phase3_sanity_check.py     # label-alignment contact sheets
-.venv\Scripts\python.exe scripts\dataset.py                 # DataLoader smoke test
+```bibtex
+@software{pravinraj_dr_external_validation_2026,
+  author = {Pravin Raj E},
+  title  = {Cross-Dataset External Validation of a Retinal Foundation Model for
+            Diabetic Retinopathy Grading: Performance, Explainability, and Uncertainty (code)},
+  year   = {2026},
+  url    = {https://github.com/Pravinraje0761/DIABETICS-AND-FUNDUS-IMAGES}
+}
 ```
 
-Headline numbers are summarised in `PHASE2_REPORT.md` and `PHASE3_REPORT.md`.
-`data_processed/` (5,861 × 224² PNGs) is gitignored and regenerable from the raw
-datasets via `phase3_preprocess.py`.
+GitHub's "Cite this repository" button uses [`CITATION.cff`](CITATION.cff). If you use the
+datasets or RETFound, please also cite their original papers (listed in `paper/references.bib`).
 
-## Key finding from Phase 2 that shapes later phases
+## License
 
-All three datasets are class-imbalanced, and **differently** so (APTOS/Messidor-2
-are ~50-58% grade 0; IDRiD's modal class is grade 2 at 34%). Primary metrics are
-**quadratic-weighted kappa** and **per-class sensitivity/specificity**, not raw
-accuracy. APTOS split must be **stratified by grade** with a fixed seed and saved
-to CSV.
+Code is released under the [MIT License](LICENSE). Datasets and the RETFound weights keep their
+own licences and are not included.

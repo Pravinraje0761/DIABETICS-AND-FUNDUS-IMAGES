@@ -11,7 +11,7 @@ Same data, normalisation, metrics, early-stopping rule and internal-test
 protocol as the Phase 4 baseline, so the numbers are directly comparable.
 APTOS ONLY - Messidor-2 / IDRiD are untouched until Phase 6.
 
-Prereq: RETFound weights downloaded to weights/ (gated - see PHASE5_SETUP.md).
+Prereq: RETFound weights downloaded to weights/ (gated - see docs/phase_reports/PHASE5_SETUP.md).
 
 Run:
   .venv/Scripts/python.exe scripts/train_retfound.py --mode linprobe --weights weights/RETFound_mae_natureCFP.pth

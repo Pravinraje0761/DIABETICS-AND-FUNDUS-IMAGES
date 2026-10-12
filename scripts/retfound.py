@@ -11,7 +11,7 @@ the architectures are identical (`vit_large_patch16_224`, global average pool).
     m = build_retfound_backbone(num_classes=5)
     report = load_retfound_weights(m, "weights/RETFound_mae_natureCFP.pth")
 
-The weights are gated on Hugging Face - see PHASE5_SETUP.md. This module does no
+The weights are gated on Hugging Face - see docs/phase_reports/PHASE5_SETUP.md. This module does no
 downloading; it only loads a local .pth.
 """
 from __future__ import annotations
@@ -82,7 +82,7 @@ def load_retfound_weights(model: nn.Module, path: str | Path) -> dict:
     path = Path(path)
     if not path.is_file():
         raise FileNotFoundError(
-            f"RETFound weights not found at {path}. See PHASE5_SETUP.md - the "
+            f"RETFound weights not found at {path}. See docs/phase_reports/PHASE5_SETUP.md - the "
             "checkpoint is gated on Hugging Face and must be downloaded manually."
         )
     raw = torch.load(path, map_location="cpu", weights_only=False)

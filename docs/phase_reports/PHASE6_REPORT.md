@@ -1,7 +1,7 @@
 # Phase 6 — External Validation: Completion Report
 
 **Status:** complete. **Date:** 2026-09-08.
-Methodology reference: `../option_A_methodology_1.txt`, Phase 6 — "the core experiment".
+Methodology reference: `../analysis_plan.txt`, Phase 6 — "the core experiment".
 
 Every model was run **unmodified, with no further training**, on APTOS internal
 test, Messidor-2 (all 1,744 gradable), and IDRiD (all 455). Identical code path
@@ -118,7 +118,7 @@ So the foundation model is not useless on shift — it is modestly better at
 ## 5. Limitations that bear on this table
 
 - **RETFound-full was truncated at epoch 7/30** (OneDrive I/O slowdown, see
-  `PHASE5_REPORT.md` section 4). Its internal QWK (0.869) was still climbing; a
+  `docs/phase_reports/PHASE5_REPORT.md` section 4). Its internal QWK (0.869) was still climbing; a
   completed run could raise both its internal and external numbers. The
   conclusion should be stated as "did not show an advantage **in this
   experiment**" and the caveat repeated. **Re-running full FT to completion

@@ -5,7 +5,7 @@ Status snapshot (2026-09-11): manuscript = `paper/main_standalone.tex`
 entries all verified against publisher DOI records; abstract trimmed to 336
 words). Analyses Phases 2-21 done or (for the Colab-bound training-time
 ablations, Phase 18/21) prepared and ready to run. What was done vs. blocked
-through Phase 12: `REVIEW_RESPONSE_STATUS.md` (a snapshot of that point, not
+through Phase 12: `docs/project_notes/REVIEW_RESPONSE_STATUS.md` (a snapshot of that point, not
 kept current); Phases 13-21 status: this file, items 1-13 below.
 
 RETFound full fine-tune v3 was **paused at epoch 7** to free the machine. Best
@@ -32,7 +32,7 @@ If staying on this laptop: the v3 settings (`--num-workers 2 --save-every 2`,
 dying. Relaunch and let it run overnight; `--save-every 2` keeps the best weights
 on disk if it stalls.
 
-### After it completes -- the refresh (also in `SESSION_STATUS.md`)
+### After it completes -- the refresh (also in `docs/project_notes/SESSION_STATUS.md`)
 
 ```
 set DR_DATA_ROOT=C:\dr_run     # PowerShell: $env:DR_DATA_ROOT="C:\dr_run"

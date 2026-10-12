@@ -62,7 +62,7 @@ Notes
   loader) was applied to **all 1,744** images regardless of source form,
   identically to APTOS and IDRiD. Any residual vendor preprocessing on the
   `*_PP.png` subset is a stated minor heterogeneity, not a confound that favours
-  either model (both see identical processed pixels). See `PHASE3_REPORT.md`
+  either model (both see identical processed pixels). See `docs/phase_reports/PHASE3_REPORT.md`
   section "Cross-dataset consistency note".
 
 ---

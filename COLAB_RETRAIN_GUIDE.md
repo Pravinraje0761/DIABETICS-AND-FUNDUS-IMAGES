@@ -2,7 +2,7 @@
 
 Four analyses are prepared (data + code) but not yet run, because they need
 sustained GPU time this laptop's RTX 5060 (8 GB) could not reliably provide for
-RETFound full fine-tuning (`PHASE5_REPORT.md`, `AUTHOR_TODO.md` B7 — two local
+RETFound full fine-tuning (`docs/phase_reports/PHASE5_REPORT.md`, `AUTHOR_TODO.md` B7 — two local
 attempts converged to val QWK ≈0.94 but were killed by thermal throttling /
 host-memory exhaustion before a clean 30-epoch finish). All four reuse the
 *existing* Phase 4/5/6/9/17 code paths unmodified — only new manifests, new CLI
@@ -40,7 +40,7 @@ dr_foundation_study/
   scripts/                       # the whole folder
   data_splits/                   # committed manifests, small
   data_processed/                # committed-size PNGs (224px, all datasets) -- gitignored, zip+upload
-  weights/RETFound_mae_natureCFP.pth   # gated HF download, ~1.2 GB -- see PHASE5_SETUP.md
+  weights/RETFound_mae_natureCFP.pth   # gated HF download, ~1.2 GB -- see docs/phase_reports/PHASE5_SETUP.md
   outputs/phase4_baseline/efficientnet_b3_best.pt   # for phase17/21 to alias frac100/weighted_ce
   outputs/phase5_retfound/{linprobe,full}_best.pt   # same
 ```
@@ -160,7 +160,7 @@ python scripts/train_retfound.py --mode full --weights weights/RETFound_mae_natu
 
 ~30 epochs, early-stopping on val QWK, patience 7; expect 2–5 h on a T4/L4.
 Download `ckpts/full_best.pt`, copy over `outputs/phase5_retfound/full_best.pt`,
-then re-run the refresh pipeline in `TODO.md` §1 ("After it completes") and
+then re-run the refresh pipeline in `docs/project_notes/TODO.md` §1 ("After it completes") and
 remove every `\pv{}` wrapper in `paper/main_standalone.tex`.
 
 ## Bringing results back
