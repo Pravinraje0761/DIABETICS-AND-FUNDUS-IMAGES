@@ -2,7 +2,7 @@
 
 **Status:** complete, with one caveat (full fine-tune compute-truncated — see §4).
 **Date:** 2026-09-08.
-Methodology reference: `../option_A_methodology_1.txt`, Phase 5.
+Methodology reference: `../analysis_plan.txt`, Phase 5.
 
 Both variants were trained on the APTOS train split with the **same** data,
 normalisation, metrics, early-stopping rule and internal-test protocol as the

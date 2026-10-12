@@ -3,7 +3,7 @@
 **Status:** complete, with two documented follow-ups (IDRiD image count, mirror
 metadata). **Date:** 2026-09-08.
 
-Methodology reference: `../option_A_methodology_1.txt`, Phase 2.
+Methodology reference: `../analysis_plan.txt`, Phase 2.
 Regenerate the numbers below with:
 `.venv/Scripts/python.exe scripts/phase2_data_audit.py`
 
@@ -122,7 +122,7 @@ Grades: 0 = No DR, 1 = Mild, 2 = Moderate, 3 = Severe, 4 = Proliferative.
 |---|---|
 | `scripts/phase2_data_audit.py` | Re-runnable audit: integrity checks + class distribution + plot |
 | `DATA_PROVENANCE.md` | Source, licence, citation, access notes per dataset + separation table |
-| `PHASE2_REPORT.md` | This report |
+| `docs/phase_reports/PHASE2_REPORT.md` | This report |
 | `logs/phase2_audit_report.md` | Auto-generated raw audit tables |
 | `outputs/phase2_audit.json` | Machine-readable full audit result |
 | `outputs/phase2_class_distribution.csv` | Long-format grade counts (dataset, subset, grade, count, pct) |

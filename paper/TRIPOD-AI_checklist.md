@@ -59,7 +59,7 @@ Supplementary Material.
 | **Open science** | | | |
 | 21a | Funding | Yes | Declarations, Funding |
 | 21b | Conflicts of interest | Yes | Declarations, Conflicts of Interest |
-| 21c | Protocol / pre-registration availability | Partial | Analysis plan fixed a priori in `../option_A_methodology_1.txt` (released with the code); not registered on a public registry |
+| 21c | Protocol / pre-registration availability | Partial | Analysis plan fixed a priori in `../docs/analysis_plan.txt` (released with the code); not registered on a public registry |
 | 21d | Data availability | Yes | Declarations, Data and Code Availability; `DATA_PROVENANCE.md` |
 | 21e | Code availability | Yes | Declarations, Data and Code Availability (repository DOI); all `scripts/` released |
 | **Results** | | | |

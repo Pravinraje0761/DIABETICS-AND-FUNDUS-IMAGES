@@ -32,7 +32,7 @@ PROJECT_DIR = Path(__file__).resolve().parents[1]
 # fast local disk without editing manifests. If DR_DATA_ROOT is set and it holds
 # the referenced relative path, it overrides PROJECT_DIR. Manifests stay portable;
 # unset -> identical behaviour. Motivation: OneDrive Files-On-Demand dehydrating
-# data_processed/ between epochs stalled the RETFound fine-tune (see PHASE5_REPORT).
+# data_processed/ between epochs stalled the RETFound fine-tune (see docs/phase_reports/PHASE5_REPORT.md).
 _DATA_ROOT = os.environ.get("DR_DATA_ROOT") or None
 
 
