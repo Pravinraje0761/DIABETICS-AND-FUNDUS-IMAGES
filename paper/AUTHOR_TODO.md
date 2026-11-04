@@ -1,6 +1,6 @@
 # Author action list — everything the pipeline cannot supply
 
-_Last refreshed 2026-09-10 (after Phase 7/8/9 extensions, commit `ced8492`)._
+_Last refreshed 2026-09-10 (after Phase 7/8/9 extensions, commit `7d66a65`)._
 
 **Current state.** All analysis is done and committed: Phases 2–16 plus the
 Phase 7/8/9 extensions (per-class uncertainty, MC-dropout re-run of the full

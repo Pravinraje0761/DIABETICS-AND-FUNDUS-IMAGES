@@ -1,7 +1,7 @@
 # Journal Submission Runbook
 
 _Last refreshed 2026-09-10 (after Phase 7/8/9 extensions + Phase 17 loss
-ablation, commit `ced8492`)._
+ablation, commit `7d66a65`)._
 
 Analysis is complete (Phases 2–17). Work top to bottom. The only non-author
 compute item still open is the completed RETFound full fine-tune
