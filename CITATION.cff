@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "If you use this code or build on its findings, please cite it as below."
-title: "Cross-Dataset External Validation of a Retinal Foundation Model for Diabetic Retinopathy Grading: Performance, Explainability, and Uncertainty (code)"
+title: "Retinal foundation-model versus ImageNet pretraining for deep learning grading of diabetic retinopathy: an external validation study (code)"
 type: software
 license: MIT
 repository-code: "https://github.com/Pravinraje0761/DIABETICS-AND-FUNDUS-IMAGES"
@@ -15,13 +15,16 @@ keywords:
 authors:
   - given-names: "Pravin Raj"
     family-names: "E"
-    email: "epravinraj0761@gmail.com"
+    email: "pravinraje.aids2024@citchennai.net"
+    affiliation: "Department of Artificial Intelligence and Data Science, Chennai Institute of Technology, Chennai, India"
+    orcid: "https://orcid.org/0009-0000-2975-1631"
 preferred-citation:
   type: article
   status: in-preparation
-  title: "Cross-Dataset External Validation of a Retinal Foundation Model for Diabetic Retinopathy Grading: Performance, Explainability, and Uncertainty"
+  title: "Retinal foundation-model versus ImageNet pretraining for deep learning grading of diabetic retinopathy: an external validation study"
   year: 2026
   authors:
     - given-names: "Pravin Raj"
       family-names: "E"
-      email: "epravinraj0761@gmail.com"
+      email: "pravinraje.aids2024@citchennai.net"
+      affiliation: "Department of Artificial Intelligence and Data Science, Chennai Institute of Technology, Chennai, India"

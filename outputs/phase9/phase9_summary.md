@@ -1,6 +1,6 @@
 # Phase 9 - Statistical analysis
 
-_Generated 2026-09-08T11:14:30+00:00. Percentile bootstrap, B=2000, seed=42, two-sided alpha=0.05._
+_Generated 2026-10-21T06:16:12+00:00. Percentile bootstrap, B=2000, seed=42, two-sided alpha=0.05. Predictions: single forward pass (`outputs/phase6/`)._
 
 ## 1. Headline metrics with 95% CI
 
@@ -15,9 +15,9 @@ _Generated 2026-09-08T11:14:30+00:00. Percentile bootstrap, B=2000, seed=42, two
 | retfound_linprobe | APTOS-internal | 0.759 (0.728–0.789) | 0.847 (0.819–0.873) | 0.607 (0.562–0.649) | 0.633 (0.588–0.682) | 0.908 (0.889–0.927) |
 | retfound_linprobe | Messidor-2 | 0.589 (0.565–0.612) | 0.394 (0.338–0.447) | 0.347 (0.314–0.377) | 0.423 (0.379–0.462) | 0.758 (0.738–0.774) |
 | retfound_linprobe | IDRiD | 0.336 (0.297–0.376) | 0.626 (0.572–0.676) | 0.325 (0.284–0.365) | 0.395 (0.342–0.451) | 0.778 (0.751–0.805) |
-| retfound_full | APTOS-internal | 0.769 (0.739–0.798) | 0.869 (0.842–0.893) | 0.616 (0.571–0.658) | 0.629 (0.582–0.678) | 0.915 (0.896–0.934) |
-| retfound_full | Messidor-2 | 0.602 (0.579–0.625) | 0.368 (0.311–0.422) | 0.362 (0.316–0.402) | 0.346 (0.307–0.387) | 0.758 (0.742–0.772) |
-| retfound_full | IDRiD | 0.420 (0.376–0.466) | 0.720 (0.673–0.759) | 0.423 (0.378–0.466) | 0.480 (0.427–0.534) | 0.821 (0.796–0.847) |
+| retfound_full | APTOS-internal | 0.783 (0.754–0.813) | 0.882 (0.858–0.905) | 0.632 (0.587–0.675) | 0.647 (0.598–0.696) | 0.900 (0.872–0.927) |
+| retfound_full | Messidor-2 | 0.624 (0.601–0.647) | 0.487 (0.436–0.533) | 0.368 (0.323–0.410) | 0.350 (0.313–0.390) | 0.750 (0.725–0.772) |
+| retfound_full | IDRiD | 0.451 (0.407–0.499) | 0.744 (0.699–0.787) | 0.419 (0.376–0.463) | 0.511 (0.463–0.556) | 0.819 (0.793–0.845) |
 
 ## 2. Internal->external drop with 95% CI (QWK)
 
@@ -29,8 +29,8 @@ _Generated 2026-09-08T11:14:30+00:00. Percentile bootstrap, B=2000, seed=42, two
 | baseline_resnet50 | IDRiD | 0.875 | 0.707 | 0.167 (0.117–0.222) |
 | retfound_linprobe | Messidor-2 | 0.847 | 0.394 | 0.453 (0.393–0.516) |
 | retfound_linprobe | IDRiD | 0.847 | 0.626 | 0.221 (0.163–0.285) |
-| retfound_full | Messidor-2 | 0.869 | 0.368 | 0.501 (0.441–0.563) |
-| retfound_full | IDRiD | 0.869 | 0.720 | 0.150 (0.101–0.202) |
+| retfound_full | Messidor-2 | 0.882 | 0.487 | 0.395 (0.345–0.449) |
+| retfound_full | IDRiD | 0.882 | 0.744 | 0.139 (0.090–0.191) |
 
 ## 3. Difference in QWK drop vs the EfficientNet-B3 baseline
 
@@ -42,8 +42,8 @@ Positive = the model lost *more* ordinal agreement than the baseline on that ext
 | baseline_resnet50 | IDRiD | 0.167 | 0.116 | 0.051 (0.003–0.102) | yes |
 | retfound_linprobe | Messidor-2 | 0.453 | 0.377 | 0.076 (0.019–0.132) | yes |
 | retfound_linprobe | IDRiD | 0.221 | 0.116 | 0.105 (0.038–0.170) | yes |
-| retfound_full | Messidor-2 | 0.501 | 0.377 | 0.124 (0.074–0.175) | yes |
-| retfound_full | IDRiD | 0.150 | 0.116 | 0.033 (-0.022–0.089) | no |
+| retfound_full | Messidor-2 | 0.395 | 0.377 | 0.018 (-0.024–0.058) | no |
+| retfound_full | IDRiD | 0.139 | 0.116 | 0.022 (-0.033–0.083) | no |
 
 ## 4. DeLong paired-AUC test (vs EfficientNet-B3 baseline)
 
@@ -53,12 +53,12 @@ Referable-DR (ICDR grade >= 2) binarisation; score = P(grade>=2).
 |---|---|--:|--:|--:|--:|--:|:--:|
 | APTOS-internal | baseline_resnet50 | 0.980 | 0.978 | -0.002 | 0.63 | 0.530 | ns |
 | APTOS-internal | retfound_linprobe | 0.980 | 0.976 | -0.003 | 0.72 | 0.474 | ns |
-| APTOS-internal | retfound_full | 0.980 | 0.978 | -0.002 | 0.44 | 0.660 | ns |
+| APTOS-internal | retfound_full | 0.980 | 0.967 | -0.013 | 1.70 | 0.089 | ns |
 | Messidor-2 | baseline_resnet50 | 0.842 | 0.789 | -0.053 | 5.19 | 0.000 | * |
 | Messidor-2 | retfound_linprobe | 0.842 | 0.781 | -0.060 | 4.74 | 0.000 | * |
-| Messidor-2 | retfound_full | 0.842 | 0.789 | -0.052 | 4.49 | 0.000 | * |
+| Messidor-2 | retfound_full | 0.842 | 0.817 | -0.025 | 2.28 | 0.023 | * |
 | IDRiD | baseline_resnet50 | 0.962 | 0.950 | -0.013 | 1.77 | 0.076 | ns |
 | IDRiD | retfound_linprobe | 0.962 | 0.903 | -0.059 | 4.88 | 0.000 | * |
-| IDRiD | retfound_full | 0.962 | 0.873 | -0.090 | 5.97 | 0.000 | * |
+| IDRiD | retfound_full | 0.962 | 0.885 | -0.077 | 5.12 | 0.000 | * |
 
-Full per-grade one-vs-rest DeLong results: `outputs/phase9/delong.csv`.
+Full per-grade one-vs-rest DeLong results: `outputs\phase9\delong.csv`.

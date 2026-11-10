@@ -1,25 +1,26 @@
-# Cross-Dataset External Validation of a Retinal Foundation Model for Diabetic Retinopathy Grading
-
-**Performance, explainability, and uncertainty under dataset shift**
+# Retinal foundation-model versus ImageNet pretraining for deep learning grading of diabetic retinopathy: an external validation study
 
 [![CI](https://github.com/Pravinraje0761/DIABETICS-AND-FUNDUS-IMAGES/actions/workflows/ci.yml/badge.svg)](https://github.com/Pravinraje0761/DIABETICS-AND-FUNDUS-IMAGES/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Reporting: TRIPOD+AI](https://img.shields.io/badge/reporting-TRIPOD%2BAI-informational.svg)
-![Paper: manuscript](https://img.shields.io/badge/paper-manuscript-lightgrey.svg)
+![Status: preprint](https://img.shields.io/badge/status-preprint-lightgrey.svg)
 
-Retinal foundation models such as **RETFound** are promoted as improving generalisation.
-This study tests that claim for five-class diabetic retinopathy (DR) grading under fully
-matched conditions. One preprocessing pipeline, one fine-tuning protocol and one evaluation
-protocol are applied identically to an ImageNet-pretrained CNN and to RETFound. Both are
-trained on **APTOS 2019** and then evaluated, unchanged and once, on two independent external
-datasets: **Messidor-2** and **IDRiD**.
+Companion repository for the manuscript by **Pravin Raj E** (Department of Artificial
+Intelligence and Data Science, Chennai Institute of Technology, Chennai, India).
 
-**Result: RETFound did not generalise better. On the pre-specified contrasts, it generalised
-worse.** Every model degraded sharply on external data. Predictive uncertainty was a weak
-safeguard under that shift.
+Retinal foundation models such as **RETFound** are expected to make diabetic retinopathy (DR)
+grading more robust to a change of camera, population or grading protocol. This study tests
+that expectation. RETFound (frozen linear probe and full fine-tuning), EfficientNet-B3 and
+ResNet-50 were developed on **APTOS 2019** and evaluated, unchanged, on two independent
+external datasets: **Messidor-2** (adjudicated specialist grades) and the official **IDRiD**
+release.
 
-> **Not for clinical use.** Retrospective study on public datasets; no prospective or
-> clinical validation. See [Limitations](#limitations).
+**Result: retinal foundation-model pretraining did not reduce the loss of grading agreement on
+external data.** External performance varied between training runs and was closely tied to case
+mix and to the no-DR/mild boundary.
+
+> **Not for clinical use.** Retrospective study of public, de-identified datasets; no prospective
+> or clinical validation. See [Limitations](#limitations).
 
 ---
 
@@ -27,86 +28,65 @@ safeguard under that shift.
 
 ```mermaid
 flowchart LR
-    A["APTOS 2019<br/>n = 3,662"] -->|"stratified 70 / 10 / 20<br/>seed 42"| B["Train · Validate · Internal test"]
-    B --> C["EfficientNet-B3 / ResNet-50<br/>(ImageNet-pretrained)"]
-    B --> D["RETFound ViT-L/16<br/>linear probe · full fine-tune"]
-    C --> E{"Evaluate once,<br/>no further tuning"}
-    D --> E
-    E --> F["Messidor-2<br/>n = 1,744<br/>adjudicated grades"]
-    E --> G["IDRiD<br/>n = 455"]
+    A["APTOS 2019<br/>n = 3,662<br/>(internal test n = 692)"] --> B["EfficientNet-B3 (4 runs) · ResNet-50<br/>RETFound linear probe (4 runs)<br/>RETFound full fine-tune (3 runs)<br/>+ label-smoothing and crossed-recipe controls"]
+    B --> C{"Every trained model scored unchanged<br/>no re-training, re-calibration<br/>or threshold tuning"}
+    C --> D["Messidor-2<br/>n = 1,744 (874 examinations)<br/>adjudicated grades"]
+    C --> E["IDRiD (official release)<br/>n = 516"]
 ```
 
-Messidor-2 and IDRiD were not used for any modelling or tuning decision before the single
-external evaluation.
+- **Primary outcome:** difference in internal-to-external quadratic weighted kappa (QWK) drop
+  versus EfficientNet-B3, averaged over training runs. Inference uses a two-level bootstrap
+  (training runs and images; Messidor-2 resampled by examination using the official ADCIS
+  examination file) with Holm adjustment over the four RETFound contrasts.
+- **Secondary outcomes:** referable-DR (grade ≥ 2) sensitivity, specificity, PPV, NPV and AUC;
+  case-mix and no-DR/mild boundary analysis; calibration; uncertainty-based referral; saliency
+  localisation against expert lesion masks (IDRiD Segmentation, n = 81).
+- Changes to the original analysis plan, with the original results, are listed in the manuscript
+  (Methods, "Changes to the analysis plan") and Online Resource 1 (S0).
 
 ## Key findings
 
-1. **No generalisation advantage for the foundation model.** RETFound's internal-to-external
-   QWK drop on Messidor-2 was significantly larger than the CNN baseline's: +0.124 (95% CI
-   0.074–0.175) for full fine-tuning and +0.076 (0.019–0.132) for linear probing.
-2. **The CNN separates referable DR better on external data.** EfficientNet-B3 had a
-   significantly higher referable-DR (ICDR ≥ 2) AUC than every RETFound variant on both
-   external datasets (DeLong *p* < 0.001), despite parity internally (*p* ≥ 0.47).
-3. **Every model collapses on Messidor-2.** QWK fell from about 0.87 internally to 0.37–0.50,
-   with models reverting toward predicting grade 0.
-4. **Uncertainty is a weak safeguard under shift.** Entropy detected errors with AUROC up to
-   0.84 internally but only 0.55–0.68 externally. Referring the 10% most uncertain external
-   cases caught only 9–18% of errors, close to random referral.
-5. **Saliency shifts with the domain.** CNN saliency stayed on retinal tissue externally;
-   RETFound's moved to the image periphery on Messidor-2, most for its errors.
-6. **Partial counterpoint: calibration.** RETFound's probabilities stayed better calibrated
-   under shift (ECE 0.10–0.16 vs. 0.26–0.29 for the CNNs), though temperature scaling did not
-   close the discrimination gap.
-
-## Results
-
-### Master results (manuscript Table 2; 95% bootstrap CIs, B = 2000)
-
-| Model | Dataset | n | QWK | Accuracy | Macro AUC |
-|---|---|--:|---|---|---|
-| **EfficientNet-B3** (baseline) | APTOS internal | 733 | 0.876 (0.849–0.901) | 0.804 | 0.928 |
-| | Messidor-2 | 1,744 | 0.499 (0.452–0.543) | 0.626 | 0.775 |
-| | IDRiD | 455 | 0.760 (0.715–0.798) | 0.497 | 0.830 |
-| ResNet-50 (baseline) | APTOS internal | 733 | 0.875 (0.848–0.898) | 0.789 | 0.924 |
-| | Messidor-2 | 1,744 | 0.435 (0.381–0.481) | 0.614 | 0.754 |
-| | IDRiD | 455 | 0.707 (0.663–0.751) | 0.448 | 0.841 |
-| RETFound, linear probe | APTOS internal | 733 | 0.847 (0.819–0.873) | 0.759 | 0.908 |
-| | Messidor-2 | 1,744 | 0.394 (0.338–0.447) | 0.589 | 0.758 |
-| | IDRiD | 455 | 0.626 (0.572–0.676) | 0.336 | 0.778 |
-| RETFound, full fine-tune † | APTOS internal | 733 | 0.869 (0.842–0.893) | 0.769 | 0.915 |
-| | Messidor-2 | 1,744 | 0.368 (0.311–0.422) | 0.602 | 0.758 |
-| | IDRiD | 455 | 0.720 (0.673–0.759) | 0.420 | 0.821 |
-
-† Provisional: epoch-6 checkpoint (see [Limitations](#limitations)). The conclusion also
-holds for the linear probe, which ran to a clean early stop.
-
-### Internal-to-external QWK drop (manuscript Table 3)
-
-| Model | Messidor-2 drop | Δ vs. baseline | IDRiD drop | Δ vs. baseline |
-|---|---|---|---|---|
-| EfficientNet-B3 | 0.377 (0.323–0.433) | reference | 0.116 (0.068–0.166) | reference |
-| ResNet-50 | 0.440 (0.388–0.499) | +0.063 (0.017–0.109) | 0.167 (0.117–0.222) | +0.051 (0.003–0.102) |
-| RETFound, linear probe | 0.453 (0.393–0.516) | **+0.076 (0.019–0.132)** | 0.221 (0.163–0.285) | **+0.105 (0.038–0.170)** |
-| RETFound, full fine-tune † | 0.501 (0.441–0.563) | **+0.124 (0.074–0.175)** | 0.150 (0.101–0.202) | +0.033 (−0.022–0.089) |
-
-Difference-in-drop intervals are paired at the image level. An interval excluding 0 means a
-significantly larger loss of external agreement than the baseline.
-
-### Robustness of the conclusion
-
-| Check | Outcome | Outputs |
+| Comparison (vs EfficientNet-B3) | Messidor-2 | IDRiD |
 |---|---|---|
-| Training seed (4 seeds per model) | Messidor-2 drop 0.461 ± 0.017 (RETFound linear probe) vs. 0.379 ± 0.025 (CNN); seed distributions do not overlap | `outputs/phase16/` |
-| Loss function (weighted CE, plain CE, focal) | CNN keeps the smaller Messidor-2 drop under every loss; IDRiD is loss-sensitive and the ordering reverses there under plain CE | `outputs/phase17/` |
-| Referable DR as a binary task | RETFound's AUROC drop exceeds the baseline's on both external sets | `outputs/phase19/` |
-| Inference-time CLAHE, colour transfer, 224 vs. 384 px | Direction of the RETFound–CNN gap unchanged | `outputs/phase15/`, `outputs/phase15c/` |
-| Duplicate / leakage check | 0 byte-identical images across datasets; removing internal APTOS duplicates moves internal QWK by ≤ 0.006 | `outputs/phase12/`, `outputs/phase14/` |
-| Independent recompute | All 60 headline cells re-derived from prediction files, agreeing to < 5 × 10⁻⁴ | `outputs/phase11/verification.csv` |
+| RETFound full fine-tune, excess QWK drop (mean of 3 runs) | +0.068 (95% CI +0.003 to +0.134; Holm *p* = 0.074) | +0.020 (−0.041 to +0.080; Holm *p* = 0.550) |
+| RETFound linear probe, excess QWK drop (mean of 4 runs) | +0.085 (+0.021 to +0.146; Holm *p* = 0.039) | +0.094 (+0.034 to +0.155; Holm *p* = 0.016) |
+| Both trained with the RETFound recipe (seed 42) | +0.021 (−0.023 to +0.067) | +0.010 (−0.044 to +0.068) |
+| Both trained with the CNN recipe (seed 42) | +0.088 (+0.043 to +0.132) | −0.006 (−0.063 to +0.047) |
+
+1. **No robustness benefit from retinal pretraining.** Fine-tuned RETFound and EfficientNet-B3
+   were similar internally (QWK 0.888 vs 0.879); externally RETFound's drop was larger on
+   Messidor-2 (not significant after adjustment) and similar on IDRiD. Neither fine-tuning recipe
+   gave RETFound an advantage.
+2. **Single runs can mislead.** The first RETFound run suggested a Messidor-2 drop similar to the
+   CNN's; two further runs differing only in seed degraded more.
+3. **Errors concentrate at the no-DR/mild boundary.** On Messidor-2 every model preserved
+   specificity (90–98%) but referable-DR sensitivity was 36–43%; EfficientNet-B3 graded 259 of
+   270 mild and 249 of 347 moderate images as no DR. On IDRiD the errors went the other way.
+   Matching case mix and merging no and mild DR reduced the Messidor-2 drop by 63–69%. These
+   corrections are descriptive and cannot separate a grading-convention difference from poorer
+   visibility of subtle lesions.
+4. **RETFound's calibration advantage is a recipe effect.** Label smoothing alone reproduced it in
+   EfficientNet-B3, and RETFound trained without its usual recipe was over-confident externally.
+5. **Referral helps on one dataset only.** Referring the least confident 30% of images to a
+   grader cut missed referable DR on Messidor-2 from 61% to 28% (EfficientNet-B3), but gave no
+   benefit over random referral on IDRiD.
+6. **Saliency localises lesions weakly.** RETFound's maps separated lesion from background pixels
+   better than the CNN's (pixel AUC 0.668 vs 0.606), partly because of its finer grid; at most 19%
+   of the most salient pixels fell on lesions for any model.
+
+## Manuscript and supplementary material
+
+| Location | Contents |
+|---|---|
+| [`paper/submission_io_final/`](paper/submission_io_final/) | Journal version (Springer Nature template): manuscript PDF, Overleaf/LaTeX package, figures, Online Resources 1–4, cover letter, submission steps |
+| [`paper/preprint_biorxiv/`](paper/preprint_biorxiv/) | Preprint version (two-column layout) with LaTeX source and Online Resources |
+| [`paper/submission_io/generated/numbers.json`](paper/submission_io/generated/numbers.json) | Every number in the manuscript, generated by script from the prediction files |
 
 ## Reproducing the results
 
-Per-image predictions for every model × dataset are committed under `outputs/phase6/`, so all
-statistics and figures can be regenerated **without a GPU or the raw images**:
+Per-image predictions for every model, training run and dataset are committed under
+`outputs/phase6/` and `outputs/phase28/`, so every statistic, table and figure can be regenerated
+**without a GPU or the raw images**:
 
 ```bash
 git clone https://github.com/Pravinraje0761/DIABETICS-AND-FUNDUS-IMAGES.git
@@ -114,29 +94,33 @@ cd DIABETICS-AND-FUNDUS-IMAGES
 python -m venv .venv && source .venv/bin/activate     # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
-pytest                                                 # recomputes Table 2 and the DeLong tests
-python scripts/phase9_stats.py --boot 2000 --seed 42   # bootstrap CIs, drop CIs, DeLong
-python scripts/phase10_figures.py                      # figures
+pytest                                         # recomputes Table 3 and checks the generated numbers
+python scripts/phase31_paper_numbers.py --model baseline_efficientnet_b3   # one model's bootstrap
+python scripts/phase31_paper_numbers.py --merge                            # contrasts across models
+python scripts/phase32_tex_numbers.py          # writes every manuscript number as a LaTeX macro
+python scripts/phase33_figures.py              # Figures 1-5
 ```
 
-Retraining from scratch needs the raw datasets (see [Data](#data)), a GPU, and the gated
-RETFound weights ([`docs/phase_reports/PHASE5_SETUP.md`](docs/phase_reports/PHASE5_SETUP.md)).
-[`docs/PIPELINE.md`](docs/PIPELINE.md) lists every phase with its script and outputs, and the
-manuscript's reproducibility table maps each table and figure to its script.
+The Messidor-2 examination-level bootstrap needs the ADCIS examination file (`messidor-2.csv`,
+distributed with the Messidor-2 release; not redistributed here) copied to
+`data_splits/messidor2_official_pairs_adcis.csv`, then `python scripts/phase30b_official_pairs.py`.
 
-The original environment was Python 3.14 on Windows with PyTorch 2.11 (CUDA 12.8) on an RTX 5060
-(8 GB); `requirements.txt` pins these versions. CI runs the analysis tests on Python 3.12.
+Retraining needs the raw datasets (see [Data](#data)), a GPU and the gated RETFound weights
+([`docs/phase_reports/PHASE5_SETUP.md`](docs/phase_reports/PHASE5_SETUP.md)). The launchers
+`run_round3_gpu.bat`, `run_round4_gpu.bat` and `run_seedpreds_cpu.bat` give the exact arguments of
+every run (seeds, label-smoothing control, crossed recipes); `requirements-lock.txt` pins the full
+environment (Python 3.14, PyTorch 2.11, CUDA 12.8, RTX 5060). [`docs/PIPELINE.md`](docs/PIPELINE.md)
+lists every phase with its script and outputs. CI runs the tests on Python 3.12.
 
 ## Repository layout
 
 ```
 scripts/        one script per analysis phase, plus shared modules (preprocessing, metrics, models)
-data_splits/    fixed APTOS split and per-dataset manifests (image IDs, no images)
+data_splits/    fixed APTOS split and per-dataset manifests (image IDs only, no images)
 outputs/        per-image predictions, metrics, statistics and figures for every phase
-paper/          manuscript (main_standalone.tex), references, TRIPOD+AI checklist, figures
+paper/          journal and preprint versions, generated numbers, figures, references
 docs/           pipeline guide, analysis plan, phase reports, project notes
 tests/          recompute-the-paper tests and unit tests (run in CI)
-logs/           preprocessing and split configuration
 ```
 
 ## Data
@@ -149,37 +133,30 @@ access date, licence and citation for each.
 |---|--:|---|---|
 | APTOS 2019 Blindness Detection | 3,662 | Development only | Kaggle |
 | Messidor-2 (adjudicated grades, Krause et al. 2018) | 1,744 | External test | ADCIS |
-| IDRiD, Disease Grading | 455 of 516 | External test | IEEE DataPort |
+| IDRiD, Disease Grading (official release) | 516 | External test | IEEE DataPort |
+| IDRiD, Segmentation (lesion masks) | 81 | Saliency localisation | IEEE DataPort |
+
+An earlier version of the analysis used a third-party copy of IDRiD; 27 of its 455 labels (5.9%)
+differed from the official release. All results use the official release
+(`outputs/phase28/mirror_audit.md`).
 
 ## Limitations
 
-- The RETFound full fine-tune uses an epoch-6 checkpoint: two full 30-epoch runs were cut short
-  by hardware limits. Its values are marked provisional, and the conclusion also holds for the
-  linear probe. [`COLAB_RETRAIN_GUIDE.md`](COLAB_RETRAIN_GUIDE.md) describes the clean re-run.
-- Retrospective, public data only; no prospective or clinical-deployment claim.
-- The IDRiD mirror used had 455 of the 516 images.
-- Grade-1 (mild) sensitivity is not estimable on Messidor-2; some CIs are wide.
-- Saliency plausibility is scored by an automated location proxy, not by blinded expert graders.
-- One foundation model and one task; results should not be generalised beyond them without testing.
-
-The manuscript discusses each in full.
+- Retrospective study of curated public datasets; neither external set is a consecutive screening
+  population.
+- One retinal foundation model, one development dataset and one input resolution (224 × 224).
+- Three or four training runs per family estimate run-to-run variation imprecisely; the crossed-recipe
+  controls are single runs; the primary analysis was changed after the second RETFound run was seen
+  (both analyses are reported).
+- APTOS and IDRiD provide no patient identifiers.
+- The case-mix and no-DR/mild boundary corrections are descriptive.
+- Saliency was evaluated on 81 images from one dataset with one attribution method per family.
 
 ## Citation
 
-The manuscript is not yet published. Until it is, please cite the software:
-
-```bibtex
-@software{pravinraj_dr_external_validation_2026,
-  author = {Pravin Raj E},
-  title  = {Cross-Dataset External Validation of a Retinal Foundation Model for
-            Diabetic Retinopathy Grading: Performance, Explainability, and Uncertainty (code)},
-  year   = {2026},
-  url    = {https://github.com/Pravinraje0761/DIABETICS-AND-FUNDUS-IMAGES}
-}
-```
-
-GitHub's "Cite this repository" button uses [`CITATION.cff`](CITATION.cff). If you use the
-datasets or RETFound, please also cite their original papers (listed in `paper/references.bib`).
+The manuscript is not yet published. Until it is, please cite the software via GitHub's
+"Cite this repository" button ([`CITATION.cff`](CITATION.cff)). If you use the datasets or
+RETFound, please also cite their original papers (listed in `paper/submission_io_final/overleaf/references.bib`).
 
 ## License
 

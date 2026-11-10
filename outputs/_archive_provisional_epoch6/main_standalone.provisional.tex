@@ -1,0 +1,1801 @@
+% =============================================================================
+% Cross-Dataset External Validation of a Retinal Foundation Model for Diabetic
+% Retinopathy Grading: Performance, Explainability, and Uncertainty
+%
+% Template: IEEEtran (two-column journal style). IEEEtran.cls ships with every
+% standard TeX Live / MiKTeX install; else CTAN: https://ctan.org/pkg/ieeetran
+% This layout suits IEEE J-BHI / IEEE Access / IEEE TMI. For a fast-turnaround
+% MDPI venue (Diagnostics, Journal of Imaging), swap the class for mdpi.cls and
+% move title/author/abstract/keywords into its macros; the body needs no change.
+%
+% Compile: pdflatex main_standalone && bibtex main_standalone
+%          && pdflatex main_standalone && pdflatex main_standalone
+% =============================================================================
+\documentclass[journal]{IEEEtran}
+
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning}
+\usepackage[hidelinks]{hyperref}
+
+% This paper is table/figure dense; loosen LaTeX's two-column float placement so
+% the spanning table*/figure* floats do not pile up at the end.
+\setcounter{topnumber}{3}
+\setcounter{bottomnumber}{2}
+\setcounter{totalnumber}{5}
+\setcounter{dbltopnumber}{3}
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\bottomfraction}{0.7}
+\renewcommand{\textfraction}{0.07}
+\renewcommand{\floatpagefraction}{0.7}
+\renewcommand{\dbltopfraction}{0.9}
+\renewcommand{\dblfloatpagefraction}{0.7}
+
+% Provisional value: from a RETFound full fine-tuning run stopped at epoch 6 of a
+% planned 30 (two completion attempts curtailed by hardware limits; the second
+% converged to the same validation QWK). See Limitations.
+\newcommand{\pv}[1]{#1\textsuperscript{p}}
+
+% Layout safety: let long file paths in \texttt break after "_" and "/",
+% and give TeX a little extra stretch before it lets a line run into the margin.
+\let\origunderscore\_
+\renewcommand{\_}{\origunderscore\allowbreak}
+\setlength{\emergencystretch}{1.5em}
+
+\begin{document}
+
+\title{Cross-Dataset External Validation of a Retinal Foundation Model for
+Diabetic Retinopathy Grading: Performance, Explainability, and Uncertainty}
+
+% >>> BEFORE SUBMISSION: replace with full legal name, affiliation,
+% >>> city/country, and ORCID iD. A single given name and a bare
+% >>> "Independent Researcher" line will be flagged by most Q1/Q2 journal
+% >>> editorial checks; several journals now require an ORCID iD.
+\author{Pravin%
+\thanks{Full legal name, affiliation, city/country, and ORCID iD to be supplied
+before submission. Independent Researcher. Correspondence:
+\texttt{epravinraj0761@gmail.com}}%
+\thanks{This work received no external funding and used only publicly available
+datasets, one gated pretrained checkpoint (RETFound), and a single consumer GPU.}}
+
+\markboth{Preprint --- under review}%
+{Pravin: Cross-Dataset External Validation of a Retinal Foundation Model for DR Grading}
+
+\maketitle
+
+\begin{abstract}
+Retinal foundation models such as RETFound are promoted as improving
+generalisation, yet protocol-matched external validation for diabetic
+retinopathy (DR) grading remains scarce. We report a controlled cross-dataset
+study applying one preprocessing, fine-tuning, and evaluation protocol
+identically to an ImageNet-pretrained CNN baseline (EfficientNet-B3) and to
+RETFound (ViT-Large/16, masked-autoencoder pretraining on $\approx$1.6\,M
+fundus images), fine-tuned on APTOS~2019 ($n=3662$) and evaluated
+\emph{unchanged} on Messidor-2 ($n=1744$, adjudicated reference standard) and
+IDRiD ($n=455$). The primary metric is the quadratic-weighted kappa (QWK),
+reported as its internal-to-external drop and the between-model difference in
+that drop, each with a bootstrap $95\%$ CI. Internally the CNN baseline and
+RETFound are comparable (QWK $0.876$ vs.\ \pv{$0.869$}). Externally
+\emph{every} model degrades substantially, most on Messidor-2 (baseline QWK
+$0.499$, drop $0.377$). RETFound does not generalise better; on the
+pre-specified contrasts it generalises \emph{worse}: its Messidor-2 QWK drop
+exceeds the baseline's by \pv{$+0.124$} ($95\%$ CI $[0.074,0.175]$), and the
+baseline has significantly higher referable-DR AUC on both external sets
+(DeLong $p<0.001$) despite parity internally ($p\geq0.47$). Convolutional
+saliency stays lesion-focused externally ($90$--$100\%$ proxy-plausible);
+RETFound's shifts to the image periphery on Messidor-2, most for its errors.
+Predictive entropy is a weak external error detector for every model (AUROC
+$0.55$--$0.68$ vs.\ up to $0.84$ internally, capturing only $9$--$18\%$ of
+errors at $10\%$ referral), and RETFound's entropy is uninformatively flat
+across DR grades. In partial counterpoint, RETFound's label-smoothed
+probabilities remain better calibrated under shift (ECE $\approx0.10$--$0.16$
+vs.\ CNN $\approx0.26$--$0.29$) than its discrimination would suggest, though
+temperature scaling does not fix this. The RETFound--CNN gap held as a
+standalone binary referable-DR task, and a domain-shift out-of-distribution
+detector fared no better than entropy at flagging external errors.
+In a frozen-feature sweep of classifier-head depth ($0$--$7$ hidden layers) and activation, none of $21$ head configurations closed the Messidor-2 gap, although the IDRiD difference shrank to a near-tie when both linear heads were re-fitted under one protocol.
+Fine-tuning a retinal foundation model on APTOS did not improve, and by
+several measures worsened, cross-dataset DR-grading discrimination relative
+to a standard ImageNet CNN; external validation, not internal performance,
+should govern claims of clinical readiness.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Diabetic retinopathy, retinal foundation models, RETFound, external validation,
+domain shift, quadratic-weighted kappa, explainability, uncertainty
+quantification, retinal imaging.
+\end{IEEEkeywords}
+
+\IEEEpeerreviewmaketitle
+
+
+\section{Introduction}
+\label{sec:intro}
+
+Diabetic retinopathy (DR) is a leading cause of preventable vision loss, and
+automated grading of colour fundus photographs has been studied extensively as a
+route to scalable screening \cite{gulshan2016,ting2017}. Reported internal
+performance is frequently high, but models often degrade when applied to images
+from cameras, populations, or grading protocols not seen during training
+\cite{beede2020,dai2021spectrum}. Rigorous external validation on independent
+datasets is therefore the appropriate evidence standard, yet it is inconsistently
+reported \cite{grzybowski2020review,tripodai2024}.
+
+Self-supervised ``foundation models'' pretrained on large unlabelled corpora have
+been proposed to improve label efficiency and robustness. RETFound
+\cite{zhou2023retfound} is a masked-autoencoder \cite{he2022mae} Vision
+Transformer \cite{dosovitskiy2021vit} pretrained on approximately $1.6$~million
+retinal images and reported to transfer well to several ocular and systemic
+disease tasks.
+
+\textbf{Gap and novelty.} Prior studies establish that retinal foundation models
+perform well on their reported benchmarks, and separate work establishes that
+DR classifiers degrade across populations. What is missing is a rigorous
+\emph{cross-dataset} evaluation of a retinal foundation model against a strong
+ImageNet-pretrained baseline \emph{under fully matched conditions} --- one
+preprocessing pipeline, one fine-tuning protocol, one evaluation protocol, one
+statistical treatment --- with the internal-to-external performance drop, and the
+difference in that drop between models, as the pre-specified inferential
+quantities. That is the contribution here; whether retinal-domain pretraining
+confers better cross-dataset generalisation for DR severity grading than the
+standard baseline has not been independently established this way.
+
+We frame three research questions.
+\begin{itemize}
+  \item \textbf{RQ1 (Performance).} Does a fine-tuned retinal foundation model
+    (RETFound) generalise better than an ImageNet-pretrained CNN to external
+    datasets (Messidor-2, IDRiD) for five-class DR grading, measured primarily by
+    the internal-to-external drop in quadratic-weighted kappa?
+  \item \textbf{RQ2 (Explainability).} Are the image regions driving each
+    model's predictions more clinically plausible --- overlapping visible DR
+    lesions rather than the optic disc, vasculature, or image border --- for one
+    model than the other, on external images?
+  \item \textbf{RQ3 (Uncertainty).} Does predictive uncertainty separate
+    correctly from incorrectly classified external images, and can an uncertainty
+    threshold support selective prediction that meaningfully raises accuracy on
+    accepted cases?
+\end{itemize}
+
+\textbf{Contributions.} We present a fully reproducible external-validation study
+in which one preprocessing pipeline, one training protocol, and one evaluation
+protocol are applied identically to an ImageNet CNN baseline and to RETFound. We:
+\begin{itemize}
+  \item fine-tune EfficientNet-B3 (primary), ResNet-50 (secondary), and RETFound
+    in two variants (linear probing and full fine-tuning) on APTOS~2019 only,
+    with an identical loss, augmentation, and early-stopping rule, so the models
+    are directly comparable;
+  \item evaluate all models \emph{once}, unchanged, on Messidor-2 and IDRiD, and
+    report the master results table across one internal and two external datasets
+    with $95\%$ bootstrap confidence intervals for every metric;
+  \item report the internal-to-external QWK drop for each model \emph{and} the
+    paired, image-level difference in that drop between RETFound and the
+    EfficientNet-B3 baseline, so that ``RETFound generalises better'' is a
+    measured contrast with a confidence interval, not an assertion;
+  \item compare the two model families with DeLong's test on the clinically
+    standard referable-DR binarisation, internally and externally;
+  \item assess explainability with method-matched class-activation mapping
+    (Grad-CAM++ for the CNN, patch-token Grad-CAM for the ViT) against an
+    a-priori plausibility rubric scored by a transparent automated proxy, show
+    the foundation model's saliency degrades under the harder shift, and release
+    a blinded expert-rating packet and scorer for a two-rater confirmation of
+    that proxy;
+  \item quantify predictive uncertainty (predictive entropy; $T=20$ Monte-Carlo
+    dropout as a sensitivity analysis, applied both to the uncertainty analysis
+    and to a full re-run of the statistical pipeline) as an error detector and as
+    a selective-prediction operating characteristic, with a per-ICDR-grade
+    breakdown;
+  \item release all code, split image-ID lists, and per-image prediction logs, so
+    that every number in this paper can be regenerated from the public data
+    (Section~\ref{sec:repro}).
+\end{itemize}
+
+\textbf{Scope.} This is a retrospective study on public benchmark images. We
+compare \emph{one} retinal foundation-model checkpoint (RETFound MAE,
+colour-fundus weights) against ImageNet CNNs on \emph{one} downstream task
+(five-class DR grading); nothing here is a prospective, clinical, or reader-study
+result, and the conclusion should not be generalised to other retinal foundation
+models or tasks without direct testing. Our central finding is negative: under
+matched conditions, RETFound did not outperform the CNN baseline on external DR
+grading, and on the pre-specified contrasts it underperformed.
+
+\begin{figure*}[!t]
+\centering
+\footnotesize
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+  node distance=3.4mm and 6mm,
+  box/.style={draw, rounded corners=2pt, align=center, inner sep=3pt, minimum height=9mm, font=\footnotesize},
+  dev/.style={box, fill=green!8},
+  ext/.style={box, fill=red!7},
+  proc/.style={box, fill=blue!6},
+  eval/.style={box, fill=orange!10},
+  >={Stealth[length=2mm]}]
+\node[dev] (aptos) {APTOS 2019\\{\scriptsize $n=3662$ --- DEVELOPMENT ONLY}};
+\node[ext, below=6mm of aptos] (mess) {Messidor-2\\{\scriptsize $n=1744$ --- EXTERNAL TEST}};
+\node[ext, below=6mm of mess] (idrid) {IDRiD\\{\scriptsize $n=455$ --- EXTERNAL TEST}};
+\node[proc, right=12mm of mess] (pre) {single preprocessing\\{\scriptsize crop $\cdot$ pad $\cdot$ $224^2$ $\cdot$ ImageNet norm}};
+\node[proc, right=12mm of pre, yshift=7mm] (split) {APTOS split\\{\scriptsize 70/10/20, stratified, seed 42}};
+\node[proc, right=12mm of pre, yshift=-11mm] (ft) {fine-tune on APTOS train\\{\scriptsize EfficientNet-B3 / ResNet-50 (ImageNet)}\\{\scriptsize RETFound ViT-L (lin.\ probe + full)}};
+\node[eval, right=12mm of split] (int) {internal test\\{\scriptsize APTOS $n=733$, same code path}};
+\node[eval, right=12mm of ft] (extv) {EXTERNAL VALIDATION\\{\scriptsize models unchanged, one run}};
+\node[eval, below=7mm of extv, text width=82mm] (an)
+ {explainability (Grad-CAM++ / ViT Grad-CAM) $\cdot$ predictive uncertainty
+  (entropy, selective prediction) $\cdot$ bootstrap $95\%$ CIs $\cdot$ DeLong test};
+\draw[->] (aptos) -- (pre);
+\draw[->] (mess) -- (pre);
+\draw[->] (idrid) -- (pre);
+\draw[->] (pre) -- (split);
+\draw[->] (pre) -- (ft);
+\draw[->] (split) -- (ft);
+\draw[->] (split) -- (int);
+\draw[->] (ft) -- (extv);
+\draw[->] (ft) -- (an);
+\draw[->] (extv) -- (an);
+\end{tikzpicture}%
+}
+\caption{Study design. APTOS~2019 is used only for development (stratified
+$70/10/20$ split); Messidor-2 and IDRiD are held out and opened once, for every
+model, at external validation. One preprocessing pipeline, one fine-tuning
+protocol, and one evaluation protocol are applied identically to the
+ImageNet-pretrained CNNs and to RETFound.}
+\label{fig:pipeline}
+\end{figure*}
+
+
+\section{Related Work}
+\label{sec:related}
+
+\textbf{Deep learning for DR grading.} Automated DR detection from fundus
+photographs reached clinical attention with large supervised systems
+\cite{gulshan2016,ting2017}, and a deep learning system spanning the full disease
+spectrum has since been reported \cite{dai2021spectrum}. Human-centred
+evaluations of deployed DR screening AI have documented that curated-test
+performance is a poor guide to behaviour in clinics \cite{beede2020}, and reviews
+of AI for DR screening repeatedly flag generalisability and external validation
+as under-reported \cite{grzybowski2020review}.
+
+\textbf{Retinal foundation models.} RETFound \cite{zhou2023retfound} adapts the
+masked-autoencoder pretraining recipe \cite{he2022mae} to a Vision Transformer
+\cite{dosovitskiy2021vit} on $\approx$1.6\,M colour fundus and OCT images and
+reports strong transfer to several ocular and systemic tasks. Its value for
+\emph{cross-dataset} DR severity grading, against a matched ImageNet baseline,
+has not been independently tested; that is the gap this paper addresses.
+
+\textbf{Baselines.} ResNet-50 \cite{he2016resnet} and EfficientNet-B3
+\cite{tan2019efficientnet}, pretrained on ImageNet, are the standard reference
+points against which pretrained representations for medical imaging are measured.
+
+\textbf{Reporting and evaluation methodology.} We follow the TRIPOD+AI reporting
+guideline for prediction-model studies \cite{tripodai2024}. The primary metric is
+the quadratic-weighted kappa \cite{cohen1968kappa}, which credits ordinal
+proximity and is robust to the severe class imbalance of every DR dataset.
+Confidence intervals are obtained by non-parametric bootstrap
+\cite{efron1994bootstrap}; paired areas under the ROC curve are compared with
+DeLong's test \cite{delong1988} in its fast midrank implementation
+\cite{sun2014fast}. Explanations use Grad-CAM++ \cite{chattopadhay2018gradcampp}
+for the CNN and, for the transformer, a patch-token Grad-CAM with attention
+rollout \cite{abnar2020rollout} reported as a supplement. Predictive uncertainty
+is quantified with Monte-Carlo dropout \cite{gal2016dropout}.
+
+\textbf{Positioning.} We make no claim of being first to externally validate DR
+AI or to evaluate RETFound. The contribution is a specific, reproducible
+combination: a matched preprocessing/fine-tuning/evaluation protocol applied to
+one foundation model and two ImageNet CNNs, with the internal-to-external drop
+and the between-model difference in that drop --- each with a bootstrap CI --- as
+the primary inferential quantities, plus matched explainability and uncertainty
+analyses and a full code and per-image-prediction release.
+
+
+\section{Materials and Methods}
+\label{sec:methods}
+
+This study followed the TRIPOD+AI reporting guideline \cite{tripodai2024}; the
+completed checklist is provided as supplementary material
+(\texttt{paper/\allowbreak{}TRIPOD-AI\_checklist.md}). Figure~\ref{fig:pipeline} summarises the
+design: freeze the datasets into development and external roles, apply one
+preprocessing pipeline, fine-tune every model on APTOS only, and evaluate once
+externally with a common resampling-based statistical treatment.
+
+\subsection{Datasets}
+\label{sec:methods-data}
+
+Three public datasets were used (Table~\ref{tab:datasets};
+Figure~\ref{fig:grades}). Full provenance (source URL, version, access date,
+licence, citation) is recorded in the data provenance log
+(\texttt{DATA\_PROVENANCE.md}).
+
+\begin{itemize}
+  \item \textbf{APTOS 2019 Blindness Detection} \cite{aptos2019}: $3662$
+    macula-centred colour fundus images from Aravind Eye Hospital, India, graded
+    0--4 on the International Clinical DR (ICDR) severity scale. Used
+    \emph{only} for model development (training, validation, internal test).
+  \item \textbf{Messidor-2} \cite{decenciere2014,abramoff2013}: $1744$ images
+    with an adjudicated consensus reference standard \cite{krause2018}. External
+    test only.
+  \item \textbf{IDRiD} (Disease Grading subset) \cite{porwal2018,porwal2020}: a
+    $455$-image subset of the $516$-image official release with ICDR 0--4 grades
+    (the local mirror was incomplete; treated as a stated limitation). External
+    test only.
+\end{itemize}
+
+Messidor-2 and IDRiD were not inspected or used for any modelling or
+hyperparameter decision until the single external evaluation
+(Section~\ref{sec:methods-ext}).
+
+\begin{table}[!t]
+\centering\small
+\caption{Dataset characteristics. Grade share is the percentage of gradable
+images at each ICDR severity level. See Figure~\ref{fig:grades} for a visual
+comparison.}
+\label{tab:datasets}
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lrlc}
+\toprule
+Dataset & $n$ & Role & Grades 0/1/2/3/4 (\%) \\
+\midrule
+APTOS 2019 & $3662$ & Development   & 49.3/10.1/27.3/5.3/8.1 \\
+Messidor-2 & $1744$ & External test & 58.3/15.5/19.9/4.3/2.0 \\
+IDRiD      & $455$  & External test & 28.4/4.8/34.3/18.5/14.1 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\linewidth,height=0.30\textheight,keepaspectratio]{figures/fig_grades.pdf}
+\caption{ICDR grade distribution by dataset. APTOS and Messidor-2 are
+grade-0-dominated; IDRiD is pathology-enriched (modal grade 2), which shapes the
+interpretation of its internal-to-external drop
+(Section~\ref{sec:results-ext}).}
+\label{fig:grades}
+\end{figure}
+
+\subsection{Domain-shift characterisation}
+\label{sec:methods-shift}
+
+Table~\ref{tab:shift} contrasts the three datasets on the acquisition and
+labelling axes that plausibly drive the external drop: country and population,
+camera and mydriasis, native resolution and field of view, illumination/colour
+uniformity, image quality, DR-grade prevalence, and the reference standard. The
+two external sets differ from APTOS in complementary ways: Messidor-2 shares the
+$\approx$45$^\circ$ macula-centred geometry and has a \emph{lower} referable-DR
+prevalence but a stricter, adjudicated-consensus reference standard, whereas IDRiD
+differs most on resolution, mydriasis, and prevalence (referable-DR $67.6\%$
+versus $40.7\%$ in APTOS). Section~\ref{sec:results-ext} interprets the two
+failure modes against this table.
+
+\begin{table*}[!t]
+\centering\footnotesize
+\caption{Domain-shift characterisation of the three datasets, compiled from the
+dataset publications and \texttt{DATA\_PROVENANCE.md}. ``Reference standard'' is
+the labelling process; ``Referable DR'' is the fraction of gradable images at
+ICDR grade $\geq 2$.}
+\label{tab:shift}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.17\textwidth} >{\raggedright\arraybackslash}p{0.25\textwidth} >{\raggedright\arraybackslash}p{0.25\textwidth} >{\raggedright\arraybackslash}p{0.25\textwidth}@{}}
+\toprule
+Axis & APTOS 2019 (development) & Messidor-2 (external) & IDRiD (external) \\
+\midrule
+Country / population & India, Aravind Eye Hospital telescreening & France, Messidor programme partners & India, Kasturba Medical College, Manipal \\
+Camera & multiple, not individually published & Topcon TRC NW6, non-mydriatic & Kowa VX-10$\alpha$ / Nidek AFC-210 \\
+Mydriasis & mixed / not published & non-mydriatic & mydriatic \\
+Native resolution & heterogeneous, $\approx$1.5--3\,MP & 1440$\times$960 to 2304$\times$1536 & 4288$\times$2848 \\
+Field of view & $\approx$45$^\circ$, macula-centred & $\approx$45$^\circ$, macula-centred & 50$^\circ$, macula-centred \\
+Illumination / colour & variable across sites & more uniform (one programme) & high, uniform \\
+Image quality & variable; low-quality frames retained & curated, adjudicated-gradable only & high and uniform \\
+Grade prevalence 0/1/2/3/4 (\%) & 49.3 / 10.1 / 27.3 / 5.3 / 8.1 & 58.3 / 15.5 / 19.9 / 4.3 / 2.0 & 28.4 / 4.8 / 34.3 / 18.5 / 14.1 \\
+Referable DR ($\geq 2$), \% & 40.7 & 26.2 & 67.6 \\
+Reference standard & single grader (Kaggle labels) & \textbf{adjudicated consensus} \cite{krause2018} & expert consensus (release) \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\subsection{Preprocessing}
+\label{sec:methods-pre}
+
+A single preprocessing script was applied identically to all three datasets:
+(i) conversion to RGB; (ii) tolerance-based cropping of the black frame around the
+circular fundus; (iii) zero-padding to a centred square (aspect ratio preserved);
+(iv) bilinear resizing to $224\times224$ (RETFound's native input). Channel
+normalisation used ImageNet statistics
+($\mu=(0.485,0.456,0.406)$, $\sigma=(0.229,0.224,0.225)$), consistent with
+RETFound's downstream configuration. Contrast-limited adaptive histogram
+equalisation was implemented as an optional step and was \emph{not} applied in the
+primary analysis. Messidor-2's mirror mixes vendor-preprocessed and original
+frames in one folder; the single pipeline was applied to all $1744$ images
+regardless of source form. All $5861$ preprocessed images passed a stratified
+visual audit for label--image alignment.
+
+\subsection{Development split}
+\label{sec:methods-split}
+
+APTOS~2019 was partitioned $70\%/10\%/20\%$ into training, internal validation,
+and internal test, stratified by DR grade, with a fixed random seed ($42$); the
+exact image-ID lists are released
+(\texttt{data\_splits/\allowbreak{}aptos\_\{train,val,test\}.csv}). Table~\ref{tab:counts}
+gives the per-split, per-grade image counts.
+
+\textbf{Duplicate / leakage check.} A byte-level (MD5) check of all $5861$
+preprocessed images (\texttt{scripts/\allowbreak{}phase12\_leakage.py}) found \emph{no}
+exact-duplicate image shared between any two of the three datasets: Messidor-2 and
+IDRiD contain no byte-copy of an APTOS image or of each other, so the external
+validation is uncontaminated. Within APTOS, which is known to contain repeated
+images, $41$ of the $733$ internal-test images ($5.6\%$) have an exact duplicate
+in the training or validation split. Removing them changes the internal-test QWK
+by $+0.001$ to $+0.006$ and accuracy by $+0.007$ to $+0.013$ for every model (the
+duplicated images were slightly harder than average, so the leakage marginally
+\emph{understates} internal performance rather than inflating it); the direction
+of every internal comparison is unchanged
+(\texttt{outputs/\allowbreak{}phase12/\allowbreak{}dedup\_internal\_metrics.csv}). All external numbers,
+which are the paper's focus, are unaffected. A semantic near-duplicate check
+(ImageNet-pretrained EfficientNet-B3 features, $1536$-d, cosine similarity over
+all cross-dataset image pairs; \texttt{scripts/\allowbreak{}phase14\_embedding\_dedup.py})
+supports the byte-level result: no cross-dataset pair exceeded cosine $0.965$ and
+none reached $0.98$, with no cluster near $1.0$, i.e.\ no evidence of
+semantically duplicated images across datasets
+(\texttt{outputs/\allowbreak{}phase14/\allowbreak{}}).
+
+\begin{table}[!t]
+\centering\small
+\caption{Image counts by split and ICDR grade. APTOS is split
+$70/10/20$ stratified by grade (seed $42$); Messidor-2 and IDRiD are used whole
+as external test sets.}
+\label{tab:counts}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lrrrrrr}
+\toprule
+Split & $n$ & g0 & g1 & g2 & g3 & g4 \\
+\midrule
+APTOS train & 2562 & 1263 & 259 & 699 & 135 & 206 \\
+APTOS validation & 367 & 181 & 37 & 100 & 19 & 30 \\
+APTOS internal test & 733 & 361 & 74 & 200 & 39 & 59 \\
+\midrule
+Messidor-2 (external) & 1744 & 1017 & 270 & 347 & 75 & 35 \\
+IDRiD (external) & 455 & 129 & 22 & 156 & 84 & 64 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Models and fine-tuning}
+\label{sec:methods-models}
+
+\textbf{Baseline CNN.} EfficientNet-B3 \cite{tan2019efficientnet} (primary) and
+ResNet-50 \cite{he2016resnet} (secondary), ImageNet-pretrained
+(\texttt{torchvision}), with the classifier head replaced by a five-way head.
+Full fine-tuning (all layers unfrozen), AdamW ($\text{lr}=10^{-4}$, weight decay
+$10^{-4}$), cosine annealing, batch size $32$, mixed precision, up to $30$ epochs
+with early stopping on internal-validation QWK (patience $7$). The loss was
+cross-entropy weighted by inverse class frequency. Augmentation:
+horizontal/vertical flips, $\pm15^{\circ}$ rotation, mild brightness/contrast
+jitter.
+
+\textbf{RETFound.} The ViT-Large/16 masked-autoencoder checkpoint pretrained on
+colour fundus images \cite{zhou2023retfound} was loaded (encoder weights only;
+pretrained final LayerNorm reused as the pooling norm; fresh five-way head). Two
+variants were fine-tuned, forming the principal ablation: (a) \emph{linear
+probing} --- backbone frozen, head trained (base $\text{lr}=10^{-3}$, up to $40$
+epochs); (b) \emph{full fine-tuning} --- all layers unfrozen with layer-wise
+learning-rate decay ($0.65$), drop-path $0.2$, label smoothing $0.1$, base
+$\text{lr}=10^{-4}$, batch size $16$, up to $30$ epochs. Data, normalisation,
+class weighting, metric set, and early-stopping rule were identical to the
+baseline. All hyperparameters are logged
+(\texttt{outputs/\allowbreak{}phase\{4,5\}\_*/\allowbreak{}\,*\_hyperparams.json}).
+
+\subsection{Evaluation metrics}
+\label{sec:methods-metrics}
+
+Given the marked class imbalance in every dataset, the primary metric was the
+quadratic-weighted kappa (QWK) \cite{cohen1968kappa}, which credits ordinal
+proximity. Secondary metrics: overall accuracy, macro-averaged F1, balanced
+accuracy, per-class sensitivity and specificity, and one-vs-rest AUC (per class
+and macro-averaged). The internal-to-external \emph{drop} in each metric is
+reported per model per external dataset.
+
+\subsection{External validation}
+\label{sec:methods-ext}
+
+Each trained model was run once, unmodified and without any further training or
+threshold tuning, on Messidor-2 and on IDRiD, and re-scored on the APTOS internal
+test set through the identical inference code path. Per-image outputs (true label,
+predicted label, class probabilities, predictive entropy) were retained for all
+model $\times$ dataset combinations.
+
+\subsection{Explainability}
+\label{sec:methods-explain}
+
+For a grade-stratified sample of correctly and incorrectly classified external
+images (image identifiers drawn from the external-validation prediction files with
+a fixed seed; forty correct and twenty-five incorrect per model per external
+dataset, $65$ per cell), a saliency map was generated for the model's predicted
+class. For the
+convolutional networks this was a Grad-CAM++ map
+\cite{chattopadhay2018gradcampp} at the last convolutional block; for the Vision
+Transformer it was a method-matched Grad-CAM map at the last transformer block
+(gradient-weighted patch-token activations for the predicted class, class token
+removed, reshaped to the $14\times14$ patch grid and bilinearly upsampled).
+Attention-rollout maps \cite{abnar2020rollout} were also computed but were more
+diffuse and border-biased and are reported only in the supplement. Clinical
+plausibility was assessed against a pre-specified rubric: a map is plausible if
+its activation is concentrated on retinal tissue away from the optic disc and the
+image border, and implausible if dominated by the optic disc or the image border.
+Because the public IDRiD mirror provides no lesion segmentation masks and a second
+expert grader was not available, the rubric was applied by a transparent,
+reproducible automated proxy: a map was scored plausible when its peak lay within
+the fundus, outside an automatically estimated optic-disc region and outside the
+outer border annulus, with at least half of the top-decile saliency mass in that
+same lesion-eligible zone. The proxy cannot exclude vessel-centred activation; the
+absence of blinded expert rating is a stated limitation
+(Section~\ref{sec:limitations}). To make that assessment executable without
+re-deriving the sample, we additionally release a blinded rating packet
+(\texttt{scripts/\allowbreak{}phase7\_rating\_packet.py}): $160$ maps ($10$ per model per
+external dataset per correctness stratum, grade-stratified, seed $42$), each
+re-rendered as a two-panel image (fundus and heatmap only, with no disc marker,
+peak marker, or identifying text), a shuffled blind identifier, a rating sheet
+and rubric, and a withheld key; the companion scorer computes the expert
+plausible-focus rate, the expert-versus-proxy Cohen's $\kappa$, and the
+inter-rater $\kappa$ per cell. Code:
+\texttt{scripts/\allowbreak{}phase7\_explainability.py},
+\texttt{scripts/\allowbreak{}phase7\_rating\_packet.py}.
+
+\subsection{Uncertainty quantification}
+\label{sec:methods-unc}
+
+Predictive uncertainty was quantified as the Shannon entropy of the predictive
+softmax distribution. The primary analysis used the entropy of a single forward
+pass; a sensitivity analysis used the entropy of the mean softmax over $T=20$
+stochastic forward passes with the layers that were stochastic during training
+held active at inference --- head dropout for the CNNs, block-wise stochastic
+depth for the RETFound full fine-tune (Monte-Carlo dropout
+\cite{gal2016dropout}); the frozen linear-probe backbone has no such layers. For
+each model and external dataset we tested whether misclassified images carried
+higher entropy than correctly classified images with a one-sided Mann--Whitney
+$U$ test, reporting the rank-biserial correlation as the effect size, and we
+computed the AUROC of predictive entropy used directly as a binary error
+detector. We then plotted selective-prediction curves: images were ranked by
+entropy and the most uncertain fraction referred out, and the accuracy,
+quadratic-weighted kappa, and fraction of all errors captured among the referred
+images were recorded as a function of retained coverage. Predictive entropy and
+accuracy were also broken down by ICDR grade --- stratified both by the reference
+grade and by the predicted grade --- to test whether a model reserved its
+uncertainty for the rarer sight-threatening grades and whether the many grade-0
+predictions it issued on the external sets were made confidently. Code:
+\texttt{scripts/\allowbreak{}phase8\_uncertainty.py}, \texttt{scripts/\allowbreak{}phase8\_mc\_dropout.py}.
+
+\subsection{Calibration}
+\label{sec:methods-calib}
+
+For each model and dataset (internal and external) we computed the expected
+calibration error (ECE, $15$ equal-width confidence bins), the maximum
+calibration error (MCE), the multi-class Brier score, and the negative
+log-likelihood from the stored class probabilities, with a $95\%$ bootstrap CI on
+ECE, and drew reliability diagrams
+(\texttt{scripts/\allowbreak{}phase11\_review\_response.py}). Calibration is reported
+separately for the internal APTOS test set and the two external sets. As a
+recalibration check we also fitted a single scalar temperature per model by
+minimising the negative log-likelihood on the APTOS \emph{validation} split
+(used for early stopping, never for test or external scoring), applied that
+temperature unchanged to the internal-test and both external sets, and recomputed
+every calibration metric (\texttt{scripts/\allowbreak{}phase13\_temperature\_scaling.py}). The
+fitted temperature was bootstrapped ($1000$ resamples) for a $95\%$ interval, and
+the fit was repeated on a disjoint stratified subset of the APTOS training split
+as a calibration-source robustness check. Temperature scaling is monotonic in the
+logits, so it leaves accuracy and the quadratic-weighted kappa unchanged.
+
+\subsection{Statistical analysis}
+\label{sec:methods-stats}
+
+All uncertainty estimates were obtained by non-parametric bootstrap resampling of
+the relevant test set(s) with replacement ($2000$ iterations; NumPy PCG64
+generator, seed $42$), recomputing each metric on every resample and taking the
+$2.5$th and $97.5$th percentiles as the $95\%$ confidence interval
+\cite{efron1994bootstrap}. For the internal-to-external performance drop, the
+internal APTOS test set and the external test set were resampled independently
+within each iteration; for the between-model difference in that drop, the same
+resampled image indices were scored for both models, so that comparison is paired
+at the image level. Areas under the one-vs-rest ROC curve were compared between
+models on the same test set with the two-sided DeLong test
+\cite{delong1988,sun2014fast}, applied to the clinically standard referable-DR
+binarisation (ICDR grade $\geq 2$; score $=$ summed probability of grades 2--4)
+and, secondarily, to each grade one-vs-rest. The significance threshold was
+$\alpha=0.05$, two-sided. The confirmatory family is the nine DeLong referable-DR
+comparisons of every non-baseline model against EfficientNet-B3 on the three
+datasets; $p$-values within it are additionally reported after Holm--Bonferroni
+correction (\texttt{outputs/\allowbreak{}phase11/\allowbreak{}multiplicity.csv}), and every claim of
+significance in Section~\ref{sec:results-ext} survives it. Secondary per-grade
+one-vs-rest tests are exploratory and not corrected. As a sensitivity analysis
+the entire procedure --- bootstrap CIs, the internal-to-external drop, the paired
+difference in drop, and the DeLong referable-DR test --- was re-run on the
+$T=20$ Monte-Carlo-dropout predictive distributions in place of the single
+forward pass (\texttt{scripts/\allowbreak{}phase9\_stats.py --preds-dir outputs/\allowbreak{}phase8/\allowbreak{}mc
+--tag mc}; \texttt{outputs/\allowbreak{}phase9/\allowbreak{}*\_mc.csv}). Analyses used \texttt{numpy},
+\texttt{pandas}, \texttt{scipy}, and \texttt{scikit-learn} in Python~3.14; the
+bootstrap, DeLong, and calibration implementations are released
+(\texttt{scripts/\allowbreak{}phase9\_stats.py}, \texttt{scripts/\allowbreak{}phase11\_review\_response.py}).
+
+Every headline number in Tables~\ref{tab:master}--\ref{tab:delong} was
+independently recomputed from the released per-image prediction files with a
+separate script (\texttt{scripts/\allowbreak{}phase11\_review\_response.py}); all $60$
+recomputed metric cells matched the reported values to within $5\times10^{-4}$.
+
+\subsection{Reproducibility}
+\label{sec:methods-repro}
+
+All code (preprocessing, split generation, training, evaluation, statistics), the
+exact split image-ID lists, per-image prediction files, and an environment
+specification are released (Section~\ref{sec:repro}). Raw datasets are not
+redistributed; each is linked to its source with licence terms in
+\texttt{DATA\_PROVENANCE.md}.
+
+
+\section{Results}
+\label{sec:results}
+
+\subsection{Internal performance}
+\label{sec:results-int}
+
+On the APTOS internal test set ($n=733$), the CNN baseline and RETFound achieved
+broadly comparable performance (Table~\ref{tab:master}). EfficientNet-B3 reached
+QWK $0.876$ ($95\%$ CI $[0.849,0.901]$; accuracy $0.804$); RETFound full
+fine-tuning reached QWK \pv{$0.869$} ($[0.842,0.893]$; accuracy \pv{$0.769$}) and
+linear probing QWK $0.847$ ($[0.819,0.873]$). RETFound showed flatter per-class
+sensitivity, with higher recall on the rare proliferative grade than the CNNs
+(Figure~\ref{fig:perclass}).
+
+\subsection{External validation and performance drop}
+\label{sec:results-ext}
+
+\begin{table*}[!t]
+\centering\footnotesize
+\caption{Master results: each model evaluated unchanged on the internal APTOS test
+set and the two external datasets. Point estimates with $95\%$ bootstrap
+confidence intervals ($B=2000$). QWK, quadratic-weighted kappa; AUC, one-vs-rest
+macro AUC. Confidence intervals for every metric (including macro-F1 and balanced
+accuracy) are in the supplement (\texttt{outputs/\allowbreak{}phase9/\allowbreak{}bootstrap\_ci.csv}).
+Values marked \textsuperscript{p} are from a full fine-tuning run stopped at
+epoch~6 (Section~\ref{sec:limitations}); a completed run is not expected to change
+the direction of any comparison (see the concordant linear-probe row).}
+\label{tab:master}
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{llrccc}
+\toprule
+Model & Dataset & $n$ & Accuracy (95\% CI) & QWK (95\% CI) & AUC (95\% CI) \\
+\midrule
+\multirow{3}{*}{EfficientNet-B3 (baseline)}
+ & APTOS-internal & 733  & 0.804 (0.776--0.832) & 0.876 (0.849--0.901) & 0.928 (0.911--0.943) \\
+ & Messidor-2     & 1744 & 0.626 (0.603--0.648) & 0.499 (0.452--0.543) & 0.775 (0.761--0.789) \\
+ & IDRiD          & 455  & 0.497 (0.451--0.545) & 0.760 (0.715--0.798) & 0.830 (0.805--0.856) \\
+\midrule
+\multirow{3}{*}{ResNet-50 (baseline)}
+ & APTOS-internal & 733  & 0.789 (0.759--0.819) & 0.875 (0.848--0.898) & 0.924 (0.908--0.939) \\
+ & Messidor-2     & 1744 & 0.614 (0.591--0.635) & 0.435 (0.381--0.481) & 0.754 (0.738--0.769) \\
+ & IDRiD          & 455  & 0.448 (0.400--0.497) & 0.707 (0.663--0.751) & 0.841 (0.818--0.862) \\
+\midrule
+\multirow{3}{*}{RETFound (linear probe)}
+ & APTOS-internal & 733  & 0.759 (0.728--0.789) & 0.847 (0.819--0.873) & 0.908 (0.889--0.927) \\
+ & Messidor-2     & 1744 & 0.589 (0.565--0.612) & 0.394 (0.338--0.447) & 0.758 (0.738--0.774) \\
+ & IDRiD          & 455  & 0.336 (0.297--0.376) & 0.626 (0.572--0.676) & 0.778 (0.751--0.805) \\
+\midrule
+\multirow{3}{*}{RETFound (full fine-tune)\textsuperscript{p}}
+ & APTOS-internal & 733  & \pv{0.769} (0.739--0.798) & \pv{0.869} (0.842--0.893) & \pv{0.915} (0.896--0.934) \\
+ & Messidor-2     & 1744 & \pv{0.602} (0.579--0.625) & \pv{0.368} (0.311--0.422) & \pv{0.758} (0.742--0.772) \\
+ & IDRiD          & 455  & \pv{0.420} (0.376--0.466) & \pv{0.720} (0.673--0.759) & \pv{0.821} (0.796--0.847) \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\begin{table*}[!t]
+\centering\footnotesize
+\caption{Internal-to-external drop in QWK (positive $=$ degradation on the
+external dataset), and the difference in that drop between each model and the
+EfficientNet-B3 baseline. All intervals are $95\%$ bootstrap CIs; the
+difference-in-drop resampling is paired at the image level. A difference CI that
+excludes $0$ indicates a statistically distinguishable loss of external ordinal
+agreement relative to the baseline.}
+\label{tab:drop}
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{llccc}
+\toprule
+Model & External set & QWK external & Drop (95\% CI) & $\Delta$Drop vs.\ baseline (95\% CI) \\
+\midrule
+\multirow{2}{*}{EfficientNet-B3 (baseline)}
+ & Messidor-2 & 0.499 & 0.377 (0.323--0.433) & --- (reference) \\
+ & IDRiD      & 0.760 & 0.116 (0.068--0.166) & --- (reference) \\
+\midrule
+\multirow{2}{*}{ResNet-50 (baseline)}
+ & Messidor-2 & 0.435 & 0.440 (0.388--0.499) & $+0.063$ (0.017--0.109) \\
+ & IDRiD      & 0.707 & 0.167 (0.117--0.222) & $+0.051$ (0.003--0.102) \\
+\midrule
+\multirow{2}{*}{RETFound (linear probe)}
+ & Messidor-2 & 0.394 & 0.453 (0.393--0.516) & $+0.076$ (0.019--0.132) \\
+ & IDRiD      & 0.626 & 0.221 (0.163--0.285) & $+0.105$ (0.038--0.170) \\
+\midrule
+\multirow{2}{*}{RETFound (full fine-tune)\textsuperscript{p}}
+ & Messidor-2 & \pv{0.368} & \pv{0.501} (0.441--0.563) & \pv{$+0.124$} (0.074--0.175) \\
+ & IDRiD      & \pv{0.720} & \pv{0.150} (0.101--0.202) & \pv{$+0.033$} ($-0.022$--0.089) \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\begin{table*}[!t]
+\centering\small
+\caption{DeLong two-sided paired-AUC test versus the EfficientNet-B3 baseline for
+referable DR (ICDR grade $\geq 2$; score $=$ summed probability of grades 2--4).
+Internally no model differs from the baseline; externally the baseline is
+significantly better than every other model.}
+\label{tab:delong}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{llccc}
+\toprule
+Dataset & Comparator & AUC base & AUC comp. & $p$ \\
+\midrule
+APTOS-internal & ResNet-50               & 0.980 & 0.978 & 0.53 \\
+APTOS-internal & RETFound linear probe   & 0.980 & 0.976 & 0.47 \\
+APTOS-internal & RETFound full fine-tune & 0.980 & \pv{0.978} & 0.66 \\
+Messidor-2     & ResNet-50               & 0.842 & 0.789 & $<0.001$ \\
+Messidor-2     & RETFound linear probe   & 0.842 & 0.781 & $<0.001$ \\
+Messidor-2     & RETFound full fine-tune & 0.842 & \pv{0.789} & $<0.001$ \\
+IDRiD          & ResNet-50               & 0.962 & 0.950 & 0.076 \\
+IDRiD          & RETFound linear probe   & 0.962 & 0.903 & $<0.001$ \\
+IDRiD          & RETFound full fine-tune & 0.962 & \pv{0.873} & $<0.001$ \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=\textwidth,height=0.44\textheight,keepaspectratio]{figures/fig_forest.pdf}
+\caption{Model performance (quadratic-weighted kappa, accuracy, macro one-vs-rest
+AUC) across the internal APTOS test set and the two external datasets. Points are
+estimates; bars are $95\%$ bootstrap confidence intervals. The internal (blue)
+versus external (red/green) gap is large and its confidence intervals do not
+overlap for any model.}
+\label{fig:forest}
+\end{figure*}
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=\textwidth,height=0.46\textheight,keepaspectratio]{figures/fig_confusion.pdf}
+\caption{Row-normalised confusion matrices for EfficientNet-B3 (top) and the
+RETFound full fine-tune (bottom) on the internal APTOS test set and on the two
+external datasets. On Messidor-2 both models collapse toward grade-0 and grade-2
+prediction; on IDRiD the predictions shift toward more advanced grades, tracking
+IDRiD's pathology-enriched class mix.}
+\label{fig:confusion}
+\end{figure*}
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=\textwidth,height=0.34\textheight,keepaspectratio]{figures/fig_perclass.pdf}
+\caption{Per-class (ICDR grade) sensitivity for every model on the internal and
+two external datasets. On Messidor-2, grade-1 (mild) sensitivity is
+$\leq 0.02$ for every model; RETFound retains isolated per-class advantages
+(highest severe-grade sensitivity on IDRiD, highest proliferative-grade
+sensitivity on Messidor-2) without a higher overall QWK.}
+\label{fig:perclass}
+\end{figure*}
+
+Every model degraded on both external datasets (Tables~\ref{tab:master},
+\ref{tab:drop}; Figures~\ref{fig:forest}, \ref{fig:confusion}). Degradation was
+largest on Messidor-2, where QWK fell from $\approx 0.87$ internally to
+$0.37$--$0.50$ and the $95\%$ CIs for the internal and external estimates did not
+overlap for any model. On Messidor-2 all models reverted toward majority-class
+(grade~0) prediction: grade-1 (mild) sensitivity was $\leq 0.02$ for every model
+and grade-0 specificity fell to $0.17$--$0.32$ (Figure~\ref{fig:perclass}). On
+IDRiD the QWK drop was smaller ($0.12$--$0.22$) but accuracy fell further
+(drop $0.31$--$0.42$), consistent with IDRiD's pathology-enriched class mix
+(Table~\ref{tab:datasets}, Figure~\ref{fig:grades}).
+
+\textbf{RQ1 --- Performance.} RETFound did not generalise better than the
+EfficientNet-B3 baseline on either external dataset; on the primary contrast it
+generalised \emph{worse}. Its external QWK was below the baseline on both
+Messidor-2 and IDRiD, and its internal-to-external QWK drop was significantly
+larger than the baseline's on Messidor-2 for both the linear-probe
+($\Delta$drop $+0.076$, $95\%$ CI $[0.019,0.132]$) and the full fine-tuning
+variant (\pv{$+0.124$}, $95\%$ CI $[0.074,0.175]$); the linear-probe variant was
+also significantly worse on IDRiD ($+0.105$, $95\%$ CI $[0.038,0.170]$). For
+referable-DR discrimination (Table~\ref{tab:delong}; ROC and precision--recall
+curves in Figure~\ref{fig:rocpr}), the EfficientNet-B3 baseline had a
+significantly \emph{higher} AUC than every other model on both external datasets
+(Messidor-2: $0.842$ vs.\ $0.781$--$0.789$, all $p<0.001$;
+IDRiD: $0.962$ vs.\ RETFound linear probe $0.903$ and full fine-tune
+\pv{$0.873$}, both $p<0.001$), whereas on the internal test set no model differed
+from the baseline ($p\geq 0.47$). RETFound retained isolated per-class advantages
+under shift --- the highest severe-grade sensitivity on IDRiD and the highest
+proliferative-grade sensitivity on Messidor-2 (Figure~\ref{fig:perclassci}) ---
+and, under linear probing, the highest balanced accuracy on Messidor-2 ($0.42$
+vs.\ $0.34$--$0.35$), reflecting a more even but not more accurate error
+distribution. Full per-class sensitivity, specificity, precision, and F1 with
+$95\%$ CIs for all four models on all three datasets are in the supplement
+(\texttt{outputs/\allowbreak{}phase11/\allowbreak{}per\_class\_ci.csv}).
+
+\subsection{Referable-DR secondary task}
+\label{sec:results-referable}
+
+The five-class result could in principle be an artefact of the ordinal QWK
+metric specifically. To test whether it persists under a coarser, clinically
+common task, every model's five predicted grades were collapsed to the binary
+referable-DR decision (ICDR grade $\geq 2$) and the same internal-to-external
+drop analysis (Section~\ref{sec:results-ext}) was repeated on AUROC in place of
+QWK, with $95\%$ bootstrap CIs ($B=2000$; \texttt{scripts/\allowbreak{}phase19\_referable\_dr.py}).
+It does. On Messidor-2 the EfficientNet-B3 baseline's AUROC fell by $0.138$
+($95\%$ CI $[0.115,0.161]$; internal $0.980\to$ external $0.842$) versus
+$0.188$--$0.195$ for the other three models (ResNet-50 $0.189\ [0.162,0.215]$;
+RETFound linear probe $0.195\ [0.169,0.223]$; RETFound full fine-tune
+\pv{$0.188$} $[0.161,0.215]$). The gap is starker on
+IDRiD, where the baseline's AUROC barely moved ($0.018\ [0.001,0.036]$) while
+RETFound's fell substantially more (linear probe $0.074\ [0.045,0.103]$; full
+fine-tune \pv{$0.105$} $[0.073,0.139]$) --- a $\geq 4\times$ larger drop than the
+baseline's on the dataset where the five-class RETFound--baseline gap was
+otherwise the narrower of the two (Table~\ref{tab:drop}). Decision-based
+sensitivity at the model's own operating point (grade $\geq 2$) also fell
+furthest for RETFound on Messidor-2 (full fine-tune sensitivity $0.219$ versus
+baseline $0.387$), consistent with the same reversion to majority-class
+prediction seen in the five-class confusion matrices
+(Figure~\ref{fig:confusion}). The RETFound--baseline generalisation gap
+therefore does not depend on the ordinal five-class formulation; full
+per-model operating-point metrics (sensitivity, specificity, PPV, NPV, AUPRC,
+and sensitivity/specificity at fixed $85\%$ operating points) are in the
+supplement (\texttt{outputs/\allowbreak{}phase19/\allowbreak{}referable\_dr\_master.csv}).
+
+\subsection{Explainability}
+\label{sec:results-explain}
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=\textwidth,height=0.42\textheight,keepaspectratio]{figures/fig_explainability.png}
+\caption{Representative saliency maps on external images: EfficientNet-B3
+(Grad-CAM++) and the RETFound full fine-tune (patch-token Grad-CAM), one
+correctly and one incorrectly classified example each on Messidor-2 and IDRiD.
+Dashed circle, estimated optic disc; white cross, saliency peak. Panel titles
+give the true and predicted ICDR grade and the automated plausibility verdict.}
+\label{fig:explain}
+\end{figure*}
+
+Saliency maps were generated for a grade-stratified sample of external images
+($40$ correctly and $25$ incorrectly classified per model per external dataset,
+$65$ per cell). The \emph{proxy-plausible} label used here means only that a
+map's peak and the bulk of its top-decile mass lie inside the fundus and outside
+the estimated optic-disc and border regions --- a coarse \emph{location} check
+within the region where DR lesions can occur, not a lesion-mask overlap. Under
+this proxy, the convolutional baselines' Grad-CAM++ maps were concentrated in the
+lesion-eligible retinal region on both external datasets ($90$--$100\%$
+proxy-plausible across the correct and incorrect subsets on both datasets;
+$0.92$--$0.98$ of top-decile saliency mass in that region). RETFound's
+method-matched patch-token Grad-CAM behaved similarly on IDRiD ($84\%$
+proxy-plausible for the full fine-tune, $72\%$ for linear probing) but not on
+Messidor-2, where a large fraction of its top-decile mass fell on the outer
+border annulus rather than the retina ($25\%$ of the mass on correctly classified
+images rising to $46\%$ on misclassified ones, versus $<4\%$ for the CNNs), so
+far fewer of its maps were proxy-plausible ($57\%$ for the full fine-tune, $46\%$
+for linear probing, versus $\approx 94\%$ for both CNNs). This border shift was
+more pronounced on RETFound's \emph{incorrect} Messidor-2 predictions ($36\%$
+proxy-plausible) than its correct ones ($70\%$). Figure~\ref{fig:explain} shows representative panels; per-cell rates are in
+the supplement (\texttt{outputs/\allowbreak{}phase7/\allowbreak{}plausibility\_rates.csv}). These figures
+come from a single automated location proxy, not blinded expert grading or
+lesion-mask overlap (Section~\ref{sec:limitations}); a blinded rating packet and
+scorer for a two-rater expert assessment against this proxy are released with the
+code (Section~\ref{sec:methods-explain}) but were not yet completed by a
+clinician.
+
+\subsection{Uncertainty}
+\label{sec:results-unc}
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=\textwidth,height=0.48\textheight,keepaspectratio]{figures/fig_uncertainty.png}
+\caption{Predictive uncertainty on external data. Top left/centre:
+predictive-entropy distributions for correctly and incorrectly classified images
+(EfficientNet-B3 and RETFound full fine-tune). Top right: AUROC of predictive
+entropy as an error detector (dashed line, chance). Bottom: selective-prediction
+curves (accuracy on retained cases, and fraction of all errors referred out,
+versus retained coverage).}
+\label{fig:uncertainty}
+\end{figure*}
+
+On the internal test set, predictive entropy was a moderately good error detector
+(AUROC of entropy for distinguishing correct from incorrect predictions:
+EfficientNet-B3 $0.84$, RETFound full fine-tune $0.63$). On external data this
+signal weakened substantially for every model (AUROC $0.55$--$0.68$;
+Figure~\ref{fig:uncertainty}). Misclassified images still carried significantly
+higher entropy than correct ones on most model $\times$ external-dataset
+combinations (one-sided Mann--Whitney $U$, $p<0.001$), with two exceptions:
+ResNet-50 on IDRiD ($p=0.04$) and, notably, the RETFound full fine-tune on IDRiD,
+where entropy carried no error signal at all (AUROC $0.50$, $p=0.52$). In
+selective-prediction terms the signal was not clinically actionable: referring
+the $10\%$ most uncertain external predictions for human review captured only
+$9$--$18\%$ of the errors on each external dataset, i.e.\ close to the
+$\approx 10\%$ expected from random referral, versus $21$--$30\%$ internally.
+Substituting $T=20$ Monte-Carlo-dropout entropy for the single-pass entropy
+changed every error-detection AUROC by $\leq 0.02$ and did not alter any of these
+conclusions --- the RETFound full fine-tune on IDRiD still showed no error signal
+(AUROC $0.51$, $p=0.37$) (supplement,
+\texttt{outputs/\allowbreak{}phase8/\allowbreak{}uncertainty\_mc.csv}).
+
+Breaking predictive entropy down by ICDR grade
+(\texttt{outputs/\allowbreak{}phase8/\allowbreak{}uncertainty\_by\_class\_singlepass.csv}) exposes why the
+foundation model's uncertainty is uninformative. For the convolutional baselines,
+mean external entropy tracked difficulty: EfficientNet-B3 on Messidor-2 rose from
+$0.15$ nats on grade-0 images (where it was $97\%$ accurate) to $0.83$ nats on
+grade-3 images (where it was $13\%$ accurate). The RETFound full fine-tune instead
+sat at $1.39$--$1.50$ nats across every grade on Messidor-2 and $1.11$--$1.41$ on
+IDRiD --- close to the $\ln 5 \approx 1.61$ maximum for five classes, and
+essentially flat regardless of whether its per-grade accuracy was $0.97$ or
+$0.07$. Its entropy therefore encodes a near-uniform posterior everywhere rather
+than a data-dependent confidence, consistent with the low fitted temperature of
+the label-smoothed RETFound head (Section~\ref{sec:results-calib}); the linear
+probe behaved the same way at a slightly lower level. This also holds when the
+breakdown is taken over the predicted rather than the reference grade: the large
+block of grade-0 predictions RETFound issued on Messidor-2 ($n=1586$, wrong $38\%$
+of the time) carried $\approx 1.4$-nat entropy, essentially the same as its
+predictions of every other grade ($1.4$--$1.6$ nats), so those errors were not
+flagged as low-confidence.
+
+\subsection{Domain-shift OOD detection}
+\label{sec:results-ood}
+
+Because predictive entropy was a weak external error detector
+(Section~\ref{sec:results-unc}), a domain-shift-specific alternative was tested:
+a Mahalanobis distance-to-nearest-class-centroid score in a frozen, DR-naive
+ImageNet EfficientNet-B3 feature space (class-conditional means and a
+Ledoit--Wolf-shrunk shared covariance fit on APTOS-train only;
+\texttt{scripts/\allowbreak{}phase20\_ood\_detection.py}), compared against each model's
+own entropy as an error detector via a paired bootstrap on the AUROC
+difference. It did not help. Across the four models and two external datasets ($8$
+model $\times$ dataset cells) the Mahalanobis score was never a significantly
+better error detector than entropy, and was significantly \emph{worse} in
+$6$ of the $8$ (e.g.\ EfficientNet-B3 on Messidor-2: AUROC(OOD) $0.472$ versus
+AUROC(entropy) $0.681$, difference $-0.210$, $95\%$ CI $[-0.244,-0.176]$); the
+remaining two cells (ResNet-50 and the RETFound full fine-tune, both on IDRiD)
+showed no significant difference, and for the RETFound full fine-tune this is
+because entropy itself already carried no error signal there (AUROC $0.50$,
+Section~\ref{sec:results-unc}) rather than the OOD score adding one (AUROC
+$0.50$ also). The same pattern held internally (in-domain, a control condition
+since the detector is fit on APTOS-train): entropy was significantly better
+or not significantly different, never worse. A single
+generic, task-agnostic distributional-distance score therefore does not
+substitute for a task-calibrated confidence signal on these shifts; if an
+out-of-distribution safeguard is wanted operationally, it would need to be
+fitted or validated on the deployment shift itself rather than assumed from a
+generic feature-space distance (full per-cell results in the supplement,
+\texttt{outputs/\allowbreak{}phase20/\allowbreak{}ood\_master.csv}).
+
+\subsection{Calibration}
+\label{sec:results-calib}
+
+\begin{table*}[!t]
+\centering\small
+\caption{Calibration on the internal and external datasets: expected calibration
+error (ECE, $15$ bins) with a $95\%$ bootstrap CI, maximum calibration error
+(MCE), multi-class Brier score, and negative log-likelihood (NLL). Lower is
+better throughout. Under external shift the ImageNet CNNs become markedly
+over-confident (ECE $\approx 0.26$--$0.29$) while RETFound's flatter,
+label-smoothed outputs stay closer to calibrated (ECE $\approx 0.10$--$0.16$).}
+\label{tab:calib}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{llcccc}
+\toprule
+Model & Dataset & ECE (95\% CI) & MCE & Brier & NLL \\
+\midrule
+\multirow{3}{*}{EfficientNet-B3}
+ & APTOS-internal & 0.101 (0.080--0.129) & 0.295 & 0.300 & 0.645 \\
+ & Messidor-2     & 0.279 (0.259--0.302) & 0.439 & 0.644 & 1.742 \\
+ & IDRiD          & 0.294 (0.253--0.342) & 0.437 & 0.764 & 1.668 \\
+\midrule
+\multirow{3}{*}{ResNet-50}
+ & APTOS-internal & 0.058 (0.046--0.091) & 0.308 & 0.311 & 0.608 \\
+ & Messidor-2     & 0.265 (0.246--0.290) & 0.400 & 0.650 & 1.583 \\
+ & IDRiD          & 0.260 (0.220--0.312) & 0.459 & 0.778 & 1.445 \\
+\midrule
+\multirow{3}{*}{RETFound (linear probe)}
+ & APTOS-internal & 0.182 (0.159--0.211) & 0.250 & 0.395 & 0.815 \\
+ & Messidor-2     & 0.121 (0.100--0.145) & 0.156 & 0.594 & 1.181 \\
+ & IDRiD          & 0.127 (0.093--0.172) & 0.419 & 0.758 & 1.462 \\
+\midrule
+\multirow{3}{*}{RETFound (full fine-tune)\textsuperscript{p}}
+ & APTOS-internal & \pv{0.178} (0.156--0.210) & 0.275 & 0.380 & 0.778 \\
+ & Messidor-2     & \pv{0.160} (0.139--0.181) & 0.245 & 0.594 & 1.185 \\
+ & IDRiD          & \pv{0.098} (0.071--0.149) & 0.745 & 0.702 & 1.302 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=\textwidth,height=0.42\textheight,keepaspectratio]{figures/fig_reliability.pdf}
+\caption{Reliability diagrams for EfficientNet-B3 (top) and the RETFound full
+fine-tune (bottom) on the internal test set and the two external datasets. Blue
+bars are accuracy per confidence bin; red segments are the calibration gap.
+Internally the CNN is close to the diagonal; externally it sits far below it
+(over-confident). RETFound's diagram is flatter and closer to the diagonal on the
+external sets.}
+\label{fig:reliability}
+\end{figure*}
+
+Internally, the ImageNet CNNs were well calibrated (ECE $0.06$--$0.10$) and
+RETFound less so (ECE $0.18$; label smoothing $0.1$ during fine-tuning flattens
+its softmax). Under external shift this reversed
+(Table~\ref{tab:calib}, Figure~\ref{fig:reliability}): both CNNs became strongly
+over-confident (ECE rising to $0.26$--$0.29$; Brier to $0.64$--$0.78$), whereas
+RETFound's ECE \emph{fell} to $0.10$--$0.16$ and its Brier was similar or lower
+($0.59$--$0.76$). So the foundation model, while worse at ordinal discrimination
+under shift (Section~\ref{sec:results-ext}), produced probability estimates that
+degraded less --- a partial, and honest, counterpoint to the negative headline.
+This does not make RETFound's external predictions safe: an ECE near $0.15$ with a
+QWK near $0.37$ still means confident, wrong grades.
+
+\textbf{Recalibration.} Post-hoc temperature scaling did not repair the external
+miscalibration. Temperatures fitted on the APTOS validation split were $T>1$ for
+the over-confident CNNs (EfficientNet-B3 $1.52$, bootstrap $95\%$ CI
+$[1.33,1.71]$; ResNet-50 $1.16$, $[1.02,1.31]$) and $T\approx 0.50$
+($[0.43,0.58]$) for the under-confident, label-smoothed RETFound variants.
+Applied externally, the fitted temperature roughly halved the RETFound full
+fine-tune's Messidor-2 ECE ($0.16\to0.08$) and lowered the CNNs' external ECE
+(EfficientNet-B3 $0.28\to0.21$ on Messidor-2, $0.29\to0.19$ on IDRiD), but the
+CNNs stayed clearly over-confident and on IDRiD the single global temperature
+\emph{worsened} both RETFound variants' ECE (full fine-tune $0.10\to0.21$; linear
+probe $0.13\to0.30$), because IDRiD's shift runs opposite in sign to
+Messidor-2's. Refitting $T$ on a disjoint stratified subset of the APTOS
+\emph{training} split left RETFound's temperature essentially unchanged
+($\approx 0.48$) and every external conclusion identical
+(\texttt{outputs/\allowbreak{}phase13/\allowbreak{}traincalib/\allowbreak{}}). A recalibration constant learned
+in-domain is therefore not a dependable external safeguard
+(\texttt{outputs/\allowbreak{}phase13/\allowbreak{}temperature\_scaling.csv}).
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=\textwidth,height=0.44\textheight,keepaspectratio]{figures/fig_roc_pr.pdf}
+\caption{Referable diabetic retinopathy (ICDR grade $\geq 2$): receiver operating
+characteristic (top) and precision--recall (bottom) curves for every model on the
+internal test set and the two external datasets; AUROC is in each legend. On both
+external datasets the EfficientNet-B3 baseline curve dominates the RETFound curves
+(DeLong $p<0.001$, Table~\ref{tab:delong}).}
+\label{fig:rocpr}
+\end{figure*}
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=0.85\textwidth,height=0.32\textheight,keepaspectratio]{figures/fig_perclass_ci.pdf}
+\caption{Per-class sensitivity with $95\%$ bootstrap confidence intervals for
+EfficientNet-B3 (blue) and the RETFound full fine-tune (red). Full per-class
+sensitivity, specificity, precision, F1, and support with CIs for all four models
+are in the supplement (\texttt{outputs/\allowbreak{}phase11/\allowbreak{}per\_class\_ci.csv}).}
+\label{fig:perclassci}
+\end{figure*}
+
+\subsection{Controlled degradation ablation}
+\label{sec:results-ablation}
+
+To probe \emph{why} the foundation model degrades, external inference was re-run
+(no retraining) for EfficientNet-B3 and the RETFound full fine-tune under two
+inference-time input perturbations: CLAHE contrast equalisation, and a
+colour-transfer that maps each image's fundus-pixel channel statistics to the
+APTOS training distribution (\texttt{scripts/\allowbreak{}phase15\_ablation.py}). Neither
+recovered RETFound's external ordinal agreement; both reduced it further, and the
+foundation model was far more fragile than the CNN. The colour-transfer left
+EfficientNet-B3 close to unchanged (Messidor-2 QWK $0.499\to0.512$, IDRiD
+$0.760\to0.689$) but pushed the RETFound full fine-tune down on every set,
+including the internal one (APTOS-internal $0.869\to0.751$, Messidor-2
+$0.368\to0.122$, IDRiD $0.720\to0.545$). CLAHE was worse still for RETFound
+(APTOS-internal $0.869\to0.599$, Messidor-2 $0.368\to0.065$) while only mildly
+affecting the CNN ($0.876\to0.807$ internal, $0.499\to0.458$ on Messidor-2).
+Because the perturbations are applied at inference to models trained on
+unperturbed images, this measures sensitivity to an input-distribution shift, not
+the value of training with these normalisations. It shows that the fully
+fine-tuned ViT's representation is tightly coupled to the exact APTOS
+acquisition and colour distribution --- consistent with the peripheral saliency
+(Section~\ref{sec:results-explain}) and the calibration behaviour
+(Section~\ref{sec:results-calib}) --- whereas the ImageNet CNN absorbs the same
+perturbations.
+
+A third variant tested input resolution: all three test sets were
+re-preprocessed from their source images at $384$~px (upscaling the committed
+$224$~px images would add no information) and both models were re-run without
+retraining, the RETFound ViT-L built at $384$~px with its $224$-trained
+positional embedding bicubically interpolated onto the $24{\times}24$ token grid
+(\texttt{scripts/\allowbreak{}phase15c\_resolution.py}). Higher resolution did not recover
+external agreement. RETFound's Messidor-2 QWK rose marginally
+($0.368 \to 0.393$) but stayed far below EfficientNet-B3 at \emph{either}
+resolution ($0.499$ at $224$, $0.425$ at $384$), and its IDRiD QWK fell
+($0.720 \to 0.683$); its internal QWK was essentially unchanged
+($0.869 \to 0.872$), confirming the positional-embedding interpolation is benign
+in-domain. EfficientNet-B3, trained at $224$, lost internal QWK at $384$
+($0.876 \to 0.824$) and did not improve externally (Messidor-2 $0.499 \to 0.425$,
+IDRiD $0.760 \to 0.731$). The change in internal-to-external QWK drop from
+switching to $384$~px was small for both models and of inconsistent sign
+($+0.022$ / $-0.024$ for EfficientNet-B3 on Messidor-2 / IDRiD; $-0.022$ /
+$+0.040$ for RETFound), so the RETFound--CNN gap is not an artefact of the
+$224$~px working resolution (\texttt{outputs/\allowbreak{}phase15c/\allowbreak{}}). A colour- and
+resolution-normalised \emph{retraining} comparison remains the definitive test
+of the mechanism and is distinct from the inference-time perturbations above,
+which show sensitivity to a shift applied to an already-trained model, not
+whether training under that same transform would change what the model learns.
+The data preparation and \texttt{train\_baseline.py} /
+\texttt{train\_retfound.py --manifest ... --img-size ...} support for this
+retraining comparison, and for a training-set-size sweep, are now released
+(\texttt{scripts/\allowbreak{}phase18\_retrain\_variants\_prep.py},
+\texttt{scripts/\allowbreak{}phase21\_training\_size\_sensitivity.py},
+\texttt{COLAB\_RETRAIN\_GUIDE.md}); execution needs sustained GPU time beyond
+this study's single consumer GPU (Section~\ref{sec:limitations}) and remains
+outstanding.
+
+
+\subsection{Classifier-head depth and activation sensitivity}
+\label{sec:results-headdepth}
+
+\textbf{What varies, and what does not.} The backbones in this study arrive with
+their depth fixed by the pretrained checkpoint: a ViT-L/16 cannot be given
+``five hidden layers'' and still be RETFound. The architectural choice that was
+ours to make, and that the main analysis did not justify, is the depth of the
+classifier head on top of the features. We therefore froze each backbone, cached
+its pooled embeddings once, and swept only the head
+(\texttt{scripts/\allowbreak{}}\allowbreak\texttt{phase22\_head\_depth\_ablation.py}). Two feature sources were
+used: the penultimate layer of the end-to-end fine-tuned EfficientNet-B3
+(1536 dimensions) and the frozen RETFound encoder of the linear-probe model (1024 dimensions).
+The EfficientNet-B3 features had therefore already been adapted to APTOS during
+fine-tuning, whereas the RETFound features had not; the sweep compares heads
+within each feature source, not adaptation regimes. Heads had
+$d\in\{0,3,4,5,6,7\}$ hidden layers of constant width $256$, each followed by one
+of four activations (ReLU, GELU, tanh, identity) and dropout $0.3$; $d=0$ is a
+linear probe and serves as the anchor. The identity activation is a control: an
+identity-activated stack is a linear map at inference regardless of depth, so its
+gap to the non-linear rows measures how much non-linearity the head needed.
+Everything else was held fixed across depths: features standardised on APTOS-train
+statistics only, class-weighted cross-entropy, AdamW ($\text{lr}=10^{-3}$, weight
+decay $10^{-4}$), batch $256$, at most $60$ epochs with early stopping on
+APTOS-validation balanced accuracy (patience $10$). The grid was
+$21$ (depth, activation) cells $\times$ $5$ seeds $=105$ fits per backbone
+($210$ in total), and every fitted head was scored, unchanged, on the APTOS
+internal test set, Messidor-2, and IDRiD ($630$ evaluations). All $210$ fits
+stopped early before the epoch cap (longest run $52$ epochs), so no depth effect
+below is an artefact of non-convergence. No fit collapsed to a single predicted
+class.
+
+Because the $d=0$ heads here are re-fitted under this common protocol, their
+values differ from the published heads in Table~\ref{tab:master} (RETFound linear
+probe: internal $0.855$ vs.\ $0.847$, Messidor-2 $0.419$ vs.\ $0.394$, IDRiD
+$0.716$ vs.\ $0.626$; EfficientNet-B3 re-fitted linear head on its fine-tuned
+features: $0.862$, $0.517$, $0.720$ vs.\ the end-to-end model's $0.876$,
+$0.499$, $0.760$). All comparisons in this subsection are within the sweep.
+
+\textbf{Reproducibility floor.} Across the five seeds of a fixed (depth,
+activation) cell, QWK varied with a median standard deviation of $0.006$, $0.014$
+and $0.011$ for EfficientNet-B3 (APTOS-internal, Messidor-2, IDRiD) and $0.010$,
+$0.036$ and $0.029$ for RETFound. The external floor is three to four times the
+internal one, and larger for RETFound than for the CNN. Every difference below is
+stated against the floor of its own (backbone, dataset) pair.
+
+\begin{table*}[!t]
+\centering\footnotesize
+\caption{Head-depth sweep on frozen features: mean QWK by number of hidden
+layers ($d=0$: linear probe; $d\geq3$: mean over the four activations and five
+seeds). Floor: median within-cell standard deviation of QWK across seeds. Ratio:
+(best $-$ worst depth mean) / floor; a ratio below $\approx 2$ means depth moved
+QWK no more than reseeding does. Source: \texttt{outputs/\allowbreak{}phase22/\allowbreak{}runs.csv}.}
+\label{tab:headdepth}
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{llcccccccc}
+\toprule
+Features & Test set & $d=0$ & $d=3$ & $d=4$ & $d=5$ & $d=6$ & $d=7$ & Floor & Ratio \\
+\midrule
+EfficientNet-B3 & APTOS-int. & 0.862 & 0.866 & 0.868 & 0.861 & 0.868 & 0.867 & 0.006 & 1.1 \\
+EfficientNet-B3 & Messidor-2 & 0.517 & 0.518 & 0.522 & 0.512 & 0.517 & 0.511 & 0.014 & 0.7 \\
+EfficientNet-B3 & IDRiD & 0.720 & 0.747 & 0.753 & 0.745 & 0.749 & 0.753 & 0.011 & 3.1 \\
+\midrule
+RETFound & APTOS-int. & 0.855 & 0.855 & 0.853 & 0.857 & 0.851 & 0.857 & 0.010 & 0.6 \\
+RETFound & Messidor-2 & 0.419 & 0.403 & 0.401 & 0.401 & 0.380 & 0.393 & 0.036 & 1.1 \\
+RETFound & IDRiD & 0.716 & 0.724 & 0.723 & 0.740 & 0.702 & 0.740 & 0.029 & 1.3 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\textbf{Depth.} Head depth did not move internal performance for either backbone
+(Table~\ref{tab:headdepth}; best-minus-worst depth $0.006$--$0.007$ QWK, $0.6$--$1.1\times$
+the floor). This null is expected rather than disappointing: both embeddings are
+already close to linearly separable for APTOS grading, because the non-linear work
+was done upstream, which is also what the competitive linear-probe result in
+Table~\ref{tab:master} implies. Externally, five of six (backbone, dataset) pairs
+were likewise within $1.3\times$ the floor. The single exception, EfficientNet-B3
+on IDRiD ($3.1\times$), is not a depth effect: QWK rose from $0.720$ at $d=0$ to
+$0.745$--$0.753$ for \emph{any} hidden head and was flat from $d=3$ to $d=7$
+(range $0.008$, below the floor), and identity-activated stacks gained as much as
+non-linear ones ($+0.027$ vs.\ $+0.028$--$0.033$; Table~\ref{tab:headact}). A
+head that is linear at inference cannot owe its gain to depth or to non-linearity;
+the plausible source is the training dynamics of the over-parameterised head
+(dropout between layers and longer training, $15$--$17$ vs.\ $12$ epochs on average),
+which act as a regulariser. We report it as such and not as evidence for a deeper
+head.
+
+\begin{table*}[!t]
+\centering\footnotesize
+\caption{Activation effect, marginalised over $d=3$--$7$ (five seeds each):
+mean QWK and, in parentheses, the change relative to the $d=0$ linear probe. The
+identity row is the linear control.}
+\label{tab:headact}
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{llccccc}
+\toprule
+Features & Test set & $d=0$ & ReLU & GELU & tanh & identity \\
+\midrule
+EfficientNet-B3 & APTOS-int. & 0.862 & 0.868 (+0.007) & 0.869 (+0.007) & 0.863 (+0.001) & 0.864 (+0.003) \\
+EfficientNet-B3 & Messidor-2 & 0.517 & 0.520 (+0.003) & 0.524 (+0.008) & 0.512 ($-$0.005) & 0.508 ($-$0.009) \\
+EfficientNet-B3 & IDRiD & 0.720 & 0.747 (+0.028) & 0.750 (+0.030) & 0.753 (+0.033) & 0.747 (+0.027) \\
+\midrule
+RETFound & APTOS-int. & 0.855 & 0.855 ($-$0.000) & 0.866 (+0.011) & 0.856 (+0.001) & 0.842 ($-$0.013) \\
+RETFound & Messidor-2 & 0.419 & 0.382 ($-$0.037) & 0.356 ($-$0.064) & 0.425 (+0.006) & 0.421 (+0.001) \\
+RETFound & IDRiD & 0.716 & 0.734 (+0.018) & 0.745 (+0.030) & 0.730 (+0.014) & 0.695 ($-$0.020) \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\textbf{Activation.} For EfficientNet-B3 the four activations were
+interchangeable on every test set (all within $0.016$ QWK of each other). For
+RETFound the activation mattered, and in opposite directions inside and outside
+the training domain (Table~\ref{tab:headact}). GELU --- the activation of the ViT
+trunk itself, and therefore the most defensible default for a head on ViT
+features --- gave the best internal mean ($0.866$, $+0.011$ over the linear probe)
+and the worst Messidor-2 mean ($0.356$, $-0.064$, $1.8\times$ the Messidor-2
+floor); ReLU followed the same pattern more weakly ($-0.037$). The bounded tanh
+and the identity control stayed at the linear-probe level on Messidor-2
+($+0.006$, $+0.001$). The configuration internal validation would select ---
+the single best internal cell, $d=7$ with GELU ($0.877$, $+0.022$, $2.2\times$
+the internal floor) --- was simultaneously among the worst on Messidor-2
+($0.344$, $-0.076$, $2.1\times$ the floor) while improving IDRiD ($0.777$,
+$+0.061$, $2.1\times$). This is the pattern the main analysis attributes to
+RETFound: added capacity in unbounded non-linear units fits APTOS-specific
+directions of the foundation-model embedding that do not transfer to the
+Messidor-2 acquisition, and whether it helps or hurts on a new site cannot be
+read from internal performance. Because these cells were chosen post hoc from
+$21$, their size should be read against the floor rather than as estimates of a
+true effect.
+
+\begin{table*}[!t]
+\centering\footnotesize
+\caption{Where the errors go: confusion-matrix structure for the linear probe
+($d=0$) and for the head internal validation would choose ($d=7$, GELU, the best
+internal cell for both backbones). Raw counts summed over five seeds ($n$ is
+$5\times$ the test-set size). Adjacent: off by one grade; distant: off by two or
+more. Under/over: predicted grade below/above the reference. Referable DR:
+grade~$\geq 2$. Per-run integer matrices: \texttt{outputs/\allowbreak{}phase22/\allowbreak{}confusion\_matrices.json}.}
+\label{tab:headcm}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lllrrrrrrcc}
+\toprule
+Features & Test set & Head & $n$ & Errors & Adjacent & Distant & Under & Over & Ref.\ sens. & Ref.\ spec. \\
+\midrule
+EfficientNet-B3 & APTOS-int. & $d=0$ & 3665 & 738 & 520 & 218 & 341 & 397 & 0.899 & 0.928 \\
+ & & $d=7$ GELU & 3665 & 756 & 563 & 193 & 346 & 410 & 0.913 & 0.926 \\
+ & Messidor-2 & $d=0$ & 8720 & 3347 & 1947 & 1400 & 2757 & 590 & 0.474 & 0.952 \\
+ & & $d=7$ GELU & 8720 & 3311 & 1842 & 1469 & 2891 & 420 & 0.438 & 0.960 \\
+ & IDRiD & $d=0$ & 2275 & 1248 & 1064 & 184 & 663 & 585 & 0.842 & 0.954 \\
+ & & $d=7$ GELU & 2275 & 1129 & 954 & 175 & 660 & 469 & 0.847 & 0.954 \\
+\midrule
+RETFound & APTOS-int. & $d=0$ & 3665 & 905 & 664 & 241 & 386 & 519 & 0.873 & 0.948 \\
+ & & $d=7$ GELU & 3665 & 901 & 748 & 153 & 410 & 491 & 0.899 & 0.939 \\
+ & Messidor-2 & $d=0$ & 8720 & 3444 & 1626 & 1818 & 3035 & 409 & 0.299 & 0.965 \\
+ & & $d=7$ GELU & 8720 & 3564 & 1647 & 1917 & 3342 & 222 & 0.222 & 0.977 \\
+ & IDRiD & $d=0$ & 2275 & 1274 & 976 & 298 & 573 & 701 & 0.805 & 0.816 \\
+ & & $d=7$ GELU & 2275 & 1058 & 793 & 265 & 544 & 514 & 0.863 & 0.899 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\textbf{Confusion-matrix structure.} The total error count says little; where
+the errors move says more (Table~\ref{tab:headcm}). Internally, the deeper GELU
+head for RETFound left the error count unchanged ($905\to901$) but converted
+distant errors into adjacent ones ($241\to153$ errors of two or more grades) and
+raised referable sensitivity ($0.873\to0.899$) --- a genuine, if small,
+improvement in ordinal behaviour. On Messidor-2 the same head moved errors the
+other way: under-grading rose ($3035\to3342$), over-grading fell
+($409\to222$), and distant errors increased ($1818\to1917$), so referable
+sensitivity fell from $0.299$ to $0.222$ while specificity rose from $0.965$ to
+$0.977$. The deeper head pushes Messidor-2 images toward grade~$0$ and misses
+$177$ more referable cases over the five seeds, which for a screening use is the
+costly direction. The EfficientNet-B3 shift on Messidor-2 had the same sign but was
+about half as large ($0.474\to0.438$ sensitivity). On IDRiD both backbones
+improved at depth $7$, mostly by removing adjacent-grade errors.
+
+\textbf{The RETFound--CNN gap is not a head artefact.} On Messidor-2, every one
+of the $21$ EfficientNet-B3 head configurations (lowest cell mean $0.496$)
+outperformed every one of the $21$ RETFound configurations (highest $0.448$). No
+choice of depth or activation closes the Messidor-2 gap reported in
+Table~\ref{tab:drop}. The IDRiD comparison is more sensitive to how the head is
+trained: under this common re-fitting protocol the two linear probes are nearly
+tied on IDRiD ($0.720$ vs.\ $0.716$), and the best RETFound cell ($0.777$)
+exceeds the best EfficientNet-B3 cell ($0.764$). The IDRiD component of the
+headline should therefore be read with the head-training protocol in mind, while
+the Messidor-2 component is robust to it.
+
+\textbf{Selected configuration.} We retain the linear probe ($d=0$). This is a
+parsimony decision under a null result, not a choice of the highest-scoring
+cell: no depth exceeded twice the seed floor internally, the one external gain
+for EfficientNet-B3 (IDRiD) came from any over-parameterised head, including
+linear ones, rather than from depth, and for RETFound the configurations that
+internal validation favours bought their internal gain with lower Messidor-2
+agreement and sensitivity. The linear head has $7{,}685$ (EfficientNet-B3) or
+$5{,}125$ (RETFound) parameters against $0.40$--$0.79$\,M for the $d=3$--$7$
+heads.
+
+\textbf{Limits of this sweep.} The sweep says nothing about trunk depth or about
+full fine-tuning at other depths, because the backbone was frozen throughout.
+Width was held constant at $256$; a capacity-matched (pyramid) schedule was not
+run, so depth and parameter count are not separated. Learning rate, dropout and
+patience were fixed across depths; a per-depth tuned result could differ and
+would answer a different question. Early stopping used validation balanced
+accuracy rather than the QWK criterion of the main models, which is one reason
+the re-fitted linear heads do not reproduce Table~\ref{tab:master} exactly.
+Differences are judged against the across-seed floor, without bootstrap
+confidence intervals over images.
+
+
+\section{Discussion}
+\label{sec:discussion}
+
+\textbf{RQ1 --- Performance.} Under a matched preprocessing, fine-tuning, and
+evaluation protocol, fine-tuning RETFound on APTOS~2019 did not yield better
+cross-dataset generalisation for five-class DR grading than an ImageNet-pretrained
+CNN; on the pre-specified contrasts it generalised \emph{worse}. Both RETFound
+variants lost significantly more ordinal agreement than the EfficientNet-B3
+baseline on Messidor-2 (difference in QWK drop with a $95\%$ CI excluding zero),
+and the baseline had a significantly higher referable-DR AUC on both external
+datasets by DeLong's test while being statistically indistinguishable from all
+models internally. The direction was consistent across linear probing --- which
+ran to a clean early stop --- and full fine-tuning, so it is not an artefact of
+the early-stopped full run, and it persisted when the five-class task was
+collapsed to the clinically standard referable-DR decision
+(Section~\ref{sec:results-referable}), so it is not an artefact of the ordinal
+QWK metric either. This does not contradict RETFound's reported strengths
+on other tasks and modalities, but it tempers the expectation that retinal-domain
+self-supervised pretraining automatically confers robustness to the specific
+shifts represented by Messidor-2 and IDRiD (different cameras, acquisition,
+populations, and --- for Messidor-2 --- an adjudicated reference standard). One
+plausible reading is that full fine-tuning on a single moderately sized dataset
+(APTOS, $\approx$2.6k training images) allows a large ViT to fit APTOS-specific
+acquisition characteristics at least as readily as it exploits its pretrained
+retinal features.
+
+\textbf{Nature of the shift.} The Messidor-2 collapse is an ordinal-structure
+failure: models predict almost exclusively grade~0 or grade~2
+(Figure~\ref{fig:confusion}), so accuracy is partly preserved by the high grade-0
+prevalence while QWK falls sharply. The IDRiD pattern is different --- a base-rate
+shift toward more advanced disease --- so accuracy falls more than QWK. Reporting
+balanced accuracy alongside QWK (Table~\ref{tab:master}) separates these effects,
+and we recommend this practice for external-validation studies generally.
+
+\textbf{RQ2 --- Explainability.} Neither model family produced more clinically
+plausible saliency overall, but the two behaved differently under the harder
+shift. On IDRiD both the CNN Grad-CAM++ and the method-matched Vision-Transformer
+Grad-CAM concentrated on retinal tissue away from the optic disc and border
+($\geq 84\%$ proxy-plausible for the CNNs and the RETFound full fine-tune). On
+Messidor-2 the CNN saliency stayed on-tissue even for misclassified images
+($\approx 94\%$ proxy-plausible), whereas RETFound's saliency moved substantially
+to the image periphery ($57\%$ proxy-plausible) --- and did so most for its
+errors. This is consistent with the performance result: under the Messidor-2
+shift the foundation model appears to rely more on image-level acquisition cues
+than on focal lesions. Because plausibility here is scored by an automated proxy
+on $65$ images per cell, the effect should be read as hypothesis-generating and
+confirmed with blinded expert grading.
+
+\textbf{RQ3 --- Uncertainty.} Predictive uncertainty was, at best, a weak
+safeguard under dataset shift. Entropy separated correct from incorrect
+predictions internally (AUROC up to $0.84$) but only weakly externally
+($0.55$--$0.68$), and for the RETFound full fine-tune on IDRiD it carried no error
+signal at all. In operational terms, referring the most-uncertain $10\%$ of
+external predictions would capture only about $9$--$18\%$ of the errors --- barely
+better than referring a random $10\%$. An uncertainty-gated referral step is
+therefore not, on this evidence, a sufficient deployment safeguard for these
+models on these shifts. A natural next safeguard, a generic domain-shift
+out-of-distribution score (Mahalanobis distance in a frozen ImageNet feature
+space), was tested directly and did not do better --- it was never a
+significantly better error detector than entropy on either external dataset,
+and was significantly worse in most model $\times$ dataset cells
+(Section~\ref{sec:results-ood}). So neither the models' own confidence nor a
+generic distributional-distance signal reliably flags external errors here;
+calibration and out-of-distribution detection \emph{tailored to and validated
+on the deployment domain}, rather than assumed from a generic feature space or
+from in-domain confidence, would be needed.
+
+\textbf{Comparison with the literature.} Reported internal QWK for five-class DR
+grading on APTOS is typically $0.88$--$0.93$, matching our internal values
+($0.85$--$0.88$). External-validation reports for DR AI more often use
+referable-DR sensitivity/specificity than five-class QWK, and
+internal-to-external QWK drops of the magnitude seen here ($0.38$--$0.50$ on
+Messidor-2) are seldom reported because five-class external validation on an
+adjudicated reference standard is itself uncommon \cite{grzybowski2020review}.
+Where cross-population degradation of DR models has been quantified it is
+substantial \cite{dai2021spectrum,beede2020}, and our results extend that
+observation specifically to a retinal foundation model under a matched protocol.
+The Messidor-2 adjudicated grades \cite{krause2018} are a stricter target than the
+single-grader APTOS labels, which likely contributes to the size of the drop for
+every model.
+
+\textbf{Why the foundation model degrades.} A full retraining-based ablation is
+prepared but not yet executed (Section~\ref{sec:results-ablation};
+Section~\ref{sec:limitations}), so the following is an interpretation
+constrained by the inference-time evidence. The Messidor-2 and IDRiD shifts differ
+(Table~\ref{tab:shift}): Messidor-2 keeps APTOS's macula-centred geometry and
+low-severity skew but applies a stricter adjudicated-consensus reference standard
+\cite{krause2018}, while IDRiD differs on resolution, mydriasis, and disease
+base rate. The failure signatures track this --- an ordinal-structure collapse on
+Messidor-2 (QWK falls, accuracy partly held by grade-0 prevalence) and a
+base-rate failure on IDRiD (accuracy falls more than QWK). Two observations point
+at the same mechanism for the foundation model specifically: its Messidor-2
+saliency moves off the retina and onto the image periphery
+(Section~\ref{sec:results-explain}), and its label-smoothed outputs stay
+comparatively calibrated externally while its discrimination collapses
+(Section~\ref{sec:results-calib}) --- consistent with a large ViT that, when fully
+fine-tuned on $\approx$2.6k images, has fitted APTOS-specific acquisition
+statistics rather than lesion morphology. A third observation reinforces this: in
+an inference-time ablation (Section~\ref{sec:results-ablation}) the RETFound full
+fine-tune was far more fragile than the CNN to \emph{any} perturbation of the
+input distribution --- CLAHE or a colour-transfer toward the APTOS statistics
+each degraded it sharply on every dataset, internal included, whereas the CNN
+absorbed both. An APTOS-only-versus-multi-dataset training comparison and a
+colour-/resolution-normalised \emph{retraining} ablation
+(Section~\ref{sec:limitations}) are the direct tests of the mechanism and remain
+the priority follow-up.
+
+\textbf{Does the head architecture explain the gap?} A natural objection is that a single linear layer is too weak a head for ViT features. The head-depth sweep (Section~\ref{sec:results-headdepth}) answers this for the frozen-feature setting. Deeper heads ($3$--$7$ hidden layers) did not raise internal QWK beyond seed noise for either backbone, and on Messidor-2 no RETFound head among the $21$ configurations reached the weakest EfficientNet-B3 head ($0.448$ vs.\ $0.496$). Extra non-linear capacity sharpened, rather than removed, the pattern this paper describes: the GELU heads that internal validation would favour lowered RETFound's Messidor-2 QWK and referable sensitivity. The sweep also qualifies one result. With both linear heads re-fitted under one protocol, the IDRiD difference nearly vanished ($0.720$ vs.\ $0.716$), so the IDRiD component of the gap is less robust to how the head is trained than the Messidor-2 component, and the weight of the conclusion rests on Messidor-2 and its adjudicated reference standard.
+
+\textbf{Clinical significance.} A QWK fall from $\approx 0.87$ to $0.37$--$0.50$
+is not a marginal loss of accuracy: on Messidor-2 every model reduces, in
+practice, to sorting images into ``no DR'' versus ``moderate'', missing almost
+all mild disease (grade-1 sensitivity $\leq 0.02$) and mis-staging severe and
+proliferative cases. A screening tool behaving this way would under-refer
+early-treatable disease while giving confident grades
+(Section~\ref{sec:results-calib}), and predictive uncertainty would not flag the
+errors (Section~\ref{sec:results-unc}). The operational implication is that an
+internal QWK near $0.9$ provides no assurance of safe behaviour on images from a
+new camera, population, or grading protocol, and that external validation on an
+independent, ideally adjudicated, reference standard --- not internal test
+performance --- must gate deployment. Neither retinal-domain pretraining nor an
+uncertainty threshold can be assumed, on this evidence, to deliver
+deployment-ready robustness on its own.
+
+
+\section{Limitations}
+\label{sec:limitations}
+
+\textbf{Internal validity.} The RETFound full fine-tuning results use an epoch-6
+checkpoint (validation QWK $0.935$). Two attempts to run the planned $30$-epoch
+schedule to completion on the available hardware were curtailed --- the first by a
+checkpoint-synchronisation I/O slowdown, the second by host memory exhaustion
+after the model had already converged. In the second attempt the validation QWK
+plateaued at $\approx 0.94$ from epoch~16 onward (best $0.943$ at epoch~19),
+essentially matching the value at which the first run was stopped, so the epoch-6
+checkpoint is representative of the converged model; its values are marked
+\textsuperscript{p} pending a clean completed run in a memory- and
+throttle-unconstrained environment. The negative conclusion does not depend on
+this: it also holds for the RETFound linear-probe variant, which ran to a clean
+early stop, and the full-fine-tune Messidor-2 deficit (difference in QWK drop
+\pv{$+0.124$}, $95\%$ CI $[0.074,0.175]$) is far larger than the $\leq 0.01$
+validation-QWK headroom between epoch~6 and convergence. All numbers come from one
+codebase on one machine with no independent re-implementation, mitigated by
+releasing the code and the per-image prediction logs (Section~\ref{sec:repro}).
+
+\textbf{External validity.} All datasets are retrospective and public; no
+prospective or clinical-deployment claim is made. The IDRiD Disease-Grading mirror
+used contained $455$ of $516$ images; because it is an external test set this
+cannot bias model development, and the subset spans all five grades with the full
+release's class mix, but precision is correspondingly reduced. External sample
+sizes limit precision for rare grades --- grade-1 (mild) sensitivity is
+effectively not estimable on Messidor-2 for any model --- and some bootstrap CIs
+are correspondingly wide. A single retinal foundation model (RETFound
+masked-autoencoder, colour-fundus weights) and a single downstream task
+(five-class DR grading) were studied; the result should not be generalised to
+other retinal foundation models or tasks without direct testing.
+
+\textbf{Construct validity.} Explainability plausibility was scored by a
+transparent automated proxy, not by a blinded expert grader, and the proxy cannot
+exclude vessel-centred activation; $65$ images were rated per model per external
+dataset. A blinded two-rater assessment with Cohen's~$\kappa$ would strengthen
+RQ2; the rating packet, rubric, and scorer for exactly this assessment are
+released (\texttt{scripts/\allowbreak{}phase7\_rating\_packet.py};
+Section~\ref{sec:methods-explain}), and completing it with practising
+ophthalmologists --- ideally against the pixel-level lesion masks of the IDRiD
+Segmentation subset --- remains outstanding. Calibration was assessed with the expected and maximum calibration error,
+the multi-class Brier score, reliability diagrams, and per-model temperature
+scaling fitted on the APTOS validation split
+(Sections~\ref{sec:methods-calib}, \ref{sec:results-calib}); a temperature fitted
+on a dedicated in-distribution calibration set separate from the early-stopping
+split, or a full multi-parameter recalibrator, was not attempted.
+
+\textbf{Statistical-conclusion validity.} The confirmatory DeLong family (nine
+referable-DR comparisons against the baseline) is reported both uncorrected and
+Holm--Bonferroni-corrected, and every significance claim survives the correction
+(\texttt{outputs/\allowbreak{}phase11/\allowbreak{}multiplicity.csv}); secondary per-grade tests are
+exploratory and uncorrected. No formal a-priori power calculation was performed:
+the external sample sizes are fixed by the public releases ($n=1744$ and $n=455$),
+and for the rare grades the achievable precision is intrinsically limited ---
+grade-1 has $270$ images on Messidor-2 and $22$ on IDRiD, grade-3/4 have $75$/$35$
+and $84$/$64$ respectively (Table~\ref{tab:counts}), so per-class estimates for
+those grades carry wide CIs (\texttt{outputs/\allowbreak{}phase11/\allowbreak{}per\_class\_ci.csv}) and are
+interpreted only as directional. The primary quantities (overall QWK, its
+internal-to-external drop, the between-model difference in drop, referable-DR
+AUC) are estimated on the full external sets and have CI half-widths of
+$0.02$--$0.06$. Bootstrap resampling treats the images within each test set as
+exchangeable; a genuine patient-partitioned analysis would require datasets that
+ship patient identifiers, which the public releases used here do not. Within
+APTOS, $41/733$ ($5.6\%$) internal-test images have an exact duplicate in
+train/val (a known property of APTOS~2019); removing them shifts internal QWK by
+$\leq 0.006$ and does not change any comparison, and the external sets contain no
+byte-duplicate of an APTOS image (Section~\ref{sec:methods-split}).
+
+\textbf{Sensitivity analyses performed.} Beyond the deduplicated-internal check
+above, the ranking was stable to: (i) the secondary CNN backbone (ResNet-50
+mirrors EfficientNet-B3); (ii) the RETFound adaptation regime (linear probing and
+full fine-tuning agree); (iii) single-pass versus $T=20$ Monte-Carlo-dropout
+predictive distributions --- for the uncertainty analysis ($\Delta$AUROC
+$\leq 0.02$) and for the full statistical pipeline (bootstrap CIs, the
+internal-to-external drop, the paired difference in drop, and the DeLong
+referable-DR test): every RETFound-versus-baseline DeLong verdict is unchanged
+(both external sets significant, internal not), and the Messidor-2 excess drop of
+each non-baseline model still excludes $0$; the only movement is the RETFound
+full fine-tune's marginal IDRiD excess-drop interval, which is
+$[-0.022, 0.089]$ single-pass and $[0.000, 0.114]$ under Monte-Carlo dropout, and
+is not relied on for any claim (\texttt{outputs/\allowbreak{}phase9/\allowbreak{}*\_mc.csv});
+(iv) recomputation of every headline metric by an independent script; (v) the
+calibration-source choice for temperature scaling (APTOS validation versus a
+disjoint APTOS-train subset; Section~\ref{sec:results-calib}); and (vi) three
+additional training seeds each for EfficientNet-B3 and for RETFound linear
+probing (seeds 43--45; four runs per model, each scored unmodified on the
+Phase-6 code path). Training-seed variability was small for both models:
+internal-test QWK standard deviation $0.003$ (EfficientNet-B3) and $0.008$
+(RETFound linear probe), and external QWK standard deviation $0.024$ / $0.015$
+(EfficientNet-B3) versus $0.015$ / $0.012$ (RETFound linear probe) on
+Messidor-2 / IDRiD. The per-model seed distributions do not overlap on either
+external set --- on Messidor-2, EfficientNet-B3 QWK is $0.500 \pm 0.024$
+(range $0.469$--$0.527$) against RETFound linear probe $0.395 \pm 0.015$
+(range $0.374$--$0.408$); on IDRiD, $0.749$ against $0.623$ --- and the
+internal-to-external QWK drop on Messidor-2 was larger for RETFound at every
+seed ($0.461 \pm 0.017$ versus $0.379 \pm 0.025$). The excess Messidor-2 drop
+of the RETFound full fine-tune over the baseline ($+0.124$ [$0.074$, $0.175$];
+Table~\ref{tab:drop}) is roughly five times the baseline's seed standard
+deviation, so neither the direction nor the magnitude of the RETFound--CNN gap
+is attributable to training-seed variance
+(\texttt{scripts/\allowbreak{}phase16\_seed\_sweep.py}, \texttt{outputs/\allowbreak{}phase16/\allowbreak{}}). The
+inference-time CLAHE, colour-transfer and $224$-versus-$384$ resolution
+ablations (Section~\ref{sec:results-ablation}) further showed the direction of
+the RETFound--CNN gap is not an artefact of the specific preprocessing choice or
+working resolution. Re-training EfficientNet-B3 and the RETFound linear probe
+with plain (unweighted) cross-entropy and with focal loss ($\gamma=2$) in place
+of the inverse-frequency weighting left internal-test QWK essentially unchanged
+for both families ($0.876$--$0.881$ and $0.847$--$0.858$); on Messidor-2 the
+convolutional baseline kept the higher QWK and the smaller internal-to-external
+drop under every loss (EfficientNet-B3 QWK $0.499$--$0.549$ versus RETFound
+linear probe $0.316$--$0.404$; Messidor-2 drop $0.33$--$0.38$ versus
+$0.45$--$0.54$), so the Messidor-2 gap is not an artefact of the class-weighting
+scheme. IDRiD was more loss-sensitive --- unweighted cross-entropy raised the
+RETFound linear probe to QWK $0.751$ and lowered EfficientNet-B3 to $0.706$ ---
+consistent with IDRiD being the smaller external set on which the
+RETFound--baseline contrast is already marginal (Table~\ref{tab:drop});
+the full fine-tune was not re-trained for this check at the time of writing,
+though the scoring harness now supports it directly
+(\texttt{scripts/\allowbreak{}phase17\_loss\_sensitivity.py} recognises
+\texttt{full\_noweight\_loss\_best.pt} / \texttt{full\_focal\_loss\_best.pt}
+checkpoints once trained). Also completed this round: a full standalone
+referable-DR secondary task (Section~\ref{sec:results-referable}), which shows
+the same directional gap under a binary clinical decision as under the ordinal
+five-class one, and a domain-shift out-of-distribution detector
+(Section~\ref{sec:results-ood}), which did not outperform predictive entropy as
+an external error detector. Not yet run: the same normalisations and resolution
+applied at \emph{training} time, matched multi-seed retraining of the RETFound
+full fine-tune, a training-set-size sweep, and the loss-sensitivity check above
+extended to full fine-tuning (the seed sweep and the loss ablation above both
+cover the linear-probe regime only). The data-preparation and training-flag
+support for all of these is prepared and released
+(\texttt{scripts/\allowbreak{}phase18\_retrain\_variants\_prep.py},
+\texttt{scripts/\allowbreak{}phase21\_training\_size\_sensitivity.py},
+\texttt{train\_baseline.py} / \texttt{train\_retfound.py --manifest ...
+--img-size ... --train-frac ...}, \texttt{COLAB\_RETRAIN\_GUIDE.md}); running it
+needs sustained GPU time this study's single consumer GPU could not provide for
+the RETFound full fine-tune (Internal validity), so execution is deferred to a
+cloud GPU and remains outstanding.
+
+\textbf{Highest-value next experiments}, in priority order:
+(1) executing the now-prepared \emph{retraining} ablation --- colour- and
+resolution-normalised fine-tuning, a training-set-size sweep, matched multi-seed
+and multi-loss retraining of the RETFound full fine-tune, and APTOS-only versus
+multi-dataset (APTOS + one other) fine-tuning --- to move from documenting the
+failure to explaining it (Section~\ref{sec:results-ablation};
+\texttt{COLAB\_RETRAIN\_GUIDE.md});
+(2) a completed RETFound full fine-tuning run in a resource-unconstrained
+environment (the results here use an epoch-6 checkpoint that has reached its
+converged validation QWK; see Internal validity), and $\geq 2$ checkpoints per
+pretraining family to support a paradigm-level rather than checkpoint-level claim;
+(3) blinded expert (ophthalmologist) rating of the saliency maps against
+lesion masks --- using the IDRiD \emph{Segmentation} subset, which ships
+pixel-level microaneurysm/haemorrhage/exudate masks, is a separate IEEE
+DataPort sub-challenge from the Disease-Grading subset used here, and was not
+obtained for this study --- with inter-rater agreement (Cohen's $\kappa$), to
+replace the automated location proxy (the blinded packet and scorer are built
+and released, \texttt{scripts/\allowbreak{}phase7\_rating\_packet.py}; recruiting raters,
+obtaining the masks, and computing the overlap are the remaining work, and are
+deliberately reported here as not attempted rather than approximated);
+(4) the full $516$-image IDRiD Disease-Grading set (the $455$-image mirror used
+here was the best available without a further data-access step) and a
+patient-partitioned external dataset (no dataset used here ships patient
+identifiers; Statistical-conclusion validity above);
+(5) adaptive, deployment-domain-fitted recalibration and out-of-distribution
+detection --- single-temperature scaling (Section~\ref{sec:results-calib}) and a
+generic Mahalanobis out-of-distribution score (Section~\ref{sec:results-ood})
+were both tested and neither repaired external behaviour, so the open question
+is specifically whether a detector fitted \emph{on} a target shift, rather than
+a generic in-domain one, would do better;
+(6) a second retinal foundation model, so that any future claim can be made at
+the pretraining-paradigm level rather than about this one checkpoint; deferred
+in this round by design (single-checkpoint scope stated throughout) rather than
+attempted and dropped.
+
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+In this retrospective external-validation study, a fine-tuned retinal foundation
+model did not outperform --- and by the pre-specified comparisons underperformed
+--- a standard ImageNet-pretrained CNN for cross-dataset diabetic retinopathy
+grading. All models lost substantial ordinal agreement on independent data, most
+severely on Messidor-2; predictive uncertainty was a weak safeguard under that
+shift; and the foundation model's saliency became peripheral rather than
+lesion-centred. The RETFound--CNN gap was consistent across the five-class
+ordinal task and a binary referable-DR reformulation, across training seeds,
+loss functions, CNN backbone, and, on Messidor-2, all $21$ classifier-head depth
+and activation configurations tested; a domain-shift out-of-distribution
+detector did not close it either --- so the finding is not an artefact of any
+single metric or design choice tested. These results argue for external
+validation, on an independent adjudicated reference standard where possible,
+as the primary evidence standard for retinal AI, and show that neither
+retinal-domain pretraining nor an uncertainty threshold can be assumed to
+deliver deployment-ready robustness on its own.
+
+
+\section{Reproducibility}
+\label{sec:repro}
+
+Every number in this paper is produced by a released script from public data; none
+is hand-entered. The release contains, and Table~\ref{tab:repro} documents: the
+exact dataset sources and licences (\texttt{DATA\_PROVENANCE.md}), the persisted
+stratified split (image-ID CSVs), all random seeds, the probe/fine-tune
+hyperparameters (JSON logs), the evaluation and statistics settings, the pinned
+software versions, and the per-image prediction logs
+(\texttt{outputs/\allowbreak{}phase6/\allowbreak{}*\_preds.csv}), plus one script per table and figure. The
+raw datasets are third-party and are not redistributed: APTOS~2019 via Kaggle
+\cite{aptos2019}; Messidor-2 via ADCIS \cite{decenciere2014} with adjudicated
+grades from \cite{krause2018}; IDRiD via IEEE DataPort \cite{porwal2018}. The
+stratified $70/10/20$ APTOS split uses seed $42$ and is persisted as
+\texttt{data\_splits/\allowbreak{}aptos\_\{train,val,test\}.csv}.
+
+\begin{table}[!t]
+\centering\footnotesize
+\caption{Result $\rightarrow$ generating script. All scripts are in the released
+repository and run against the committed checkpoints and split files.}
+\label{tab:repro}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.34\linewidth} >{\raggedright\arraybackslash}p{0.62\linewidth}@{}}
+\toprule
+Result & Script \\
+\midrule
+Split (Table~\ref{tab:datasets}) & \texttt{scripts/\allowbreak{}phase3\_split\_aptos.py}, \texttt{phase3\_preprocess.py} \\
+Baselines (Table~\ref{tab:master}) & \texttt{scripts/\allowbreak{}train\_baseline.py --arch \{efficientnet\_b3,resnet50\}} \\
+RETFound (Table~\ref{tab:master}) & \texttt{scripts/\allowbreak{}train\_retfound.py --mode \{linprobe,full\}} \\
+External eval (Tables~\ref{tab:master}, \ref{tab:drop}) & \texttt{scripts/\allowbreak{}phase6\_external\_eval.py} \\
+Explainability (Fig.~\ref{fig:explain}); blinded-rating packet + scorer & \texttt{scripts/\allowbreak{}phase7\_explainability.py}; \texttt{scripts/\allowbreak{}phase7\_rating\_packet.py} \\
+Uncertainty (Fig.~\ref{fig:uncertainty}); per-grade entropy breakdown & \texttt{scripts/\allowbreak{}phase8\_uncertainty.py}, \texttt{phase8\_mc\_dropout.py} \\
+Stats (Tables~\ref{tab:master}--\ref{tab:delong}); MC-dropout re-run & \texttt{scripts/\allowbreak{}phase9\_stats.py --boot 2000 --seed 42} \newline (\texttt{--preds-dir outputs/\allowbreak{}phase8/\allowbreak{}mc --tag mc} for the MC sensitivity variant) \\
+Verification, per-class CIs, calibration, ROC/PR, multiplicity, domain-shift, split counts (Tables~\ref{tab:calib}, \ref{tab:shift}, \ref{tab:counts}) & \texttt{scripts/\allowbreak{}phase11\_review\_response.py} \\
+Duplicate / leakage check (Section~\ref{sec:methods-split}) & \texttt{scripts/\allowbreak{}phase12\_leakage.py} \\
+Temperature scaling (Section~\ref{sec:results-calib}) & \texttt{scripts/\allowbreak{}phase13\_temperature\_scaling.py --calib-preds \ldots} \\
+Embedding near-duplicate check (Section~\ref{sec:methods-split}) & \texttt{scripts/\allowbreak{}phase14\_embedding\_dedup.py} \\
+Degradation ablation --- CLAHE, colour-transfer (Section~\ref{sec:results-ablation}) & \texttt{scripts/\allowbreak{}phase15\_ablation.py} \\
+Degradation ablation --- input resolution $224$/$384$ (Section~\ref{sec:results-ablation}) & \texttt{scripts/\allowbreak{}phase15c\_resolution.py} \\
+Classifier-head depth $\times$ activation sweep (Tables~\ref{tab:headdepth}--\ref{tab:headcm}) & \texttt{scripts/\allowbreak{}}\allowbreak\texttt{phase22\_head\_depth\_ablation.py} \newline \texttt{--stage \{embed,sweep\}}; \texttt{run\_phase22.bat} \\
+Training-seed sensitivity (Limitations) & \texttt{scripts/\allowbreak{}phase16\_seed\_sweep.py} \\
+Loss-function / class-weighting sensitivity (Limitations) & \texttt{scripts/\allowbreak{}phase17\_loss\_sensitivity.py} (variants via \texttt{train\_baseline.py} / \texttt{train\_retfound.py --loss \{ce,focal\}}) \\
+Retraining-ablation data prep --- CLAHE, colour-transfer, $384$~px, all splits (Limitations) & \texttt{scripts/\allowbreak{}phase18\_retrain\_variants\_prep.py}; run via \texttt{train\_baseline.py} / \texttt{train\_retfound.py --manifest ... --img-size ...} (\texttt{COLAB\_RETRAIN\_GUIDE.md}) \\
+Referable-DR secondary task (Section~\ref{sec:results-referable}) & \texttt{scripts/\allowbreak{}phase19\_referable\_dr.py} \\
+Domain-shift OOD detection (Section~\ref{sec:results-ood}) & \texttt{scripts/\allowbreak{}phase20\_ood\_detection.py} \\
+Training-set-size sensitivity scoring (Limitations) & \texttt{scripts/\allowbreak{}phase21\_training\_size\_sensitivity.py}; variant checkpoints via \texttt{train\_baseline.py} / \texttt{train\_retfound.py --train-frac ...} (\texttt{COLAB\_RETRAIN\_GUIDE.md}) \\
+Figs.~\ref{fig:forest}, \ref{fig:confusion}, \ref{fig:perclass}, \ref{fig:grades} & \texttt{scripts/\allowbreak{}phase10\_figures.py}, \texttt{phase10b\_figures.py} \\
+Figs.~\ref{fig:reliability}, \ref{fig:rocpr}, \ref{fig:perclassci} & \texttt{scripts/\allowbreak{}phase11\_figures.py} \\
+Fig.~\ref{fig:pipeline} & hand-drawn (TikZ, in this file) \\
+Environment & Python 3.14, \texttt{torch} 2.11.0+cu128, \texttt{timm} 1.0.29, \texttt{scikit-learn} 1.9.0; full list in \texttt{requirements.txt} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+{\raggedright
+\paragraph{Supplementary material (released with the code, not in this PDF).}
+Complete per-class sensitivity / specificity / precision / F1 / support with
+$95\%$ CIs for every model $\times$ dataset
+(\texttt{outputs/\allowbreak{}phase11/\allowbreak{}per\_class\_ci.csv}); all bootstrap CIs for every metric
+(\texttt{outputs/\allowbreak{}phase9/\allowbreak{}bootstrap\_ci.csv}); per-grade one-vs-rest DeLong tests
+(\texttt{outputs/\allowbreak{}phase9/\allowbreak{}delong.csv}) and their Holm-adjusted $p$
+(\texttt{outputs/\allowbreak{}phase11/\allowbreak{}multiplicity.csv}); full calibration table and
+reliability-diagram bin data (\texttt{outputs/\allowbreak{}phase11/\allowbreak{}reliability\_*.csv});
+$T=20$ Monte-Carlo-dropout uncertainty
+(\texttt{outputs/\allowbreak{}phase8/\allowbreak{}uncertainty\_mc.csv}) and the whole statistical pipeline
+re-run on those distributions (\texttt{outputs/\allowbreak{}phase9/\allowbreak{}*\_mc.csv}); predictive
+entropy and accuracy broken down by reference and by predicted ICDR grade
+(\texttt{outputs/\allowbreak{}phase8/\allowbreak{}uncertainty\_by\_class\_\{singlepass,mc\}.csv},
+\texttt{fig\_uncertainty\_byclass\_*.png}); the full per-model
+temperature-scaling table, raw versus recalibrated
+(\texttt{outputs/\allowbreak{}phase13/\allowbreak{}temperature\_scaling.csv}); the deduplicated-internal
+sensitivity analysis (\texttt{outputs/\allowbreak{}phase12/\allowbreak{}dedup\_internal\_metrics.csv});
+the four-seed training-seed sweep for EfficientNet-B3 and RETFound linear
+probing, per-seed and aggregated (\texttt{outputs/\allowbreak{}phase16/\allowbreak{}seed\_master.csv},
+\texttt{seed\_summary.md}); the $224$-versus-$384$ input-resolution ablation
+(\texttt{outputs/\allowbreak{}phase15c/\allowbreak{}resolution\_master.csv}); the loss-function /
+class-weighting ablation --- EfficientNet-B3 and the RETFound linear probe
+re-trained with plain cross-entropy and with focal loss
+(\texttt{outputs/\allowbreak{}phase17/\allowbreak{}loss\_master.csv}, \texttt{loss\_drop.csv});
+attention-rollout saliency maps and per-image plausibility scores
+(\texttt{outputs/\allowbreak{}phase7/\allowbreak{}}); the blinded expert-rating packet --- $160$ clean
+saliency overlays, rating sheet, rubric, and withheld key
+(\texttt{outputs/\allowbreak{}phase7/\allowbreak{}rating\_packet/\allowbreak{}}); the referable-DR secondary-task
+operating-point metrics with $95\%$ CIs
+(\texttt{outputs/\allowbreak{}phase19/\allowbreak{}referable\_dr\_master.csv},
+\texttt{referable\_dr\_drop.csv}); the domain-shift OOD-detection-versus-entropy
+comparison (\texttt{outputs/\allowbreak{}phase20/\allowbreak{}ood\_master.csv}); the retraining-ablation
+data-preparation script and Colab/Kaggle run recipe for the colour-,
+resolution-, and training-set-size retraining comparisons
+(\texttt{scripts/\allowbreak{}phase18\_retrain\_variants\_prep.py},
+\texttt{COLAB\_RETRAIN\_GUIDE.md}); hyperparameter JSONs; the split image-ID
+lists; and the TRIPOD+AI checklist (\texttt{paper/\allowbreak{}TRIPOD-AI\_checklist.md}).
+\par}
+
+
+\section*{Declarations}
+
+\textbf{Data availability.} All datasets used are publicly available: APTOS~2019
+\cite{aptos2019}, Messidor-2 \cite{decenciere2014,abramoff2013} with adjudicated
+grades \cite{krause2018}, and IDRiD \cite{porwal2018,porwal2020}. No new data were
+collected. Source URLs, versions, access dates, and licence terms are in
+\texttt{DATA\_PROVENANCE.md}; the raw images are not redistributed.
+
+\textbf{Code availability.} The full evaluation codebase, configuration, split
+image-ID lists, per-image prediction logs, and environment specification are
+released at [repository URL / archival DOI to be inserted on acceptance; an
+anonymised snapshot accompanies the submission].
+
+\textbf{Ethics approval.} This study analysed only previously published, fully
+de-identified, publicly available retinal image datasets, each collected and
+graded under the ethical approvals and consent procedures of its original study.
+No new human-subjects data were collected and no individual can be identified from
+the data used, so no additional ethics approval was required. [Replace with the
+target journal's exact required wording for secondary use of public,
+de-identified data.]
+
+\textbf{Competing interests.} The author declares no competing interests.
+
+\textbf{Funding.} This work received no external funding and used only publicly
+available datasets, one gated pretrained checkpoint (RETFound), and a single
+consumer GPU.
+
+\textbf{Author contributions.} P.\ conceived the study, implemented the
+evaluation pipeline, ran the experiments, analysed the results, and wrote the
+manuscript.
+
+\textbf{Use of AI tools.} Data-processing, model-training, evaluation, and
+statistical code, the manuscript figures, and portions of the manuscript text
+were prepared with the assistance of an AI coding assistant under author
+supervision; all analyses were executed by the author, and all results,
+interpretations, and the final text were verified and approved by the author, who
+takes full responsibility for the work. [Adjust to the target journal's AI-use
+policy.]
+
+\section*{Acknowledgments}
+The author thanks the teams behind APTOS~2019, Messidor-2, and IDRiD for
+releasing their data publicly, the Krause et al.\ team for the adjudicated
+Messidor-2 reference standard, and the authors of RETFound for releasing their
+pretrained checkpoint.
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\end{document}

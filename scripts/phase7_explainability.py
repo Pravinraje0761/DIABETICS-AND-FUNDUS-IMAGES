@@ -344,8 +344,8 @@ def overlay(rgb01, cam224, out_png: Path, title: str, proxy: dict) -> None:
     ax[1].add_patch(Circle((proxy["disc_cx"], proxy["disc_cy"]), proxy["disc_r"],
                            fill=False, ec="white", lw=1.0, ls="--"))
     ax[1].plot(proxy["peak_x"], proxy["peak_y"], "w+", ms=9, mew=2)
-    ax[1].set_title("proxy-plausible" if proxy["proxy_plausible"]
-                    else "proxy-implausible", fontsize=8)
+    ax[1].set_title("in-zone (location proxy)" if proxy["proxy_plausible"]
+                    else "out-of-zone (location proxy)", fontsize=8)
     ax[1].axis("off")
     fig.suptitle(title, fontsize=8)
     fig.tight_layout(rect=(0, 0, 1, 0.92))
@@ -573,7 +573,7 @@ def _selected_figure(df):
                      f"true {GRADE_NAMES[row.true_grade]} $\\rightarrow$ pred "
                      f"{GRADE_NAMES[row.pred_grade]}  "
                      f"({'correct' if row.correct else 'error'})\n"
-                     f"{'proxy-plausible' if row.proxy_plausible else 'proxy-implausible'}"
+                     f"{'in-zone' if row.proxy_plausible else 'out-of-zone'}"
                      f"  [{row.saliency_method}]",
                      fontsize=7)
         ax.axis("off")

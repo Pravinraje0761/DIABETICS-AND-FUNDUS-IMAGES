@@ -1,0 +1,392 @@
+%% International Ophthalmology -- Original Article
+%% Springer Nature LaTeX template (sn-jnl), basic reference style, numbered citations.
+%% Every result is a macro \nv{key} generated from the analysis outputs by
+%% scripts/phase32_tex_numbers.py (generated/numbers.tex); do not type numbers by hand.
+\documentclass[pdflatex,sn-basic,Numbered]{sn-jnl}
+
+\usepackage{graphicx}
+\usepackage{multirow}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{array}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\usepackage{xcolor}
+\usepackage{textcomp}
+\usepackage{url}
+
+\input{generated/numbers.tex}
+\newcommand{\ci}[2]{(#1 to #2)}
+\newcommand{\hd}[2]{\begin{tabular}[b]{@{}c@{}}#1\\#2\end{tabular}}
+\newcommand{\two}[2]{\begin{tabular}[c]{@{}c@{}}#1\\[-1.5pt]{\fontsize{6.5}{7.5}\selectfont #2}\end{tabular}}
+
+\raggedbottom
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\textfraction}{0.1}
+\renewcommand{\floatpagefraction}{0.8}
+\makeatletter\@secpenalty=0\makeatother
+
+\begin{document}
+
+\title[Foundation-model pretraining and external DR grading]{Retinal foundation-model versus ImageNet pretraining for deep learning grading of diabetic retinopathy: an external validation study}
+
+\author*[1]{\fnm{Pravin Raj} \sur{E}}\email{pravinraje.aids2024@citchennai.net}
+
+\affil*[1]{\orgdiv{Department of Artificial Intelligence and Data Science}, \orgname{Chennai Institute of Technology}, \orgaddress{\city{Chennai}, \state{Tamil Nadu}, \country{India}}}
+
+\abstract{\textbf{Purpose} To determine whether retinal foundation-model pretraining reduces the loss of diabetic retinopathy (DR) grading agreement on external datasets compared with an ImageNet-pretrained convolutional network, and to describe how external performance relates to case mix and grading conventions.
+
+\textbf{Methods} RETFound (linear probe and full fine-tuning), EfficientNet-B3 and ResNet-50 were developed on APTOS 2019 and tested unchanged on Messidor-2 (1,744 images; adjudicated grades) and IDRiD (516 images). The primary outcome was the difference in internal-to-external quadratic weighted kappa (QWK) drop versus EfficientNet-B3, averaged over independent training runs, with a bootstrap that resampled runs, images and Messidor-2 examinations.
+
+\textbf{Results} Internal QWK was \nv{fullintqwk} for fine-tuned RETFound and \nv{effintqwk} for EfficientNet-B3. Averaged over runs, fine-tuned RETFound's excess drop was \nv{sxgfullmesqwk} (95\% CI \nv{sxgfullmesqwkhlo} to \nv{sxgfullmesqwkhhi}; Holm \textit{p}\,\nv{sxgfullmesqwkhholmeq}) on Messidor-2 and \nv{sxgfullidrqwk} (\nv{sxgfullidrqwkhlo} to \nv{sxgfullidrqwkhhi}) on IDRiD; the linear probe degraded more on both (Holm \textit{p}\,$\le$\,\nv{sxglpmesqwkhholm}). On Messidor-2, referable-DR sensitivity was \nv{effmessens}\% for both models (specificity \nv{effmesspec}--\nv{fullmesspec}\%), with almost all mild DR graded as no DR; on IDRiD, no DR was often graded mild. Matching case mix and merging no and mild DR reduced the Messidor-2 drop by \nv{preffmesqwkfourrw}--\nv{prfullmesqwkfourrw}\%. RETFound's lower external calibration error was reproduced by label smoothing. Referring the least confident 30\% of images reduced missed referable DR on Messidor-2 from \nv{effmesmissed0}\% to \nv{effmesmissedmsp30}\% (EfficientNet-B3).
+
+\textbf{Conclusion} Retinal foundation-model pretraining did not reduce external performance loss. External DR-grading studies should report reference standards and prevalence-independent measures, and repeat training runs.}
+
+\keywords{Diabetic retinopathy, Deep learning, Foundation model, External validation, Reference standard, Fundus photography}
+
+\maketitle
+
+%% =========================================================================
+\section{Introduction}\label{sec:intro}
+
+Diabetic retinopathy (DR) remains a leading cause of preventable vision loss, and the number of people who need regular retinal screening is growing faster than the number of graders available to read their photographs. Deep learning systems trained on colour fundus photographs can reach specialist-level agreement on the data they were developed with \cite{gulshan2016,ting2017}, and this journal has published deep-learning approaches to DR and other retinal disease \cite{nagasawa2019,mahapadi2025,yuan2023} and evaluations of commercial DR software in screening settings \cite{vought2023eyeart}. Performance, however, often falls when the camera, population, image quality or grading protocol changes \cite{beede2020,dai2021spectrum}, and reviews of DR screening artificial intelligence (AI) note that external validation is still reported inconsistently \cite{grzybowski2020review,tripodai2024}. The opening editorial of this journal's special collection on retinal AI asks that new models show incremental value over strong baselines, address distribution shift, use transparent reference standards and independent external validation, assess uncertainty, and report outcomes such as referral appropriateness \cite{jin2026editorial}.
+
+Retinal foundation models have been proposed as one route to robustness. RETFound, a Vision Transformer \cite{dosovitskiy2021vit} pretrained by masked autoencoding \cite{he2022mae} on about 1.6 million unlabelled retinal images, was reported to transfer well to several ocular and systemic tasks \cite{zhou2023retfound}. The intuition is that a representation learned from many retinas should survive a change of camera or clinic better than one learned from everyday objects. The evidence is mixed. On the three public DR datasets used here, a natural-image foundation model generally achieved higher cross-dataset AUC than RETFound \cite{hou2025dinov2}. In a large comparison, RETFound and ImageNet-pretrained models performed similarly when fine-tuned on full datasets, with RETFound advantages confined to small-data regimes \cite{yew2026}. Frozen RETFound features transferred worse than an ImageNet encoder from APTOS 2019 to Messidor-2 \cite{poyrazer2026}, and foundation models generalised poorly to unseen ultra-wide-field populations \cite{li2026uwf}. Comparisons can also be undermined by the data: in one recent comparison of EfficientNet-B3 and RETFound, the authors' own provenance audit later found the pooled cohort confounded and stated that the original conclusion did not stand \cite{alutaibi2026}.
+
+An internal-to-external drop in agreement mixes several things: a change in the images (camera, population, acquisition), a change in case mix (grade prevalence), and a change in the reference standard that defines the labels. Adjudicated specialist grades differ materially from single-grader labels and change the measured performance of the same algorithm \cite{krause2018}. Two further questions are rarely tested quantitatively: whether a model's uncertainty identifies its errors better than its plain confidence, and whether its saliency falls on expert-annotated lesions more often than a trivial control \cite{mahapadi2025,alizadeh2024}.
+
+We therefore compared RETFound, as a frozen linear probe and fully fine-tuned, with two ImageNet-pretrained convolutional neural networks (CNNs), all developed on one dataset and tested unchanged on two external datasets that differ in camera, population, case mix and reference standard. The primary hypothesis was that fully fine-tuned RETFound loses less five-grade agreement than EfficientNet-B3 between internal and external data. Secondary aims were to report referable-DR accuracy in clinical terms; to describe how the drop relates to case mix and to the no-DR/mild boundary; to test whether uncertainty identifies errors and supports referral to a human grader; and to measure saliency localisation against expert lesion masks.
+
+%% =========================================================================
+\section{Methods}\label{sec:methods}
+
+\subsection{Study design and reporting}
+
+This was a retrospective external-validation study using only public, de-identified images. Models were developed on one dataset and evaluated, unchanged, on two external datasets (Fig.~\ref{fig:design}). Reporting follows TRIPOD+AI \cite{tripodai2024}; the completed checklist, with a map to the CLAIM 2024 \cite{claim2024} and STARD-AI \cite{stardai2025} topics, is provided as Online Resource 2. Changes made to the analysis plan during the study are listed in Sect.~\ref{sec:changes}.
+
+\subsection{Datasets and reference standards}\label{sec:data}
+
+Table~\ref{tab:datasets} summarises the three datasets.
+\textbf{APTOS 2019} \cite{aptos2019} contains 3,662 labelled colour fundus photographs from Aravind Eye Hospital (India), acquired across clinics and cameras and graded by one clinician per image on a 0--4 scale; no adjudication is described. It was used only for development and split 70/10/20 into training (2,562), validation (367) and internal test (733) sets, stratified by grade (seed 42). Forty-one internal-test images had a byte-identical duplicate in the training or validation split and were excluded from all internal estimates, leaving 692 internal-test images.
+\textbf{Messidor-2} \cite{decenciere2014,abramoff2013} contains 874 examinations (1,748 macula-centred images, one per eye) acquired in France, largely with a Topcon TRC NW6 non-mydriatic camera. We used the adjudicated International Clinical Diabetic Retinopathy (ICDR) grades of three retina specialists \cite{krause2018} and the 1,744 images graded gradable.
+\textbf{IDRiD} \cite{porwal2018,porwal2020} is the official Disease-Grading release (516 images: 413 training, 103 test, pooled because neither was used for development), acquired with a Kowa VX-10$\alpha$ camera under mydriasis at an eye clinic in Nanded (India) and graded by experts on an ICDR-based 0--4 scale; the number of graders and any adjudication are not reported.
+
+All three label sets use the same five levels (0 no DR, 1 mild, 2 moderate, 3 severe non-proliferative, 4 proliferative DR), so no relabelling was required; identical numbers do not imply identical grading processes (Table~\ref{tab:datasets}). Referable DR was defined as grade $\ge2$. An earlier version of this analysis used a third-party copy of IDRiD; comparison with the official release showed \nv{mirrorMissing} missing images and \nv{mirrorDiff} of \nv{mirrorN} labels (\nv{mirrorPct}\%) that differed from the official grade, \nv{mirrorDiseasedAsZero} of them official mild or moderate DR labelled as no DR. All IDRiD results reported here use the official release (audit in Online Resource 3).
+
+\begin{table}[!tbp]
+\caption{Datasets, reference standards and label harmonisation}\label{tab:datasets}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}L{2.6cm}L{3.2cm}L{3.2cm}L{3.2cm}@{}}
+\toprule
+ & APTOS 2019 & Messidor-2 & IDRiD (official) \\
+\midrule
+Role & Development & External test & External test \\
+Images used & 3,662 (internal test 692$^{\mathrm{a}}$) & 1,744 of 1,748 & 516 \\
+Country / setting & India; Aravind Eye Hospital, multiple clinics & France; Messidor programme partners & India; eye clinic, Nanded \\
+Camera & Multiple (not specified) & Topcon TRC NW6$^{\mathrm{b}}$ & Kowa VX-10$\alpha$ \\
+Mydriasis & Not reported & None$^{\mathrm{b}}$ & Yes \\
+Native resolution (pixels) & Heterogeneous & 1440$\times$960 to 2304$\times$1536 & 4288$\times$2848 \\
+Original grading scale & 0--4 clinician scale & ICDR 0--4 & ICDR-based 0--4 \\
+Reference standard & One clinician; no adjudication described & Three retina specialists; adjudicated \cite{krause2018} & Medical experts; number and adjudication not reported \\
+Eyes per participant & Not identifiable & Two (official examination pairing file) & Not identifiable \\
+Mapping to common scale & Identity (0--4) & Identity (0--4) & Identity (0--4) \\
+Grades 0/1/2/3/4 (\%) & 49.3/10.1/27.3/5.3/8.1 & 58.3/15.5/19.9/4.3/2.0 & 32.6/4.8/32.6/18.0/12.0 \\
+Referable DR (grade $\ge$2), \% & 40.6 & 26.2 & 62.6 \\
+\botrule
+\end{tabular}
+\footnotetext{ICDR, International Clinical Diabetic Retinopathy scale. $^{\mathrm{a}}$733 images minus 41 with a byte-identical duplicate in the training or validation split. $^{\mathrm{b}}$Messidor-Extension subset; not stated for the Messidor-Original subset.}
+\end{table}
+
+\begin{figure}[!tbp]
+\centering
+\includegraphics[width=\textwidth]{Fig1.pdf}
+\caption{Study design. APTOS 2019 was used only for development; Messidor-2 and IDRiD were held out and scored unchanged for every model. QWK, quadratic weighted kappa}\label{fig:design}
+\end{figure}
+
+\subsection{Preprocessing}
+
+One script was applied identically to all images: conversion to RGB, tolerance-based cropping of the black frame, zero-padding to a centred square, and bilinear resizing to $224\times224$ pixels (RETFound's native input), followed by ImageNet channel normalisation. Contrast enhancement was not applied.
+
+\subsection{Models and training}\label{sec:models}
+
+EfficientNet-B3 \cite{tan2019efficientnet} (pre-specified primary comparator) and ResNet-50 \cite{he2016resnet} were initialised from ImageNet weights and fully fine-tuned. RETFound \cite{zhou2023retfound} (ViT-Large/16, colour-fundus masked-autoencoder weights) was trained as a linear probe (frozen backbone) and fully fine-tuned. The data pipeline, splits, preprocessing, augmentation (flips, $\pm15^\circ$ rotation, mild brightness and contrast jitter), inverse-frequency class-weighted cross-entropy and early stopping on APTOS validation QWK (patience 7) were shared. Each family used its customary fine-tuning recipe (Table~\ref{tab:config}): RETFound received layer-wise learning-rate decay, label smoothing (0.1), learning-rate warm-up and larger weight decay. Two control experiments separated recipe from pretraining: EfficientNet-B3 retrained with label smoothing 0.1 only (label-smoothing control), and a crossed-recipe experiment, added during the study (Sect.~\ref{sec:changes}), in which EfficientNet-B3 was trained with the RETFound recipe and fully fine-tuned RETFound with the CNN recipe (Table~\ref{tab:config}).
+
+To characterise run-to-run variation, EfficientNet-B3 and the linear probe were each trained with four seeds (42--45) and fully fine-tuned RETFound with three (42--44); only the seed changed between runs.
+
+\begin{table}[!tbp]
+\caption{Training configuration}\label{tab:config}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}L{2.3cm}L{2.45cm}L{2.45cm}L{2.45cm}L{2.45cm}@{}}
+\toprule
+ & EfficientNet-B3 & ResNet-50 & RETFound linear probe & RETFound full \\
+\midrule
+\multicolumn{5}{@{}L{12.3cm}@{}}{\emph{Shared}: APTOS split, preprocessing, augmentation, class-weighted cross-entropy, AdamW, early stopping on APTOS validation QWK (patience 7), mixed precision, $224\times224$ input} \\
+\midrule
+Pretraining & ImageNet (supervised) & ImageNet (supervised) & Retinal MAE \cite{zhou2023retfound} & Retinal MAE \cite{zhou2023retfound} \\
+Trainable layers & All & All & Classification head & All \\
+Learning rate & $10^{-4}$, cosine & $10^{-4}$, cosine & $10^{-3}$, 3-epoch warm-up, cosine & $10^{-4}$, 3-epoch warm-up, cosine \\
+Weight decay & $10^{-4}$ & $10^{-4}$ & 0.05 & 0.05 \\
+Layer-wise decay & -- & -- & -- & 0.65 \\
+Stochastic depth & 0.2$^{\mathrm{a}}$ & -- & 0 & 0.2 \\
+Label smoothing & 0 & 0 & 0.1 & 0.1 \\
+Batch size & 32 & 32 & 16 & 16 \\
+Maximum epochs & 30 & 30 & 40 & 30 \\
+Training runs (seeds) & 4 (42--45) & 1 (42) & 4 (42--45) & 3 (42--44) \\
+\midrule
+Control runs (seed 42) & Label smoothing 0.1 only; RETFound recipe$^{\mathrm{b}}$ & -- & -- & CNN recipe$^{\mathrm{c}}$ \\
+\botrule
+\end{tabular}
+\footnotetext{MAE, masked autoencoder; QWK, quadratic weighted kappa. $^{\mathrm{a}}$torchvision default for EfficientNet-B3 (classifier dropout 0.3). $^{\mathrm{b}}$Label smoothing 0.1, weight decay 0.05, batch size 16, 3-epoch warm-up. $^{\mathrm{c}}$No layer-wise decay, stochastic depth or label smoothing; weight decay $10^{-4}$; batch size 16; no warm-up.}
+\end{table}
+
+\subsection{External testing and leakage controls}
+
+Model code and training defaults were fixed in version control before any external image was scored, checkpoints were selected only on APTOS validation QWK, and no threshold, temperature or other parameter was fitted on external data. Byte-level (MD5) and feature-embedding duplicate checks found no image shared between datasets.
+
+\subsection{Outcomes and statistical analysis}\label{sec:stats}
+
+The primary metric was QWK \cite{cohen1968kappa}, which credits ordinal proximity. The primary estimand was, for each external dataset, the difference between a model's internal-to-external QWK drop and that of EfficientNet-B3, averaged over its training runs (Sect.~\ref{sec:changes}). The confirmatory family comprised four contrasts (RETFound linear probe and fully fine-tuned, each on Messidor-2 and IDRiD), tested two-sided with Holm adjustment \cite{holm1979}. ResNet-50 contrasts were secondary. Confidence intervals came from a two-level bootstrap (2,000 replicates) \cite{efron1994bootstrap}: in each replicate, training runs were resampled with replacement within each model family, and images (internal and IDRiD) or examinations (Messidor-2) were resampled, with the same image resample used for every model. With three or four runs per family, this captures run-to-run variation only coarsely; intervals conditional on the observed runs are also reported. No equivalence margin was pre-specified, so non-significant differences are not interpreted as equivalence.
+
+Messidor-2 contributes two eyes per examination. Examinations were identified from the official pairing file distributed with the dataset (\nv{pairsN} examinations with both images gradable and \nv{pairsSingle} with one). Fellow eyes had identical reference grades in \nv{pairsAgree}\% of examinations, against \nv{pairsAgreeRand}\% expected for two random images, and the within-examination correlation of EfficientNet-B3 grading errors was \nv{pairsErrCorr}; all Messidor-2 intervals therefore resample whole examinations.
+
+Secondary outcomes were sensitivity, specificity, positive and negative predictive values (PPV, NPV) for referable DR at each model's own grade decision, with 95\% bootstrap intervals; accuracy; and referable-DR area under the receiver operating characteristic curve (AUC) from the summed probability of grades 2--4, compared with EfficientNet-B3 by paired bootstrap with Holm adjustment within each dataset. Calibration was summarised by the expected calibration error (ECE; 15 equal-width bins) \cite{guo2017calibration}. Secondary analyses used the seed-42 run of each model.
+
+\subsection{Case mix and the no-DR/mild boundary}\label{sec:decomp}
+
+To describe how the drop depends on case mix, each external image was weighted by the ratio of the APTOS internal-test prevalence of its reference grade to the external prevalence of that grade, so that the weighted external set has the development grade mix. Because graders disagree most at the no-DR/mild boundary \cite{krause2018}, QWK was also computed on a four-level scale with grades 0 and 1 merged. The drop was recomputed under each correction and both together. These corrections are descriptive: merging grades 0 and 1 removes both any difference in where graders place that boundary and the model's task of detecting subtle lesions, and the two cannot be separated with these data.
+
+\subsection{Uncertainty and selective referral}
+
+For each image we computed the maximum softmax probability (MSP, a simple confidence baseline) \cite{hendrycks2017baseline}, the margin between the two highest probabilities, and the predictive entropy (the uncertainty score in the original analysis plan). Error detection was summarised by the AUC for separating incorrectly from correctly graded images, with paired differences from MSP. For selective referral \cite{geifman2017selective}, the least confident 10--30\% of images were referred to a human grader; we report the fraction of all referable-DR images that the system would miss (retained and graded non-referable), with a fixed random referral order as a no-information comparator, and accuracy and QWK on retained images.
+
+\subsection{Saliency localisation against expert lesion masks}
+
+The IDRiD Segmentation subset (81 images with pixel-level expert masks for microaneurysms, haemorrhages, hard and soft exudates, and the optic disc) \cite{porwal2018}, previously used for lesion segmentation in this journal \cite{yuan2023}, was used for quantitative localisation; none of these images was used for training or model selection. Saliency maps for the predicted grade were computed with Grad-CAM++ \cite{chattopadhay2018gradcampp} on the last convolutional block of the CNNs and with gradient-weighted class activation over the last transformer block's patch tokens for RETFound. Masks were transformed with the same crop, pad and resize as the images. Within the field of view we computed the pixel-level AUC of the saliency map for lesion versus non-lesion pixels, the pointing game (saliency peak within 4 pixels of a lesion) \cite{zhang2018topdown}, lift (saliency mass on lesions divided by lesion area share), precision of the top 10\% of salient pixels, and saliency mass on the optic disc. Controls were a centred Gaussian prior and each model's map for a different image. Because CNN maps derive from a $7\times7$ grid and RETFound maps from a $14\times14$ grid, RETFound maps were also re-scored after degradation to $7\times7$. Paired comparisons used the Wilcoxon signed-rank test.
+
+\subsection{Changes to the analysis plan}\label{sec:changes}
+
+The original plan specified one training run per model (seed 42), image-level resampling, all 733 internal-test images, and a third-party copy of IDRiD. Five changes were made, each before the final analysis and each reported with the original result. (1) The IDRiD copy was replaced by the official release after the label audit above. (2) Duplicated internal-test images were excluded. (3) Messidor-2 examinations were resampled as clusters using the official pairing file, replacing a worst-case design-effect bound. (4) A second fine-tuning run of RETFound, trained to estimate run-to-run variation, gave a materially larger excess drop than the first; because a single run could not then represent the training procedure, the primary estimand was changed to the mean over runs and a third run was trained. This change was made after the second run's external result was known; the additional EfficientNet-B3 and linear-probe runs had been completed earlier as a sensitivity analysis. The originally specified single-run analysis is reported alongside the primary analysis (Table~\ref{tab:primary}). (5) The crossed-recipe control was added to separate pretraining from the fine-tuning recipe.
+
+\subsection{Software, reproducibility and use of generative AI}
+
+Analyses used Python with PyTorch 2.11 and timm 1.0.29 on a single laptop GPU (NVIDIA RTX 5060). Checkpoints of the primary runs are identified by SHA-256 hash (Online Resource 1). All manuscript numbers are generated by script from the per-image prediction files. Large-language-model assistants (Claude, Anthropic; Codex, OpenAI) were used under the author's direction to write and debug code, generate figures, and draft and edit text; all analyses were executed by the author, every number was checked against the prediction files, and the author takes full responsibility for the content.
+
+%% =========================================================================
+\begin{table}[!tbp]
+\caption{Grading agreement and referable diabetic retinopathy performance on internal and external data (primary training run of each model)}\label{tab:perf}
+\fontsize{8}{9.5}\selectfont
+\setlength{\tabcolsep}{2pt}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular*}{\textwidth}{@{\extracolsep\fill}lcccccc@{}}
+\toprule
+Model & \hd{QWK}{(95\% CI)} & \hd{Sensitivity,}{\% (95\% CI)} & \hd{Specificity,}{\% (95\% CI)} & \hd{PPV,}{\%} & \hd{NPV,}{\%} & \hd{AUC}{(95\% CI)} \\
+\midrule
+\multicolumn{7}{@{}l}{\textit{APTOS internal ($n=692$)}} \\
+\quad EfficientNet-B3 & \two{\nv{effintqwk}}{(\nv{effintqwklo}--\nv{effintqwkhi})} & \two{\nv{effintsens}}{(\nv{effintsenslo}--\nv{effintsenshi})} & \two{\nv{effintspec}}{(\nv{effintspeclo}--\nv{effintspechi})} & \nv{effintppv} & \nv{effintnpv} & \two{\nv{effintrefauc}}{(\nv{effintrefauclo}--\nv{effintrefauchi})} \\
+\quad ResNet-50 & \two{\nv{resintqwk}}{(\nv{resintqwklo}--\nv{resintqwkhi})} & \two{\nv{resintsens}}{(\nv{resintsenslo}--\nv{resintsenshi})} & \two{\nv{resintspec}}{(\nv{resintspeclo}--\nv{resintspechi})} & \nv{resintppv} & \nv{resintnpv} & \two{\nv{resintrefauc}}{(\nv{resintrefauclo}--\nv{resintrefauchi})} \\
+\quad RETFound LP & \two{\nv{lpintqwk}}{(\nv{lpintqwklo}--\nv{lpintqwkhi})} & \two{\nv{lpintsens}}{(\nv{lpintsenslo}--\nv{lpintsenshi})} & \two{\nv{lpintspec}}{(\nv{lpintspeclo}--\nv{lpintspechi})} & \nv{lpintppv} & \nv{lpintnpv} & \two{\nv{lpintrefauc}}{(\nv{lpintrefauclo}--\nv{lpintrefauchi})} \\
+\quad RETFound full & \two{\nv{fullintqwk}}{(\nv{fullintqwklo}--\nv{fullintqwkhi})} & \two{\nv{fullintsens}}{(\nv{fullintsenslo}--\nv{fullintsenshi})} & \two{\nv{fullintspec}}{(\nv{fullintspeclo}--\nv{fullintspechi})} & \nv{fullintppv} & \nv{fullintnpv} & \two{\nv{fullintrefauc}}{(\nv{fullintrefauclo}--\nv{fullintrefauchi})} \\
+\addlinespace
+\multicolumn{7}{@{}l}{\textit{Messidor-2 ($n=1{,}744$)}} \\
+\quad EfficientNet-B3 & \two{\nv{effmesqwk}}{(\nv{effmesqwklo}--\nv{effmesqwkhi})} & \two{\nv{effmessens}}{(\nv{effmessenslo}--\nv{effmessenshi})} & \two{\nv{effmesspec}}{(\nv{effmesspeclo}--\nv{effmesspechi})} & \nv{effmesppv} & \nv{effmesnpv} & \two{\nv{effmesrefauc}}{(\nv{effmesrefauclo}--\nv{effmesrefauchi})} \\
+\quad ResNet-50 & \two{\nv{resmesqwk}}{(\nv{resmesqwklo}--\nv{resmesqwkhi})} & \two{\nv{resmessens}}{(\nv{resmessenslo}--\nv{resmessenshi})} & \two{\nv{resmesspec}}{(\nv{resmesspeclo}--\nv{resmesspechi})} & \nv{resmesppv} & \nv{resmesnpv} & \two{\nv{resmesrefauc}}{(\nv{resmesrefauclo}--\nv{resmesrefauchi})} \\
+\quad RETFound LP & \two{\nv{lpmesqwk}}{(\nv{lpmesqwklo}--\nv{lpmesqwkhi})} & \two{\nv{lpmessens}}{(\nv{lpmessenslo}--\nv{lpmessenshi})} & \two{\nv{lpmesspec}}{(\nv{lpmesspeclo}--\nv{lpmesspechi})} & \nv{lpmesppv} & \nv{lpmesnpv} & \two{\nv{lpmesrefauc}}{(\nv{lpmesrefauclo}--\nv{lpmesrefauchi})} \\
+\quad RETFound full & \two{\nv{fullmesqwk}}{(\nv{fullmesqwklo}--\nv{fullmesqwkhi})} & \two{\nv{fullmessens}}{(\nv{fullmessenslo}--\nv{fullmessenshi})} & \two{\nv{fullmesspec}}{(\nv{fullmesspeclo}--\nv{fullmesspechi})} & \nv{fullmesppv} & \nv{fullmesnpv} & \two{\nv{fullmesrefauc}}{(\nv{fullmesrefauclo}--\nv{fullmesrefauchi})} \\
+\addlinespace
+\multicolumn{7}{@{}l}{\textit{IDRiD ($n=516$)}} \\
+\quad EfficientNet-B3 & \two{\nv{effidrqwk}}{(\nv{effidrqwklo}--\nv{effidrqwkhi})} & \two{\nv{effidrsens}}{(\nv{effidrsenslo}--\nv{effidrsenshi})} & \two{\nv{effidrspec}}{(\nv{effidrspeclo}--\nv{effidrspechi})} & \nv{effidrppv} & \nv{effidrnpv} & \two{\nv{effidrrefauc}}{(\nv{effidrrefauclo}--\nv{effidrrefauchi})} \\
+\quad ResNet-50 & \two{\nv{residrqwk}}{(\nv{residrqwklo}--\nv{residrqwkhi})} & \two{\nv{residrsens}}{(\nv{residrsenslo}--\nv{residrsenshi})} & \two{\nv{residrspec}}{(\nv{residrspeclo}--\nv{residrspechi})} & \nv{residrppv} & \nv{residrnpv} & \two{\nv{residrrefauc}}{(\nv{residrrefauclo}--\nv{residrrefauchi})} \\
+\quad RETFound LP & \two{\nv{lpidrqwk}}{(\nv{lpidrqwklo}--\nv{lpidrqwkhi})} & \two{\nv{lpidrsens}}{(\nv{lpidrsenslo}--\nv{lpidrsenshi})} & \two{\nv{lpidrspec}}{(\nv{lpidrspeclo}--\nv{lpidrspechi})} & \nv{lpidrppv} & \nv{lpidrnpv} & \two{\nv{lpidrrefauc}}{(\nv{lpidrrefauclo}--\nv{lpidrrefauchi})} \\
+\quad RETFound full & \two{\nv{fullidrqwk}}{(\nv{fullidrqwklo}--\nv{fullidrqwkhi})} & \two{\nv{fullidrsens}}{(\nv{fullidrsenslo}--\nv{fullidrsenshi})} & \two{\nv{fullidrspec}}{(\nv{fullidrspeclo}--\nv{fullidrspechi})} & \nv{fullidrppv} & \nv{fullidrnpv} & \two{\nv{fullidrrefauc}}{(\nv{fullidrrefauclo}--\nv{fullidrrefauchi})} \\
+\botrule
+\end{tabular*}
+\footnotetext{Seed-42 run of each model. Sensitivity, specificity, PPV and NPV refer to referable diabetic retinopathy (grade $\ge$2) at the model's own grade decision, with 95\% bootstrap intervals; AUC is the area under the receiver operating characteristic curve for referable DR. Messidor-2 intervals resample examinations. QWK, quadratic weighted kappa; PPV, NPV, positive and negative predictive value; LP, linear probe.}
+\end{table}
+
+\section{Results}\label{sec:results}
+
+\subsection{Internal performance}
+
+On the deduplicated APTOS internal test set ($n=692$), QWK was \nv{effintqwk} (95\% CI \nv{effintqwklo}--\nv{effintqwkhi}) for EfficientNet-B3, \nv{resintqwk} (\nv{resintqwklo}--\nv{resintqwkhi}) for ResNet-50, \nv{lpintqwk} (\nv{lpintqwklo}--\nv{lpintqwkhi}) for the RETFound linear probe and \nv{fullintqwk} (\nv{fullintqwklo}--\nv{fullintqwkhi}) for fully fine-tuned RETFound (Table~\ref{tab:perf}). Referable-DR sensitivity was \nv{lpintsens}--\nv{fullintsens}\%, specificity \nv{effintspec}--\nv{fullintspec}\% and AUC \nv{fullintrefauc}--\nv{effintrefauc}; no model's AUC differed from EfficientNet-B3's after adjustment (Holm $p\ge$\,\nv{aucxfullintholm}). Including the 41 duplicated images changed internal QWK by at most \nv{dedupMaxDiff} (Online Resource 1).
+
+
+
+\begin{table}[!tbp]
+\caption{Primary comparison: internal-to-external drop in quadratic weighted kappa relative to EfficientNet-B3}\label{tab:primary}
+\fontsize{8}{9.5}\selectfont
+\setlength{\tabcolsep}{2pt}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular*}{\textwidth}{@{\extracolsep\fill}lccccc@{}}
+\toprule
+ & & \multicolumn{2}{c}{Primary: mean over runs} & \multicolumn{2}{c}{Original plan: seed-42 run} \\
+\cmidrule{3-4}\cmidrule{5-6}
+Model (runs) & \hd{Drop, mean}{(range)} & \hd{Excess drop}{(95\% CI)$^{\mathrm{a}}$} & Holm $p$ & \hd{Excess drop}{(95\% CI)$^{\mathrm{b}}$} & Holm $p$ \\
+\midrule
+\multicolumn{6}{@{}l}{\textit{Messidor-2}} \\
+\quad EfficientNet-B3 (\nv{sgeffn}) & \two{\nv{sgeffmesqwk}}{(\nv{sgeffmesqwkmin}--\nv{sgeffmesqwkmax})} & reference & & reference & \\
+\quad RETFound LP (\nv{sglpn}) & \two{\nv{sglpmesqwk}}{(\nv{sglpmesqwkmin}--\nv{sglpmesqwkmax})} & \two{\nv{sxglpmesqwk}}{(\nv{sxglpmesqwkhlo} to \nv{sxglpmesqwkhhi})} & \nv{sxglpmesqwkhholm} & \two{\nv{dxlpmesqwk}}{(\nv{dxlpmesqwklo} to \nv{dxlpmesqwkhi})} & \nv{dxlpmesqwkholm} \\
+\quad RETFound full (\nv{sgfulln}) & \two{\nv{sgfullmesqwk}}{(\nv{sgfullmesqwkmin}--\nv{sgfullmesqwkmax})} & \two{\nv{sxgfullmesqwk}}{(\nv{sxgfullmesqwkhlo} to \nv{sxgfullmesqwkhhi})} & \nv{sxgfullmesqwkhholm} & \two{\nv{dxfullmesqwk}}{(\nv{dxfullmesqwklo} to \nv{dxfullmesqwkhi})} & \nv{dxfullmesqwkholm} \\
+\quad ResNet-50 (1)$^{\mathrm{c}}$ & \nv{dresmesqwk} & -- & & \two{\nv{dxresmesqwk}}{(\nv{dxresmesqwklo} to \nv{dxresmesqwkhi})} & -- \\
+\addlinespace
+\multicolumn{6}{@{}l}{\textit{IDRiD}} \\
+\quad EfficientNet-B3 (\nv{sgeffn}) & \two{\nv{sgeffidrqwk}}{(\nv{sgeffidrqwkmin}--\nv{sgeffidrqwkmax})} & reference & & reference & \\
+\quad RETFound LP (\nv{sglpn}) & \two{\nv{sglpidrqwk}}{(\nv{sglpidrqwkmin}--\nv{sglpidrqwkmax})} & \two{\nv{sxglpidrqwk}}{(\nv{sxglpidrqwkhlo} to \nv{sxglpidrqwkhhi})} & \nv{sxglpidrqwkhholm} & \two{\nv{dxlpidrqwk}}{(\nv{dxlpidrqwklo} to \nv{dxlpidrqwkhi})} & \nv{dxlpidrqwkholm} \\
+\quad RETFound full (\nv{sgfulln}) & \two{\nv{sgfullidrqwk}}{(\nv{sgfullidrqwkmin}--\nv{sgfullidrqwkmax})} & \two{\nv{sxgfullidrqwk}}{(\nv{sxgfullidrqwkhlo} to \nv{sxgfullidrqwkhhi})} & \nv{sxgfullidrqwkhholm} & \two{\nv{dxfullidrqwk}}{(\nv{dxfullidrqwklo} to \nv{dxfullidrqwkhi})} & \nv{dxfullidrqwkholm} \\
+\quad ResNet-50 (1)$^{\mathrm{c}}$ & \nv{dresidrqwk} & -- & & \two{\nv{dxresidrqwk}}{(\nv{dxresidrqwklo} to \nv{dxresidrqwkhi})} & -- \\
+\botrule
+\end{tabular*}
+\footnotetext{Drop: internal (APTOS, $n=692$) minus external QWK; a positive excess drop means a larger drop than EfficientNet-B3. Holm adjustment over the four RETFound contrasts. $^{\mathrm{a}}$Two-level bootstrap resampling training runs within each model family and images or Messidor-2 examinations (2,000 replicates); intervals conditional on the observed runs are in Online Resource 1. $^{\mathrm{b}}$Seed-42 runs only. $^{\mathrm{c}}$Secondary comparator, single run. LP, linear probe.}
+\end{table}
+
+\begin{figure}[!tbp]
+\centering
+\includegraphics[width=\textwidth]{Fig2.pdf}
+\caption{Internal and external grading agreement. \textbf{a} Internal-to-external drop in quadratic weighted kappa (QWK) for each training run (small markers) and the mean over runs (large markers) on Messidor-2 and IDRiD. \textbf{b} Excess drop relative to EfficientNet-B3 averaged over runs, with 95\% two-level bootstrap intervals and Holm-adjusted $p$ values; positive values indicate a larger drop than EfficientNet-B3. ResNet-50 (single run) is secondary}\label{fig:primary}
+\end{figure}
+
+\subsection{External performance and the primary comparison}
+
+Every model degraded on both external sets, more on Messidor-2 than on IDRiD (Table~\ref{tab:perf}, Fig.~\ref{fig:primary}). Averaged over runs, EfficientNet-B3's QWK fell by \nv{sgeffmesqwk} on Messidor-2 and \nv{sgeffidrqwk} on IDRiD, and fully fine-tuned RETFound's by \nv{sgfullmesqwk} and \nv{sgfullidrqwk} (Table~\ref{tab:primary}). Fine-tuned RETFound's excess drop relative to EfficientNet-B3 was \nv{sxgfullmesqwk} (95\% CI \nv{sxgfullmesqwkhlo} to \nv{sxgfullmesqwkhhi}; Holm $p$\,\nv{sxgfullmesqwkhholmeq}) on Messidor-2 and \nv{sxgfullidrqwk} (\nv{sxgfullidrqwkhlo} to \nv{sxgfullidrqwkhhi}; Holm $p$\,\nv{sxgfullidrqwkhholmeq}) on IDRiD. Retinal pretraining therefore did not reduce the external drop: on Messidor-2 the drop was larger for RETFound, although not significantly after adjustment, and on IDRiD the two were similar. The drop varied between training runs of the same model: across RETFound runs it ranged from \nv{sgfullmesqwkmin} to \nv{sgfullmesqwkmax} on Messidor-2, and across EfficientNet-B3 runs from \nv{sgeffmesqwkmin} to \nv{sgeffmesqwkmax}. In the originally specified single-run analysis, the excess drop of the first RETFound run was \nv{dxfullmesqwk} (\nv{dxfullmesqwklo} to \nv{dxfullmesqwkhi}) on Messidor-2 and \nv{dxfullidrqwk} (\nv{dxfullidrqwklo} to \nv{dxfullidrqwkhi}) on IDRiD; on Messidor-2 this single run understated the difference seen across runs.
+
+The linear probe degraded more than EfficientNet-B3 on both sets (\nv{sxglpmesqwk}, \nv{sxglpmesqwkhlo} to \nv{sxglpmesqwkhhi}, Holm $p$\,\nv{sxglpmesqwkhholmeq}; \nv{sxglpidrqwk}, \nv{sxglpidrqwkhlo} to \nv{sxglpidrqwkhhi}, Holm $p$\,\nv{sxglpidrqwkhholmeq}). In the secondary comparison, ResNet-50 also degraded more (\nv{dxresmesqwk} and \nv{dxresidrqwk}).
+
+
+
+
+
+\subsection{Matched-recipe and label-smoothing controls}
+
+In the crossed-recipe experiment (single seed-42 runs), RETFound had no advantage under either recipe. When both families were trained with the RETFound recipe, RETFound's excess drop relative to EfficientNet-B3 was \nv{xrfmesqwk} (95\% CI \nv{xrfmesqwklo} to \nv{xrfmesqwkhi}) on Messidor-2 and \nv{xrfidrqwk} (\nv{xrfidrqwklo} to \nv{xrfidrqwkhi}) on IDRiD; when both were trained with the CNN recipe, it was \nv{dxfullcnnmesqwk} (\nv{dxfullcnnmesqwklo} to \nv{dxfullcnnmesqwkhi}) and \nv{dxfullcnnidrqwk} (\nv{dxfullcnnidrqwklo} to \nv{dxfullcnnidrqwkhi}). The label-smoothed EfficientNet-B3 control did not differ from the original EfficientNet-B3 in drop (\nv{dxefflsmesqwk}, \nv{dxefflsmesqwklo} to \nv{dxefflsmesqwkhi}; \nv{dxefflsidrqwk}, \nv{dxefflsidrqwklo} to \nv{dxefflsidrqwkhi}).
+
+\begin{table}[!tbp]
+\caption{Internal-to-external drop in quadratic weighted kappa under case-mix and no-DR/mild boundary corrections}\label{tab:decomp}
+\fontsize{8}{9.5}\selectfont
+\setlength{\tabcolsep}{2pt}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular*}{\textwidth}{@{\extracolsep\fill}lcccc@{}}
+\toprule
+Model & Observed & \hd{Case mix}{matched} & \hd{Grades 0 and 1}{merged} & \hd{Both}{corrections} \\
+\midrule
+\multicolumn{5}{@{}l}{\textit{Messidor-2}} \\
+\quad EfficientNet-B3 & \two{\nv{deffmesqwk}}{(\nv{deffmesqwklo}--\nv{deffmesqwkhi})} & \two{\nv{deffmesqwkrw}}{(\nv{deffmesqwkrwlo}--\nv{deffmesqwkrwhi})} & \two{\nv{deffmesqwkfour}}{(\nv{deffmesqwkfourlo}--\nv{deffmesqwkfourhi})} & \two{\nv{deffmesqwkfourrw}}{(\nv{deffmesqwkfourrwlo}--\nv{deffmesqwkfourrwhi})} \\
+\quad ResNet-50 & \two{\nv{dresmesqwk}}{(\nv{dresmesqwklo}--\nv{dresmesqwkhi})} & \two{\nv{dresmesqwkrw}}{(\nv{dresmesqwkrwlo}--\nv{dresmesqwkrwhi})} & \two{\nv{dresmesqwkfour}}{(\nv{dresmesqwkfourlo}--\nv{dresmesqwkfourhi})} & \two{\nv{dresmesqwkfourrw}}{(\nv{dresmesqwkfourrwlo}--\nv{dresmesqwkfourrwhi})} \\
+\quad RETFound LP & \two{\nv{dlpmesqwk}}{(\nv{dlpmesqwklo}--\nv{dlpmesqwkhi})} & \two{\nv{dlpmesqwkrw}}{(\nv{dlpmesqwkrwlo}--\nv{dlpmesqwkrwhi})} & \two{\nv{dlpmesqwkfour}}{(\nv{dlpmesqwkfourlo}--\nv{dlpmesqwkfourhi})} & \two{\nv{dlpmesqwkfourrw}}{(\nv{dlpmesqwkfourrwlo}--\nv{dlpmesqwkfourrwhi})} \\
+\quad RETFound full & \two{\nv{dfullmesqwk}}{(\nv{dfullmesqwklo}--\nv{dfullmesqwkhi})} & \two{\nv{dfullmesqwkrw}}{(\nv{dfullmesqwkrwlo}--\nv{dfullmesqwkrwhi})} & \two{\nv{dfullmesqwkfour}}{(\nv{dfullmesqwkfourlo}--\nv{dfullmesqwkfourhi})} & \two{\nv{dfullmesqwkfourrw}}{(\nv{dfullmesqwkfourrwlo}--\nv{dfullmesqwkfourrwhi})} \\
+\addlinespace
+\multicolumn{5}{@{}l}{\textit{IDRiD}} \\
+\quad EfficientNet-B3 & \two{\nv{deffidrqwk}}{(\nv{deffidrqwklo}--\nv{deffidrqwkhi})} & \two{\nv{deffidrqwkrw}}{(\nv{deffidrqwkrwlo}--\nv{deffidrqwkrwhi})} & \two{\nv{deffidrqwkfour}}{(\nv{deffidrqwkfourlo}--\nv{deffidrqwkfourhi})} & \two{\nv{deffidrqwkfourrw}}{(\nv{deffidrqwkfourrwlo}--\nv{deffidrqwkfourrwhi})} \\
+\quad ResNet-50 & \two{\nv{dresidrqwk}}{(\nv{dresidrqwklo}--\nv{dresidrqwkhi})} & \two{\nv{dresidrqwkrw}}{(\nv{dresidrqwkrwlo}--\nv{dresidrqwkrwhi})} & \two{\nv{dresidrqwkfour}}{(\nv{dresidrqwkfourlo}--\nv{dresidrqwkfourhi})} & \two{\nv{dresidrqwkfourrw}}{(\nv{dresidrqwkfourrwlo}--\nv{dresidrqwkfourrwhi})} \\
+\quad RETFound LP & \two{\nv{dlpidrqwk}}{(\nv{dlpidrqwklo}--\nv{dlpidrqwkhi})} & \two{\nv{dlpidrqwkrw}}{(\nv{dlpidrqwkrwlo}--\nv{dlpidrqwkrwhi})} & \two{\nv{dlpidrqwkfour}}{(\nv{dlpidrqwkfourlo}--\nv{dlpidrqwkfourhi})} & \two{\nv{dlpidrqwkfourrw}}{(\nv{dlpidrqwkfourrwlo}--\nv{dlpidrqwkfourrwhi})} \\
+\quad RETFound full & \two{\nv{dfullidrqwk}}{(\nv{dfullidrqwklo}--\nv{dfullidrqwkhi})} & \two{\nv{dfullidrqwkrw}}{(\nv{dfullidrqwkrwlo}--\nv{dfullidrqwkrwhi})} & \two{\nv{dfullidrqwkfour}}{(\nv{dfullidrqwkfourlo}--\nv{dfullidrqwkfourhi})} & \two{\nv{dfullidrqwkfourrw}}{(\nv{dfullidrqwkfourrwlo}--\nv{dfullidrqwkfourrwhi})} \\
+\botrule
+\end{tabular*}
+\footnotetext{Internal (APTOS, $n=692$) minus external quadratic weighted kappa (QWK), seed-42 run of each model, with 95\% bootstrap intervals (Messidor-2: examination level). Case mix matched: external images weighted to the APTOS internal-test grade distribution. Grades 0 and 1 merged: QWK on a four-level scale with no and mild DR combined, applied to internal and external sets. These corrections describe how the drop depends on case mix and on the no-DR/mild boundary; they do not establish its cause. LP, linear probe.}
+\end{table}
+
+\begin{figure}[!tbp]
+\centering
+\includegraphics[width=\textwidth]{Fig3.pdf}
+\caption{Case mix and the no-DR/mild boundary. \textbf{a} Internal-to-external QWK drop for EfficientNet-B3 and fully fine-tuned RETFound as observed, after matching the external case mix to APTOS, after merging grades 0 and 1, and after both corrections (filled markers, Messidor-2; open markers, IDRiD; 95\% bootstrap intervals). \textbf{b} Grades assigned by EfficientNet-B3 to reference-standard grade 0, 1 and 2 images: mild and moderate DR were graded as no DR on Messidor-2, and no DR was graded as mild on IDRiD}\label{fig:decomp}
+\end{figure}
+
+\subsection{Referable DR in clinical terms}
+
+On Messidor-2, specificity for referable DR was preserved (\nv{lpmesspec}--\nv{fullmesspec}\%) but sensitivity was low (\nv{resmessens}--\nv{lpmessens}\%; Table~\ref{tab:perf}). Of \nv{cntMesMild} reference-standard mild images, EfficientNet-B3 graded \nv{cnteffmesMildToZero} as no DR and fine-tuned RETFound \nv{cntfullmesMildToZero}; of \nv{cntMesMod} moderate images, \nv{cnteffmesModToZero} and \nv{cntfullmesModToZero}, respectively, were graded no DR (Fig.~\ref{fig:decomp}b). On IDRiD, sensitivity was higher (\nv{residrsens}--\nv{effidrsens}\%) and errors went the other way at the same boundary: of \nv{cntIdrZero} reference-standard no-DR images, EfficientNet-B3 graded \nv{cnteffidrZeroToMild} as mild and RETFound \nv{cntfullidrZeroToMild}. Referable-DR AUC was \nv{lpmesrefauc}--\nv{effmesrefauc} on Messidor-2 and \nv{fullidrrefauc}--\nv{effidrrefauc} on IDRiD; EfficientNet-B3 had a higher AUC than fine-tuned RETFound on IDRiD (difference \nv{aucxfullidr}, 95\% CI \nv{aucxfullidrlo} to \nv{aucxfullidrhi}; Holm $p$\,\nv{aucxfullidrholmeq}) but not on Messidor-2 (\nv{aucxfullmes}; Holm $p$\,\nv{aucxfullmesholmeq}).
+
+\subsection{Case mix and the no-DR/mild boundary}
+
+Matching the external case mix to APTOS reduced the Messidor-2 drop by \nv{preffmesqwkrw}\% (EfficientNet-B3) and \nv{prfullmesqwkrw}\% (RETFound); merging grades 0 and 1 reduced it by \nv{preffmesqwkfour}\% and \nv{prfullmesqwkfour}\%; together by \nv{preffmesqwkfourrw}\% and \nv{prfullmesqwkfourrw}\% (Table~\ref{tab:decomp}, Fig.~\ref{fig:decomp}a). The remaining drops (\nv{deffmesqwkfourrw}, 95\% CI \nv{deffmesqwkfourrwlo}--\nv{deffmesqwkfourrwhi}; \nv{dfullmesqwkfourrw}, \nv{dfullmesqwkfourrwlo}--\nv{dfullmesqwkfourrwhi}) excluded zero, so the corrections did not account for all of the loss. On IDRiD, reweighting alone did not reduce the drop, because IDRiD's pathology-enriched case mix favours QWK; the two corrections together reduced EfficientNet-B3's drop by \nv{preffidrqwkfourrw}\% and RETFound's by \nv{prfullidrqwkfourrw}\%. After both corrections, fine-tuned RETFound's excess drop was \nv{dxfullmesqwkfourrw} (\nv{dxfullmesqwkfourrwlo} to \nv{dxfullmesqwkfourrwhi}) on Messidor-2 and \nv{dxfullidrqwkfourrw} (\nv{dxfullidrqwkfourrwlo} to \nv{dxfullidrqwkfourrwhi}) on IDRiD.
+
+
+
+
+
+\begin{figure}[!tbp]
+\centering
+\includegraphics[width=\textwidth]{Fig4.pdf}
+\caption{Uncertainty and referral. \textbf{a}, \textbf{b} Fraction of all referable-DR images missed by the system (retained and graded non-referable) when the least confident images (maximum softmax probability) are referred to a human grader, on Messidor-2 and IDRiD; the dotted line is a fixed random referral order for EfficientNet-B3. \textbf{c} Area under the curve for detecting grading errors with maximum softmax probability (filled) and predictive entropy (open), with 95\% bootstrap intervals; the dashed line marks chance}\label{fig:unc}
+\end{figure}
+
+\subsection{Calibration}
+
+Externally, the CNNs were over-confident (ECE \nv{effmesece} and \nv{effidrece} for EfficientNet-B3 on Messidor-2 and IDRiD), whereas fine-tuned RETFound had lower external ECE (\nv{fullmesece} and \nv{fullidrece}); internally the pattern reversed (\nv{effintece} vs \nv{fullintece}). The label-smoothed EfficientNet-B3 reproduced the RETFound pattern (internal ECE \nv{efflsintece}; Messidor-2 \nv{efflsmesece}; IDRiD \nv{efflsidrece}), as did EfficientNet-B3 trained with the full RETFound recipe (Messidor-2 ECE \nv{effrfmesece}). Conversely, RETFound trained with the CNN recipe was well calibrated internally (ECE \nv{fullcnnintece}) and over-confident externally (Messidor-2 \nv{fullcnnmesece}; IDRiD \nv{fullcnnidrece}), like the CNNs. The calibration difference is therefore attributable to the training recipe rather than to retinal pretraining.
+
+
+
+\subsection{Uncertainty and referral}
+
+Predictive entropy did not identify grading errors significantly better than MSP for any model (Fig.~\ref{fig:unc}c). For EfficientNet-B3, MSP error-detection AUC was \nv{effinterraucmsp} internally, \nv{effmeserraucmsp} on Messidor-2 and \nv{effidrerraucmsp} on IDRiD, and the entropy--MSP differences were \nv{entxeffint}, \nv{entxeffmes} and \nv{entxeffidr}. For fine-tuned RETFound, entropy was worse than MSP internally (\nv{entxfullint}, 95\% CI \nv{entxfullintlo} to \nv{entxfullinthi}), as for the label-smoothed CNN (\nv{entxefflsint}). On IDRiD, MSP detected fine-tuned RETFound's errors no better than chance (AUC \nv{fullidrerraucmsp}, \nv{fullidrerraucmsplo}--\nv{fullidrerraucmsphi}).
+
+When the least confident 30\% of images were referred to a human grader, the fraction of all referable DR missed by the system on Messidor-2 fell from \nv{effmesmissed0}\% to \nv{effmesmissedmsp30}\% for EfficientNet-B3 and from \nv{fullmesmissed0}\% to \nv{fullmesmissedmsp30}\% for RETFound, compared with \nv{effmesmissedrandom30}\% for random referral (Fig.~\ref{fig:unc}a). On IDRiD the reduction was small and no better than random referral (EfficientNet-B3 \nv{effidrmissed0}\% to \nv{effidrmissedmsp30}\%, random \nv{effidrmissedrandom30}\%; RETFound \nv{fullidrmissed0}\% to \nv{fullidrmissedmsp30}\%; Fig.~\ref{fig:unc}b). Accuracy on retained Messidor-2 images rose from \nv{effmesacc}\% to \nv{effmesacckeptmsp30}\% for EfficientNet-B3, but QWK on retained images fell from \nv{effmesqwk} to \nv{effmesqwkkeptmsp30}, because referral preferentially removed diseased images.
+
+
+
+\subsection{Saliency localisation against expert lesion masks}
+
+Lesions occupied \nv{locAreaPct}\% of the field of view on average. Fine-tuned RETFound's saliency separated lesion from non-lesion pixels better than EfficientNet-B3's (pixel AUC \nv{locfullauroclesion}, 95\% CI \nv{locfullauroclesionlo}--\nv{locfullauroclesionhi}, vs \nv{loceffauroclesion}, \nv{loceffauroclesionlo}--\nv{loceffauroclesionhi}; $p$\,\nv{locpfulleffauroclesioneq}), placed its peak on a lesion more often (\nv{locfullpointinghit} vs \nv{loceffpointinghit}) and put less mass on the optic disc (Fig.~\ref{fig:loc}). EfficientNet-B3's maps were not significantly better than the centred-Gaussian control (pixel AUC \nv{loceffauroclesion} vs \nv{locctrauroclesion}, $p$\,\nv{locpeffctrauroclesioneq}), although all models' maps beat the cross-image control ($p$\,\nv{locpeffcrossauroclesioneq}), so they tracked image-specific content. Part of RETFound's advantage reflected its finer grid: at a matched $7\times7$ resolution its lift over EfficientNet-B3 was no longer significant (\nv{loc7fullliftany} vs \nv{loc7effliftany}, $p$\,\nv{loc7pfullliftanyeq}), whereas pixel AUC (\nv{loc7fullauroclesion} vs \nv{loc7effauroclesion}, $p$\,\nv{loc7pfullauroclesioneq}) and top-10\% precision (\nv{loc7fulltop10precision} vs \nv{loc7efftop10precision}, $p$\,\nv{loc7pfulltop10precisioneq}) remained higher. In absolute terms localisation was weak for every model: at most \nv{locTopMaxPct}\% of the most salient pixels fell on lesions.
+
+
+
+\subsection{Additional analyses}
+
+Monte Carlo dropout \cite{gal2016dropout}, temperature scaling, alternative loss functions, re-fitted linear heads and inference-time contrast enhancement and colour transfer are reported in Online Resource 1; these were run with the earlier IDRiD copy, and their IDRiD results are given for completeness only.
+
+%% =========================================================================
+\section{Discussion}\label{sec:discussion}
+
+\begin{figure}[!tbp]
+\centering
+\includegraphics[width=\textwidth]{Fig5.pdf}
+\caption{Saliency localisation against expert lesion masks (IDRiD Segmentation subset, $n=81$). \textbf{a} Expert lesion outlines and saliency maps for the images at the 25th, 50th and 75th percentiles of lesion burden (selected by rule, not by appearance). \textbf{b} Pixel-level AUC for lesion versus non-lesion pixels and \textbf{c} fraction of images whose saliency peak lies on a lesion, with 95\% bootstrap intervals. Open markers show RETFound maps degraded to the CNN's $7\times7$ resolution; the grey marker is a centred-Gaussian control}\label{fig:loc}
+\end{figure}
+
+In this external validation, retinal foundation-model pretraining did not reduce the loss of DR grading agreement on two independent datasets. Fully fine-tuned RETFound and EfficientNet-B3 were similar internally; externally, averaged over training runs, RETFound's drop was larger on Messidor-2 (not significant after adjustment) and similar on IDRiD, and a frozen RETFound linear probe degraded more than the CNN on both. Neither fine-tuning recipe gave RETFound an advantage when the two families were trained with each other's recipes. These findings agree with reports that fine-tuned RETFound performs similarly to ImageNet models on full datasets \cite{yew2026}, that a natural-image foundation model matches or exceeds it across the same three datasets \cite{hou2025dinov2}, and that frozen RETFound features transfer worse from APTOS to Messidor-2 \cite{poyrazer2026}. In the terms of this journal's recent editorial \cite{jin2026editorial}, we found no incremental robustness over a strong conventional baseline.
+
+The variability between training runs is itself a finding. The first RETFound run suggested a Messidor-2 drop similar to the CNN's; the next two runs, differing only in seed, degraded more. Single-run comparisons of external performance, which are the norm in this field, can therefore be misleading, and comparisons of model families should report repeated runs. We changed our primary analysis for this reason and report both versions.
+
+The clinically relevant pattern concerns what the drop contains. On Messidor-2 every model preserved specificity but graded almost all reference-standard mild DR, and about three-quarters of moderate DR, as no DR, giving a referable-DR sensitivity well below that expected of a screening tool. On IDRiD the errors went the other way at the same boundary. Matching case mix and merging no and mild DR reduced most of the Messidor-2 drop. This pattern is consistent with a difference between the single-grader development labels and the adjudicated Messidor-2 grades in where the no-DR/mild boundary is placed \cite{krause2018}, but merging grades also removes the hardest detection task, and poorer visibility of subtle lesions in Messidor-2 images, many acquired without mydriasis, could produce the same pattern; our data cannot separate the two. The audit of a widely shared IDRiD copy, in which \nv{mirrorPct}\% of labels differed from the official release, shows how easily the reference standard itself can drift. For ophthalmologists reading AI validation studies, an external drop in an agreement statistic should be read alongside the reference standard of each dataset, the case mix, and prevalence-independent measures such as sensitivity and specificity, as reported in clinical evaluations in this journal \cite{vought2023eyeart}.
+
+Two commonly cited advantages of RETFound were not attributable to retinal pretraining. Its lower external ECE was reproduced by adding label smoothing to the CNN and lost when RETFound was trained without its usual recipe, consistent with the known effect of label smoothing on predicted probabilities \cite{muller2019labelsmoothing}, and the same smoothing explains why predictive entropy was uninformative: entropy summarised the deliberately flattened tail of the distribution, whereas the maximum probability still carried signal. Uncertainty estimates should be compared with the model's plain confidence before being presented as added value. In a screening workflow, referring the least confident 30\% of images more than halved the referable DR missed on Messidor-2, a useful but incomplete gain, and gave no benefit over random referral on IDRiD.
+
+Saliency localisation, tested against expert lesion masks, favoured RETFound, partly because of its finer grid. This does not establish clinical interpretability: every model's maps localised lesions weakly, and the CNN maps were barely distinguishable from a centred prior. Better localisation also did not translate into better grading transfer.
+
+\subsection*{Strengths and limitations}
+
+Strengths include external datasets never used for any modelling decision, repeated training runs with a bootstrap that propagates run-to-run variation, examination-level resampling for Messidor-2, crossed-recipe and label-smoothing controls, an audit against the official dataset release, reporting in clinical terms, quantitative lesion-mask localisation with controls, and release of code and per-image predictions. The limitations are as follows. This is a retrospective study of curated public datasets; neither external dataset is a consecutive screening population, so the results describe transfer between research datasets rather than performance at a clinical site. Only one retinal foundation model, one development dataset and one input resolution ($224\times224$) were examined; higher resolutions may favour subtle-lesion detection differently for the two families. Three or four training runs per family estimate run-to-run variation imprecisely, the crossed-recipe controls used single runs, and the primary analysis was changed after the second RETFound run was seen; both analyses are reported. APTOS and IDRiD provide no patient identifiers, so images from the same person may be correlated, and internal estimates may be optimistic. The corrections for case mix and the no-DR/mild boundary are descriptive and cannot distinguish a grading-convention difference from poorer visibility of subtle lesions. Saliency was evaluated on 81 images from one dataset with one attribution method per family.
+
+%% =========================================================================
+\section{Conclusion}\label{sec:conclusion}
+
+Retinal foundation-model pretraining did not make DR grading more robust to dataset change than an ImageNet-pretrained CNN, and RETFound's apparent calibration advantage was explained by its fine-tuning recipe (label smoothing) rather than its pretraining. External performance varied between training runs and was closely tied to case mix and to the no-DR/mild boundary, where errors went in opposite directions on the two external datasets. External validation of DR grading systems should report the reference standard of each dataset, prevalence-independent measures and repeated training runs before drawing conclusions about model robustness.
+
+%% =========================================================================
+\backmatter
+
+\bmhead{Supplementary Information}
+Online Resource 1: supplementary methods and results (PDF). Online Resource 2: TRIPOD+AI reporting checklist with CLAIM 2024 and STARD-AI topic map (PDF). Online Resource 3: per-image predictions for all models, runs and datasets, APTOS split lists and the IDRiD label audit (ZIP of CSV files). Online Resource 4: analysis code (ZIP).
+
+\bmhead{Acknowledgements}
+The author thanks the teams who released APTOS 2019, Messidor-2 and IDRiD, the authors of the adjudicated Messidor-2 grades, and the developers of RETFound for releasing their pretrained weights.
+
+\section*{Declarations}
+
+\textbf{Funding} The author did not receive support from any organisation for the submitted work.
+
+\textbf{Competing interests} The author has no relevant financial or non-financial interests to disclose.
+
+\textbf{Ethics approval} This study used only publicly available, de-identified retinal images collected under the approvals of the original studies \cite{aptos2019,decenciere2014,krause2018,porwal2018}. No new data were collected from human participants and no individual can be identified; in accordance with the Declaration of Helsinki, no additional ethics approval was required for this secondary analysis.
+
+\textbf{Consent to participate} Not applicable (secondary analysis of public, de-identified datasets).
+
+\textbf{Consent to publish} Not applicable. Fig.~5 shows de-identified fundus photographs from the IDRiD dataset, released under a Creative Commons Attribution 4.0 licence.
+
+\textbf{Data availability} APTOS 2019 is available from Kaggle (\url{https://www.kaggle.com/competitions/aptos2019-blindness-detection}), Messidor-2 from ADCIS (\url{https://www.adcis.net/en/third-party/messidor2/}) with adjudicated grades from Krause et al.\ \cite{krause2018}, and IDRiD from IEEE DataPort (doi:10.21227/H25W98). Per-image predictions, split lists and the IDRiD label audit are provided as Online Resource 3.
+
+\textbf{Code availability} The data-processing, training, evaluation and statistical code, with the software environment and instructions to regenerate every number, table and figure from the prediction files, is provided as Online Resource 4. Trained weights are available from the author on reasonable request.
+
+\textbf{Author contributions} P.R.E.\ conceived and designed the study, curated the data, wrote the software, performed the analyses, interpreted the results, and wrote and revised the manuscript. The author read and approved the final manuscript.
+
+\bibliography{references}
+
+\end{document}

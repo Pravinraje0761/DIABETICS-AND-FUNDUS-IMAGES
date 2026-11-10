@@ -8,10 +8,10 @@ Eval predictions: `outputs/phase6`
 
 | Model | T | reading |
 |---|--:|---|
-| EfficientNet-B3 (baseline) | 1.523 (bootstrap 95% CI 1.33-1.71) | over-confident -> softened (T>1) |
-| ResNet-50 (baseline) | 1.160 (bootstrap 95% CI 1.02-1.31) | over-confident -> softened (T>1) |
+| EfficientNet-B3 (baseline) | 1.523 (bootstrap 95% CI 1.32-1.71) | over-confident -> softened (T>1) |
+| ResNet-50 (baseline) | 1.160 (bootstrap 95% CI 1.01-1.30) | over-confident -> softened (T>1) |
 | RETFound (linear probe) | 0.503 (bootstrap 95% CI 0.43-0.58) | under-confident -> sharpened (T<1) |
-| RETFound (full fine-tune) | 0.496 (bootstrap 95% CI 0.43-0.57) | under-confident -> sharpened (T<1) |
+| RETFound (full fine-tune) | 0.616 (bootstrap 95% CI 0.54-0.70) | under-confident -> sharpened (T<1) |
 
 ## ECE before -> after, by dataset
 
@@ -26,9 +26,9 @@ Eval predictions: `outputs/phase6`
 | RETFound (linear probe) | APTOS-internal | 733 | 0.182 | 0.045 | 0.395 | 0.344 | 0.815 | 0.753 |
 | RETFound (linear probe) | Messidor-2 | 1744 | 0.121 | 0.100 | 0.594 | 0.591 | 1.181 | 1.190 |
 | RETFound (linear probe) | IDRiD | 455 | 0.127 | 0.299 | 0.758 | 0.874 | 1.462 | 1.804 |
-| RETFound (full fine-tune) | APTOS-internal | 733 | 0.177 | 0.053 | 0.380 | 0.327 | 0.777 | 0.698 |
-| RETFound (full fine-tune) | Messidor-2 | 1744 | 0.160 | 0.081 | 0.594 | 0.569 | 1.185 | 1.122 |
-| RETFound (full fine-tune) | IDRiD | 455 | 0.098 | 0.211 | 0.702 | 0.774 | 1.302 | 1.440 |
+| RETFound (full fine-tune) | APTOS-internal | 733 | 0.179 | 0.081 | 0.369 | 0.335 | 0.748 | 0.721 |
+| RETFound (full fine-tune) | Messidor-2 | 1744 | 0.095 | 0.090 | 0.563 | 0.558 | 1.158 | 1.179 |
+| RETFound (full fine-tune) | IDRiD | 455 | 0.129 | 0.229 | 0.715 | 0.778 | 1.377 | 1.634 |
 
 _Temperature scaling is monotonic in the logits, so accuracy and QWK are
 unchanged (verified: `QWK_raw == QWK_scaled`). Only the probability

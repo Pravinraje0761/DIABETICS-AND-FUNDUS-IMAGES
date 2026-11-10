@@ -116,7 +116,18 @@ def main() -> int:
             print(f"  skip {mkey}: checkpoint missing")
             continue
         model, _ = load_checkpoint(ckpt, device)
-        n_on = enable_stochastic(model, args.min_dropout_p)
+        # Only layers that were stochastic DURING TRAINING may be re-activated.
+        # The linear probe's frozen backbone was trained with drop_path=0, but
+        # load_checkpoint() rebuilds the ViT with the builder default (0.2); a
+        # bug found in review (2026-10-21) meant its "MC" output injected
+        # untrained stochastic depth. Respect the checkpoint's own drop_path.
+        _hp = torch.load(ckpt, map_location="cpu", weights_only=False).get("hyperparams", {}) \
+            if mkey.startswith("retfound") else {}
+        if mkey.startswith("retfound") and float(_hp.get("drop_path", 0.2) or 0.0) == 0.0:
+            n_on = 0
+            print(f"  {mkey}: trained without stochastic layers -> deterministic (T passes identical)")
+        else:
+            n_on = enable_stochastic(model, args.min_dropout_p)
         print(f"  {mkey}: {n_on} stochastic modules active")
         for dkey, (manifest, split) in DATASETS.items():
             if not manifest.is_file():

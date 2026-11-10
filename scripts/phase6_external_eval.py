@@ -112,8 +112,23 @@ def main() -> int:
             print()
 
     master = pd.DataFrame(rows)
+    per_class_df = pd.DataFrame(per_class_rows)
+    # Review fix (2026-10-21): a run with --models <subset> used to OVERWRITE the
+    # master tables with only that subset. Keep rows of models not re-run.
+    for _name, _df in (("master_results.csv", "master"),
+                       ("master_results_per_class.csv", "per_class_df")):
+        _f = OUT_DIR / _name
+        if _f.is_file():
+            _old = pd.read_csv(_f)
+            _new = master if _df == "master" else per_class_df
+            _keep = _old[~_old["model"].isin(_new["model"].unique())]
+            _merged = pd.concat([_keep, _new], ignore_index=True)
+            if _df == "master":
+                master = _merged
+            else:
+                per_class_df = _merged
     master.to_csv(OUT_DIR / "master_results.csv", index=False)
-    pd.DataFrame(per_class_rows).to_csv(OUT_DIR / "master_results_per_class.csv",
+    per_class_df.to_csv(OUT_DIR / "master_results_per_class.csv",
                                        index=False)
 
     # internal -> external drop, per model per metric

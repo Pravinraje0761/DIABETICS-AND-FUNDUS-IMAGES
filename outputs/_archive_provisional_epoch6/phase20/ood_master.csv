@@ -1,0 +1,13 @@
+model,dataset,n,n_errors,auroc_ood_mahalanobis,auroc_entropy_recomputed,auroc_entropy_phase8,auroc_diff_ood_minus_entropy,diff_ci_lo,diff_ci_hi,ood_significantly_better,entropy_significantly_better
+baseline_efficientnet_b3,APTOS-internal,733,144,0.6516,0.8406,0.8406,-0.189,-0.2433,-0.1355,False,True
+baseline_efficientnet_b3,Messidor-2,1744,653,0.4716,0.6813,0.6813,-0.2097,-0.2441,-0.1758,False,True
+baseline_efficientnet_b3,IDRiD,455,229,0.4864,0.5923,0.5923,-0.1059,-0.1744,-0.0324,False,True
+baseline_resnet50,APTOS-internal,733,155,0.6439,0.7885,0.7885,-0.1446,-0.1966,-0.091,False,True
+baseline_resnet50,Messidor-2,1744,674,0.4745,0.6523,0.6523,-0.1779,-0.2088,-0.1459,False,True
+baseline_resnet50,IDRiD,455,251,0.5061,0.5474,0.5474,-0.0413,-0.106,0.018,False,False
+retfound_linprobe,APTOS-internal,733,177,0.6628,0.6946,0.6946,-0.0318,-0.1006,0.0298,False,False
+retfound_linprobe,Messidor-2,1744,716,0.4788,0.6486,0.6486,-0.1698,-0.2059,-0.1351,False,True
+retfound_linprobe,IDRiD,455,302,0.4273,0.6484,0.6484,-0.2211,-0.322,-0.1228,False,True
+retfound_full,APTOS-internal,733,169,0.6625,0.6275,0.6275,0.035,-0.0377,0.1001,False,False
+retfound_full,Messidor-2,1744,694,0.4473,0.6707,0.6707,-0.2234,-0.255,-0.1925,False,True
+retfound_full,IDRiD,455,264,0.498,0.4985,0.4985,-0.0005,-0.0897,0.0922,False,False

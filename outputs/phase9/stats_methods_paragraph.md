@@ -18,4 +18,7 @@ small pre-specified family of confirmatory contrasts (foundation model vs.
 EfficientNet-B3 baseline on each external dataset); secondary per-grade tests are
 reported as exploratory. Analyses used Python 3.14, NumPy, pandas, SciPy and
 scikit-learn; the bootstrap and DeLong code is released with the study
-(`scripts/phase9_stats.py`).
+(`scripts/phase9_stats.py`). As a sensitivity analysis the entire procedure was
+repeated on the Monte-Carlo-dropout predictive distributions (mean softmax over
+T stochastic forward passes; see Uncertainty quantification), which leaves the
+substantive conclusions unchanged (`outputs/phase9/*_mc.csv`).

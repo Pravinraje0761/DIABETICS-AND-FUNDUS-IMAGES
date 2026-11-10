@@ -132,6 +132,12 @@ def main() -> int:
                          "ablation). Focal keeps the same class-weight vector as "
                          "alpha unless --no-class-weights is also given.")
     ap.add_argument("--focal-gamma", type=float, default=2.0)
+    ap.add_argument("--warmup-epochs", type=int, default=0,
+                    help="sensitivity analysis only: linear warm-up then cosine (RETFound recipe "
+                         "uses 3). Default 0 = original CosineAnnealingLR protocol")
+    ap.add_argument("--label-smoothing", type=float, default=0.0,
+                    help="sensitivity analysis only (default 0.0 = original protocol); "
+                         "0.1 matches the RETFound fine-tuning recipe")
     ap.add_argument("--no-amp", action="store_true")
     ap.add_argument("--device", default="auto", choices=["auto", "cpu", "cuda"])
     ap.add_argument("--limit-train-batches", type=int, default=0,
@@ -168,11 +174,20 @@ def main() -> int:
 
     class_weights = None if args.no_class_weights else train_ds.class_weights().to(device)
     criterion = build_criterion(args.loss, class_weights,
+                                label_smoothing=args.label_smoothing,
                                 focal_gamma=args.focal_gamma)
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr,
                                   weight_decay=args.weight_decay)
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
+    if args.warmup_epochs > 0:
+        def _lr_lambda(epoch: int) -> float:
+            if epoch < args.warmup_epochs:
+                return (epoch + 1) / args.warmup_epochs
+            progress = (epoch - args.warmup_epochs) / max(args.epochs - args.warmup_epochs, 1)
+            return 0.5 * (1.0 + np.cos(np.pi * progress))
+        scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, _lr_lambda)
+    else:
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
     scaler = torch.amp.GradScaler(enabled=use_amp)
 
     hyperparams = {
@@ -188,10 +203,12 @@ def main() -> int:
         "optimizer": "AdamW",
         "lr": args.lr,
         "weight_decay": args.weight_decay,
-        "lr_schedule": "CosineAnnealingLR",
+        "lr_schedule": ("linear warmup + cosine decay" if args.warmup_epochs > 0 else "CosineAnnealingLR"),
+        "warmup_epochs": args.warmup_epochs,
         "loss": (("CrossEntropy" if args.loss == "ce"
                   else f"Focal(gamma={args.focal_gamma})")
                  + ("" if args.no_class_weights else " (inverse-freq class weights)")),
+        "label_smoothing": args.label_smoothing,
         "class_weights": None if class_weights is None else [round(float(w), 4) for w in class_weights],
         "early_stopping": f"val quadratic-weighted kappa, patience={args.patience}",
         "augmentation": "resize224, H/V flip, +/-15deg rotation, brightness/contrast jitter 0.1",

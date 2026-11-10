@@ -48,3 +48,20 @@ Thumbs.db
 
 # Test cache
 .pytest_cache/
+# IDRiD raw images and masks (licence: download from IEEE DataPort)
+/A. Segmentation/
+/B. Disease Grading/
+# Messidor-2 examination file is distributed by ADCIS - do not redistribute
+/messidor-2.csv
+/data_splits/messidor2_official_pairs_adcis.csv
+# regenerable preprocessed variants
+/data_processed_*/
+# LaTeX build artefacts
+*.aux
+*.out
+*.blg
+*.synctex.gz
+# large regenerable arrays (embeddings, saliency maps, bootstrap replicates)
+/outputs/phase22/embeddings/
+/outputs/phase26/cams.npz
+/outputs/phase31/reps/

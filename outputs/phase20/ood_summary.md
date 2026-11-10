@@ -1,6 +1,6 @@
 # Phase 20 -- domain-shift OOD detection vs. entropy error detection
 
-_Generated 2026-09-11T06:01:00+00:00. OOD score = min-over-class squared Mahalanobis distance in a frozen ImageNet EfficientNet-B3 feature space (class-conditional means + Ledoit-Wolf shared covariance fit on APTOS-train only; same extractor as Phase 14). Paired bootstrap on the difference in error-detection AUROC, B=2000, seed=42._
+_Generated 2026-10-21T06:20:49+00:00. OOD score = min-over-class squared Mahalanobis distance in a frozen ImageNet EfficientNet-B3 feature space (class-conditional means + Ledoit-Wolf shared covariance fit on APTOS-train only; same extractor as Phase 14). Paired bootstrap on the difference in error-detection AUROC, B=2000, seed=42._
 
 | Model | Dataset | n | errors | AUROC(OOD) | AUROC(entropy) | diff (OOD-entropy), 95% CI | verdict |
 |---|---|--:|--:|--:|--:|---|---|
@@ -13,8 +13,8 @@ _Generated 2026-09-11T06:01:00+00:00. OOD score = min-over-class squared Mahalan
 | retfound_linprobe | APTOS-internal | 733 | 177 | 0.663 | 0.695 | -0.032 (-0.101,+0.030) | no sig. difference |
 | retfound_linprobe | Messidor-2 | 1744 | 716 | 0.479 | 0.649 | -0.170 (-0.206,-0.135) | entropy better |
 | retfound_linprobe | IDRiD | 455 | 302 | 0.427 | 0.648 | -0.221 (-0.322,-0.123) | entropy better |
-| retfound_full | APTOS-internal | 733 | 169 | 0.662 | 0.627 | +0.035 (-0.038,+0.100) | no sig. difference |
-| retfound_full | Messidor-2 | 1744 | 694 | 0.447 | 0.671 | -0.223 (-0.255,-0.193) | entropy better |
-| retfound_full | IDRiD | 455 | 264 | 0.498 | 0.498 | -0.001 (-0.090,+0.092) | no sig. difference |
+| retfound_full | APTOS-internal | 733 | 159 | 0.637 | 0.516 | +0.120 (+0.040,+0.197) | OOD better |
+| retfound_full | Messidor-2 | 1744 | 655 | 0.452 | 0.633 | -0.181 (-0.215,-0.144) | entropy better |
+| retfound_full | IDRiD | 455 | 250 | 0.556 | 0.491 | +0.065 (-0.026,+0.150) | no sig. difference |
 
 APTOS-internal rows are a control: the OOD detector is fit on this same distribution, so a large advantage there (if any) reflects in-domain behaviour, not domain-shift detection.

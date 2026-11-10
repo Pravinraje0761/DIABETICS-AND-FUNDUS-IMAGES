@@ -1,71 +1,64 @@
 # Cover letter
 
-> Replace `[Journal]`, the bracketed fields, and the reviewer list before
-> sending. Keep to one page. A journal-specific hook is offered at the end.
+> Replace `[Journal]` and the reviewer list before sending. Keep to one page.
+> A journal-specific hook is offered at the end.
 
 ---
 
 Dear Editors,
 
-Please consider our manuscript, **"Cross-Dataset External Validation of a Retinal
+Please consider the manuscript **"Cross-Dataset External Validation of a Retinal
 Foundation Model for Diabetic Retinopathy Grading: Performance, Explainability,
-and Uncertainty,"** for publication in *[Journal]*.
+and Uncertainty"** for publication in *[Journal]*.
 
-Retinal foundation models are increasingly promoted for clinical retinal image
-analysis, yet independent, protocol-matched external validation for diabetic
-retinopathy (DR) severity grading remains scarce. Under a single, fully matched
-preprocessing, fine-tuning and evaluation protocol, we compared a fine-tuned
-retinal foundation model (RETFound, ViT-Large, masked-autoencoder pretraining on
-~1.6 M fundus images) with an ImageNet-pretrained convolutional baseline
-(EfficientNet-B3; ResNet-50 as secondary) on two fully independent external
-datasets, Messidor-2 (n = 1,744, adjudicated reference standard) and IDRiD
-(n = 455), after development on APTOS 2019 only.
+Retinal foundation models are widely expected to generalise better than
+ImageNet-pretrained networks, yet independent, protocol-matched external
+validation for diabetic retinopathy (DR) severity grading remains scarce. Under
+one matched preprocessing, fine-tuning and evaluation protocol, we compared
+RETFound (ViT-Large, masked-autoencoder pretraining on ~1.6 M fundus images;
+linear probing and full fine-tuning) with ImageNet-pretrained EfficientNet-B3
+(and ResNet-50), developed on APTOS 2019 only and evaluated unchanged on
+Messidor-2 (n = 1,744, adjudicated reference standard) and IDRiD (n = 455).
 
-Our principal finding is **negative and, we believe, useful**: fine-tuning
-RETFound on APTOS did **not** produce better cross-dataset generalisation than
-the ImageNet CNN. Every model - foundation and baseline alike - lost substantial
-ordinal agreement on external data (quadratic-weighted kappa falling from
-approximately 0.87 internally to 0.37-0.50 on Messidor-2), and RETFound's
-external kappa was no higher than the baseline's on either external set. The
-result is consistent across RETFound linear-probing and full fine-tuning. We add
-protocol-matched explainability (Grad-CAM++ / attention rollout against an
-a-priori plausibility rubric) and predictive-uncertainty analyses (Monte-Carlo
-dropout, selective prediction), bootstrap 95% confidence intervals for every
-headline metric, DeLong tests for paired AUC comparisons, and we release all
-code, split definitions and per-image predictions. Reporting follows TRIPOD+AI
-(completed checklist included as Supplementary Material).
+The primary outcome is the quadratic-weighted kappa, and the confirmatory
+inference is a pre-specified, Holm-controlled family of four paired contrasts in
+internal-to-external kappa drop. Fully fine-tuned RETFound generalised **neither
+better nor measurably worse** than the CNN (excess drop +0.018 on Messidor-2 and
++0.022 on IDRiD, both intervals including zero), while RETFound used as a frozen
+feature extractor generalised **worse** (Holm p = 0.030 and 0.016). Every model
+lost substantial agreement externally (kappa ~0.85-0.88 internally, 0.39-0.50 on
+Messidor-2), and softmax entropy did not reliably flag the errors. We also report
+that an earlier, hardware-interrupted RETFound training run had suggested a
+significant disadvantage that disappeared when the pre-specified protocol was
+run to completion, which we think is itself a useful caution for the field.
 
-We believe this is relevant to *[Journal]*'s readership because it directly and
-transparently tests a widely repeated assumption about foundation models in
-ophthalmic imaging, and because it exemplifies the external-validation-first
-evidence standard that the field increasingly asks for. The work is original,
-not under consideration elsewhere, and all authors have approved this
-submission. We declare **[no conflicts of interest / see disclosure]**. Use of an
-AI coding assistant is disclosed in the manuscript.
+The submission includes a full reproducibility package: code, split lists,
+per-image predictions, checkpoint SHA-256 hashes, an exact environment lock, a
+documented audit of each dataset copy against its canonical release, and the
+completed TRIPOD+AI checklist. The work is original and not under consideration
+elsewhere. The author declares no conflicts of interest. Use of an AI coding
+assistant is disclosed in the manuscript.
 
-Suggested reviewers (no conflict of interest with the authors):
+Suggested reviewers (no conflict of interest):
 - [Name, affiliation, email] - retinal foundation models / RETFound
 - [Name, affiliation, email] - external validation of DR AI
 - [Name, affiliation, email] - reporting standards for prediction models (TRIPOD+AI)
 - [Name, affiliation, email] - uncertainty / explainability in medical imaging
 
-We would be glad to respond to any questions.
-
 Sincerely,
-[Corresponding author], on behalf of all authors
-[Affiliation] - [email] - [ORCID]
+Pravin Raj E
+Independent researcher - epravinraj0761@gmail.com
 
 ---
 
 ### Optional journal-specific hooks (pick one, delete the rest)
 
 - **Diagnostics / Journal of Imaging (MDPI):** "...and because it fits the
-  journal's scope in AI-assisted diagnostic imaging; we note the open Special
-  Issue on [exact title] and would be happy to be considered for it."
+  journal's scope in AI-assisted diagnostic imaging."
 - **Translational Vision Science & Technology (ARVO):** "...and because a
-  rigorously reported negative external-validation result, with a full
+  rigorously reported null external-validation result, with a full
   reproducibility package, advances translational understanding of where retinal
   AI does and does not transfer."
-- **Ophthalmology Science:** "...and because it addresses clinical readiness of
-  retinal AI head-on, with external validation and an uncertainty-aware referral
-  analysis rather than internal test performance alone."
+- **Ophthalmology Science:** "...and because it tests a widely repeated
+  assumption about retinal foundation models with external validation rather
+  than internal test performance."

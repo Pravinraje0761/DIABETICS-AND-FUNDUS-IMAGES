@@ -127,6 +127,12 @@ def main() -> int:
                     help="flush the ~1.2 GB checkpoint to disk every N epochs "
                          "(and always once at the end). Default: only at the end. "
                          "Set 1 for the legacy per-epoch behaviour.")
+    ap.add_argument("--resume", action="store_true",
+                    help="continue from <ckpt-dir>/<tag>_resume.pt (model, optimiser, "
+                         "scheduler, AMP scaler, RNG, history, early-stopping state) "
+                         "written at the end of every epoch. Lets a run interrupted by a "
+                         "crash / OOM / reboot finish the SAME pre-specified protocol "
+                         "(30 epochs max, patience 7 on val QWK) instead of restarting.")
     ap.add_argument("--num-workers", type=int, default=4)
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--no-class-weights", action="store_true")
@@ -274,6 +280,34 @@ def main() -> int:
     history: list[dict] = []
     best_qwk, best_epoch, since_best = -np.inf, -1, 0
     best_path = ckpt_dir / f"{tag}_best.pt"
+    resume_path = ckpt_dir / f"{tag}_resume.pt"
+    start_epoch = 1
+    if args.resume and resume_path.exists():
+        rs = torch.load(resume_path, map_location="cpu", weights_only=False)
+        model.load_state_dict(rs["model_state"])
+        optimizer.load_state_dict(rs["optimizer_state"])
+        scheduler.load_state_dict(rs["scheduler_state"])
+        scaler.load_state_dict(rs["scaler_state"])
+        history = rs["history"]
+        best_qwk, best_epoch, since_best = rs["best_qwk"], rs["best_epoch"], rs["since_best"]
+        start_epoch = rs["epoch"] + 1
+        random.setstate(rs["py_rng"]); np.random.set_state(rs["np_rng"])
+        torch.set_rng_state(rs["torch_rng"])
+        if rs.get("cuda_rng") is not None and device.type == "cuda":
+            torch.cuda.set_rng_state_all(rs["cuda_rng"])
+        hyperparams["started_utc"] = rs.get("started_utc", hyperparams["started_utc"])
+        hyperparams.setdefault("resumed_utc", list(rs.get("resumed_utc", [])))
+        hyperparams["resumed_utc"].append(datetime.now(timezone.utc).isoformat(timespec="seconds"))
+        hyperparams["resumed_from_epoch"] = hyperparams.get("resumed_from_epoch", []) + [rs["epoch"]]
+        (OUT_DIR / f"{tag}_hyperparams.json").write_text(json.dumps(hyperparams, indent=2), encoding="utf-8")
+        print(f"RESUMED from {resume_path.name}: completed epoch {rs['epoch']}, "
+              f"best epoch {best_epoch} (val QWK {best_qwk:.4f}), since_best {since_best}")
+        del rs
+        if since_best >= args.patience:
+            print("early-stopping criterion already met before interruption")
+            start_epoch = epochs + 1
+    elif args.resume:
+        print(f"--resume given but {resume_path} not found -> starting from epoch 1")
     if ckpt_dir != OUT_DIR:
         print(f"checkpoints -> {best_path} (outside outputs/ to avoid OneDrive sync)")
 
@@ -302,7 +336,25 @@ def main() -> int:
         print(f"  -> checkpoint flushed to {best_path.name} "
               f"(best epoch {best_state['epoch']}, {reason})")
 
-    for epoch in range(1, epochs + 1):
+    def _save_resume(ep: int) -> None:
+        state = {
+            "epoch": ep, "model_state": model.state_dict(),
+            "optimizer_state": optimizer.state_dict(),
+            "scheduler_state": scheduler.state_dict(),
+            "scaler_state": scaler.state_dict(), "history": history,
+            "best_qwk": best_qwk, "best_epoch": best_epoch, "since_best": since_best,
+            "py_rng": random.getstate(), "np_rng": np.random.get_state(),
+            "torch_rng": torch.get_rng_state(),
+            "cuda_rng": torch.cuda.get_rng_state_all() if device.type == "cuda" else None,
+            "started_utc": hyperparams["started_utc"],
+            "resumed_utc": hyperparams.get("resumed_utc", []),
+        }
+        tmp = resume_path.with_suffix(".pt.tmp")
+        torch.save(state, tmp)
+        tmp.replace(resume_path)
+
+    stopped_early = False
+    for epoch in range(start_epoch, epochs + 1):
         t0 = time.time()
         model.train()
         running, seen = 0.0, 0
@@ -350,13 +402,20 @@ def main() -> int:
             print(f"  -> new best (val QWK {best_qwk:.4f}) held in memory")
             if epoch % args.save_every == 0:
                 _flush("periodic")
+                if args.resume:      # on disk now; free ~1.2 GB of host RAM
+                    best_state = None
         else:
             since_best += 1
-            if since_best >= args.patience:
-                print(f"early stopping at epoch {epoch}")
-                break
+        if args.resume:
+            _save_resume(epoch)
+        if since_best >= args.patience:
+            print(f"early stopping at epoch {epoch}")
+            stopped_early = True
+            break
 
     _flush("final")
+    if not best_path.exists():
+        raise SystemExit(f"no best checkpoint at {best_path}")
     print(f"\nbest epoch {best_epoch}, val QWK {best_qwk:.4f}")
 
     # -- internal test ------------------------------------------------------- #
@@ -376,6 +435,11 @@ def main() -> int:
         "mode": args.mode,
         "best_epoch": best_epoch,
         "val_qwk": best_qwk,
+        "epochs_run": len(history),
+        "stop_reason": ("early stopping (patience %d)" % args.patience
+                        if (stopped_early or since_best >= args.patience)
+                        else f"reached epoch cap ({epochs})"),
+        "resumed_from_epoch": hyperparams.get("resumed_from_epoch", []),
         "internal_test": {
             k: test_m[k] for k in
             ["n", "accuracy", "quadratic_weighted_kappa", "macro_f1",

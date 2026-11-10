@@ -1,10 +1,10 @@
 family,comparison,p_raw,p_holm,sig_holm_0.05
-"DeLong referable-DR (vs EfficientNet-B3), k=9",APTOS-internal : baseline_resnet50,0.5301,1.0,False
-"DeLong referable-DR (vs EfficientNet-B3), k=9",APTOS-internal : retfound_linprobe,0.4736,1.0,False
-"DeLong referable-DR (vs EfficientNet-B3), k=9",APTOS-internal : retfound_full,0.6603,1.0,False
+"DeLong referable-DR (vs EfficientNet-B3), k=9",APTOS-internal : baseline_resnet50,0.5301,0.9471,False
+"DeLong referable-DR (vs EfficientNet-B3), k=9",APTOS-internal : retfound_linprobe,0.4736,0.9471,False
+"DeLong referable-DR (vs EfficientNet-B3), k=9",APTOS-internal : retfound_full,0.0891,0.3058,False
 "DeLong referable-DR (vs EfficientNet-B3), k=9",Messidor-2 : baseline_resnet50,0.0,0.0,True
 "DeLong referable-DR (vs EfficientNet-B3), k=9",Messidor-2 : retfound_linprobe,0.0,0.0,True
-"DeLong referable-DR (vs EfficientNet-B3), k=9",Messidor-2 : retfound_full,0.0,0.0,True
+"DeLong referable-DR (vs EfficientNet-B3), k=9",Messidor-2 : retfound_full,0.0229,0.1143,False
 "DeLong referable-DR (vs EfficientNet-B3), k=9",IDRiD : baseline_resnet50,0.0765,0.3058,False
 "DeLong referable-DR (vs EfficientNet-B3), k=9",IDRiD : retfound_linprobe,0.0,0.0,True
 "DeLong referable-DR (vs EfficientNet-B3), k=9",IDRiD : retfound_full,0.0,0.0,True

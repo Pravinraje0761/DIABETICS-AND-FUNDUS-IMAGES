@@ -8,6 +8,6 @@ baseline_resnet50,IDRiD,455,0.2599,0.22,0.3122,0.4586,0.7779,1.4451,external
 retfound_linprobe,APTOS-internal,733,0.1818,0.1589,0.2111,0.2495,0.3947,0.8152,internal
 retfound_linprobe,Messidor-2,1744,0.1211,0.1002,0.1446,0.1555,0.5936,1.1813,external
 retfound_linprobe,IDRiD,455,0.127,0.0925,0.1718,0.4187,0.7584,1.4621,external
-retfound_full,APTOS-internal,733,0.1775,0.1563,0.2095,0.2749,0.3795,0.7775,internal
-retfound_full,Messidor-2,1744,0.1597,0.1385,0.1806,0.2451,0.5937,1.1848,external
-retfound_full,IDRiD,455,0.0981,0.0713,0.1487,0.7451,0.7022,1.3018,external
+retfound_full,APTOS-internal,733,0.1791,0.1612,0.2127,0.2576,0.3695,0.7484,internal
+retfound_full,Messidor-2,1744,0.0948,0.0755,0.1181,0.2302,0.563,1.1579,external
+retfound_full,IDRiD,455,0.1292,0.1011,0.1838,0.4494,0.7147,1.3775,external
