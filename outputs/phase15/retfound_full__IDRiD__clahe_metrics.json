@@ -1,33 +1,33 @@
 {
   "n": 455,
-  "accuracy": 0.34065934065934067,
-  "quadratic_weighted_kappa": 0.2967927968843137,
-  "macro_f1": 0.16605741603689306,
-  "balanced_accuracy": 0.2619047619047619,
+  "accuracy": 0.3802197802197802,
+  "quadratic_weighted_kappa": 0.4095727180396813,
+  "macro_f1": 0.20391140257793375,
+  "balanced_accuracy": 0.30440705128205126,
   "per_class": {
     "No DR": {
       "support": 129,
       "sensitivity": 1.0,
-      "specificity": 0.2607361963190184
+      "specificity": 0.3987730061349693
     },
     "Mild": {
       "support": 22,
       "sensitivity": 0.0,
-      "specificity": 0.9930715935334873
+      "specificity": 0.9861431870669746
     },
     "Moderate": {
       "support": 156,
-      "sensitivity": 0.0,
+      "sensitivity": 0.00641025641025641,
       "specificity": 1.0
     },
     "Severe": {
       "support": 84,
-      "sensitivity": 0.30952380952380953,
-      "specificity": 0.8490566037735849
+      "sensitivity": 0.5,
+      "specificity": 0.784366576819407
     },
     "Proliferative": {
       "support": 64,
-      "sensitivity": 0.0,
+      "sensitivity": 0.015625,
       "specificity": 1.0
     }
   },
@@ -47,34 +47,34 @@
       0
     ],
     [
-      134,
+      113,
+      3,
+      1,
+      39,
+      0
+    ],
+    [
+      40,
       2,
       0,
-      20,
+      42,
       0
     ],
     [
-      58,
-      0,
-      0,
-      26,
-      0
-    ],
-    [
-      27,
+      21,
       1,
       0,
-      36,
-      0
+      41,
+      1
     ]
   ],
-  "auc_ovr_macro": 0.7099049829190073,
+  "auc_ovr_macro": 0.7022618077225651,
   "auc_ovr_per_class": {
-    "No DR": 0.9052052123460314,
-    "Mild": 0.4503989082511022,
-    "Moderate": 0.5957893834148015,
-    "Severe": 0.7428924399948659,
-    "Proliferative": 0.8552389705882354
+    "No DR": 0.9297926475483902,
+    "Mild": 0.48955490237245436,
+    "Moderate": 0.6594417288397222,
+    "Severe": 0.7572680015402387,
+    "Proliferative": 0.6752517583120204
   },
-  "referable_auc": 0.8917087835482747
+  "referable_auc": 0.9380228302544441
 }

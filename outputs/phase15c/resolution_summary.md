@@ -13,12 +13,12 @@ bicubically interpolated positional embedding (off-distribution test).
 | baseline_efficientnet_b3 | APTOS-internal | 384 | 0.824 | 0.756 | 0.535 | 0.977 |
 | baseline_efficientnet_b3 | Messidor-2 | 384 | 0.425 | 0.616 | 0.330 | 0.866 |
 | baseline_efficientnet_b3 | IDRiD | 384 | 0.731 | 0.600 | 0.435 | 0.984 |
-| retfound_full | APTOS-internal | 224 | 0.869 | 0.769 | 0.616 | 0.978 |
-| retfound_full | Messidor-2 | 224 | 0.368 | 0.602 | 0.362 | 0.789 |
-| retfound_full | IDRiD | 224 | 0.720 | 0.420 | 0.423 | 0.873 |
-| retfound_full | APTOS-internal | 384 | 0.872 | 0.764 | 0.614 | 0.976 |
-| retfound_full | Messidor-2 | 384 | 0.393 | 0.607 | 0.373 | 0.803 |
-| retfound_full | IDRiD | 384 | 0.683 | 0.396 | 0.394 | 0.854 |
+| retfound_full | APTOS-internal | 224 | 0.882 | 0.783 | 0.632 | 0.967 |
+| retfound_full | Messidor-2 | 224 | 0.487 | 0.624 | 0.368 | 0.817 |
+| retfound_full | IDRiD | 224 | 0.744 | 0.451 | 0.419 | 0.885 |
+| retfound_full | APTOS-internal | 384 | 0.886 | 0.776 | 0.636 | 0.975 |
+| retfound_full | Messidor-2 | 384 | 0.553 | 0.643 | 0.409 | 0.851 |
+| retfound_full | IDRiD | 384 | 0.652 | 0.413 | 0.389 | 0.856 |
 
 ## Internal->external QWK drop, and change vs 224
 
@@ -28,7 +28,7 @@ bicubically interpolated positional embedding (off-distribution test).
 | baseline_efficientnet_b3 | IDRiD | 224 | 0.116 | +0.000 |
 | baseline_efficientnet_b3 | Messidor-2 | 384 | 0.399 | +0.022 |
 | baseline_efficientnet_b3 | IDRiD | 384 | 0.093 | -0.024 |
-| retfound_full | Messidor-2 | 224 | 0.501 | +0.000 |
-| retfound_full | IDRiD | 224 | 0.150 | +0.000 |
-| retfound_full | Messidor-2 | 384 | 0.480 | -0.022 |
-| retfound_full | IDRiD | 384 | 0.189 | +0.040 |
+| retfound_full | Messidor-2 | 224 | 0.395 | +0.000 |
+| retfound_full | IDRiD | 224 | 0.139 | +0.000 |
+| retfound_full | Messidor-2 | 384 | 0.333 | -0.062 |
+| retfound_full | IDRiD | 384 | 0.234 | +0.096 |

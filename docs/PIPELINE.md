@@ -62,3 +62,31 @@ python scripts/phase10_figures.py
 
 Phases 6 onward that only re-score predictions can be run without a GPU from the committed
 files in `outputs/phase6/`. Training (Phases 4–5, 16–18, 21) needs a GPU and the raw data.
+
+## Revision phases (manuscript version of November 2026)
+
+| Phase | Script | Purpose | Outputs |
+|---|---|---|---|
+| 24 | `phase24_uncertainty_validity.py` | Error detection (MSP, margin, entropy) and selective referral, including the fraction of referable DR missed | `outputs/phase24/` |
+| 25 | `phase25_shift_decomposition.py` | Case-mix reweighting and no-DR/mild merging of the external drop | `outputs/phase25/` |
+| 26, 26b | `phase26_lesion_localization.py`, `phase26b_resolution_matched.py` | Saliency against IDRiD expert lesion masks, with centre and cross-image controls and a 7×7 resolution-matched control | `outputs/phase26/` |
+| 27 | `phase27_rater_agreement.py` | Agreement statistics for a blinded rating packet | — |
+| 28 | `phase28_idrid_official_prep.py` | Official IDRiD manifest (516 images) and audit of the third-party copy | `outputs/phase28/` |
+| 29 | `phase29_calibration_ls.py`, `phase29_delong.py`, `phase29_master_table.py`, `phase29_figures.py` | Label-smoothing calibration control, referable-DR AUC tests, figure style | `outputs/phase29/` |
+| 30, 30b | `phase30_messidor_pairs.py`, `phase30b_official_pairs.py` | Messidor-2 examinations from the official ADCIS file (needs `messidor-2.csv`, not redistributed); validation of an earlier reconstruction | `outputs/phase30/` |
+| 31 | `phase31_paper_numbers.py` | All manuscript metrics; examination-level bootstrap; seed-averaged primary contrast with two-level bootstrap; crossed-recipe contrasts | `outputs/phase31/` |
+| 32 | `phase32_tex_numbers.py` | Every manuscript number as a LaTeX macro (`paper/submission_io/generated/`) | `numbers.tex`, `numbers.json` |
+| 33 | `phase33_figures.py` | Manuscript Figures 1–5 | `outputs/phase33/figures/` |
+| 34 | `phase34_code_archive.py` | Online Resources 3 (predictions) and 4 (code) | `paper/submission_io/` |
+| 35 | `phase35_esm1.py` | Data-driven sections of Online Resource 1 | `outputs/phase35/` |
+
+Additional training runs (seeds 43–45, label-smoothing control, crossed recipes) are launched by
+`run_round3_gpu.bat`, `run_round4_gpu.bat` and `run_seedpreds_cpu.bat`.
+
+```bash
+for m in baseline_efficientnet_b3 baseline_resnet50 retfound_linprobe retfound_full; do
+  python scripts/phase31_paper_numbers.py --model $m; done   # and every other run in ALL_MODELS
+python scripts/phase31_paper_numbers.py --merge
+python scripts/phase32_tex_numbers.py
+python scripts/phase33_figures.py
+```

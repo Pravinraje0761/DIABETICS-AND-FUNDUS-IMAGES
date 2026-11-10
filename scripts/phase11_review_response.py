@@ -289,23 +289,23 @@ means the axis is not reported in the public releases used here._
 
 | Axis | APTOS 2019 (development) | Messidor-2 (external) | IDRiD (external) |
 |---|---|---|---|
-| Country / population | India (Aravind Eye Hospital); telescreening | France (Messidor programme partners) | India (Kasturba Medical College, Manipal) |
-| Camera / device | Multiple, not individually published (multi-site) | Topcon TRC NW6 non-mydriatic | Kowa VX-10 alpha / Nidek AFC-210 |
+| Country / population | India (Aravind Eye Hospital); telescreening | France (Messidor programme partners) | India (Eye Clinic, Nanded, Maharashtra; Porwal et al. 2018) |
+| Camera / device | Multiple, not individually published (multi-site) | Messidor-Extension: Topcon TRC NW6 non-mydriatic; Messidor-Original: not stated on the release page | Kowa VX-10 alpha |
 | Native resolution | Heterogeneous; ~1.5-3 MP after vendor processing | 1440x960 to 2304x1536 | 4288x2848 |
 | Field of view | ~45 deg, macula-centred | ~45 deg, macula-centred | 50 deg, macula-centred |
 | Illumination / colour | Variable across sites; partly pre-processed by the Kaggle release | more uniform (single programme) | high-resolution, well-exposed; least colour variation |
-| Mydriasis | mixed / not published | non-mydriatic | mydriatic |
+| Mydriasis | not published | Extension: no dilation; Original: not stated on the release page | mydriatic (tropicamide 0.5%) |
 | Grading scale | ICDR 0-4 | ICDR 0-4 | ICDR 0-4 |
-| Reference standard | single grader (Kaggle labels) | **adjudicated consensus** (Krause et al. 2018) | expert consensus (release) |
-| Grade prevalence 0/1/2/3/4 (%) | 49.3 / 10.1 / 27.3 / 5.3 / 8.1 | 58.3 / 15.5 / 19.9 / 4.3 / 2.0 | 28.4 / 4.8 / 34.3 / 18.5 / 14.1 |
-| Referable DR (grade >= 2), % | 40.7 | 26.2 | 67.6 |
+| Reference standard | one clinician per image (Kaggle data page); no adjudication described | **adjudicated consensus of 3 retina specialists** (Krause et al. 2018) | "medical experts" (Porwal et al. 2018); number of graders and adjudication not reported |
+| Grade prevalence 0/1/2/3/4 (%) | {prev_APTOS} | {prev_Messidor-2} | {prev_IDRiD} |
+| Referable DR (grade >= 2), % | {ref_APTOS} | {ref_Messidor-2} | {ref_IDRiD} |
 | Image quality | variable; some low-quality frames retained | curated; adjudicated-gradable subset only | high and uniform |
 | Preprocessing here | single Phase 3 pipeline (crop / pad / 224 / ImageNet norm) | same, all 1744 | same, all 455 |
 
 **Interpretation.** Messidor-2 differs from APTOS most on the reference standard
 (adjudicated consensus vs single grader) and acquisition programme, and least on
-FOV/scale; its referable-DR prevalence is *lower* (26% vs 41%). IDRiD differs most
-on resolution, mydriasis, and prevalence (referable DR 68%), and least on colour
+FOV/scale; its referable-DR prevalence is *lower* ({ref_Messidor-2}% vs {ref_APTOS}%). IDRiD differs most
+on resolution, mydriasis, and prevalence (referable DR {ref_IDRiD}%), and least on colour
 uniformity. This matches the observed failure modes: on Messidor-2 (stricter
 labels, similar low-severity skew) QWK collapses by an ordinal-structure
 mechanism; on IDRiD (very different base rate) accuracy falls more than QWK.
@@ -344,7 +344,16 @@ def main() -> int:
     training_accounting().to_csv(OUT / "training_accounting.csv", index=False)
 
     print("[7/7] domain-shift table ...")
-    (OUT / "domain_shift.md").write_text(DOMAIN_SHIFT_MD, encoding="utf-8")
+    _md = DOMAIN_SHIFT_MD
+    # prevalence rows are COMPUTED from the manifests (previously hand-entered)
+    for _d, _m in [("APTOS", SPLIT / "aptos_manifest.csv"),
+                   ("Messidor-2", SPLIT / "messidor2_manifest.csv"),
+                   ("IDRiD", SPLIT / "idrid_manifest.csv")]:
+        _y = pd.read_csv(_m)["diagnosis"].astype(int).to_numpy()
+        _c = np.bincount(_y, minlength=5) / len(_y) * 100
+        _md = _md.replace("{prev_%s}" % _d, " / ".join(f"{v:.1f}" for v in _c))
+        _md = _md.replace("{ref_%s}" % _d, f"{(_y >= 2).mean() * 100:.1f}")
+    (OUT / "domain_shift.md").write_text(_md, encoding="utf-8")
 
     L = ["# Phase 11 - review-response analyses", "",
          f"Verification: {len(v)} metric cells recomputed from prediction files; "

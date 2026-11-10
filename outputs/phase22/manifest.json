@@ -1,0 +1,38 @@
+{
+  "commit": "7167021",
+  "python": "3.14.7",
+  "platform": "Windows-11-10.0.26300-SP0",
+  "packages": {
+    "numpy": "2.5.3",
+    "pandas": "3.0.5",
+    "sklearn": "1.9.0",
+    "torch": "2.11.0+cu128",
+    "scipy": "1.18.1"
+  },
+  "grid": {
+    "depths": [
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "activations": [
+      "relu",
+      "tanh",
+      "gelu",
+      "identity"
+    ],
+    "seeds": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ]
+  },
+  "paper": "Cross-dataset external validation of a retinal foundation model",
+  "what_varies": "classifier-head depth and activation, on FROZEN backbone embeddings. Backbone depth is fixed by the pretrained checkpoint and is NOT varied.",
+  "anchor": "depth 0 = the published linear probe",
+  "qwk_note": "QWK is recorded per run in the note field; it is the paper's primary metric and should lead the table."
+}

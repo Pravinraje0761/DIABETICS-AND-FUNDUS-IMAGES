@@ -1,0 +1,13 @@
+# Messidor-2: reconstructed versus official examination pairs
+
+- official_exams: 874
+- official_pairs_gradable: 870
+- images: 1744
+- singletons: 4
+- reconstructed_pairs: 831
+- reconstructed_correct: 754
+- reconstructed_ppv: 0.9073405535499398
+- official_pairs_recovered: 0.8666666666666667
+- laterality_accuracy: 0.9833715596330275
+- fellow_agree: 0.7620689655172413
+- fellow_within1: 0.9666666666666667

@@ -1,0 +1,68 @@
+Pravin Raj E
+Independent Researcher, Chennai, Tamil Nadu, India
+epravinraj0761@gmail.com · ORCID 0009-0000-2975-1631
+
+6 November 2026
+
+The Editor-in-Chief
+International Ophthalmology
+
+Dear Editor,
+
+I submit the Original Article “Retinal foundation-model versus ImageNet
+pretraining for diabetic retinopathy grading across datasets: how much
+of the external performance drop reflects the reference standard?” for
+consideration in International Ophthalmology.
+
+Automated diabetic retinopathy (DR) grading performs well on the data it
+is developed on but loses accuracy when the camera, population or
+grading protocol changes. Retinal foundation models such as RETFound are
+often expected to solve this problem. This study tests that expectation
+directly. It also asks a question that matters to every ophthalmologist
+who reads an AI validation paper: how much of an “external performance
+drop” is model failure, and how much reflects a different case mix or a
+different reference standard?
+
+Models were developed on APTOS 2019 and evaluated once, unchanged, on
+Messidor-2 (adjudicated specialist grades) and the official IDRiD
+release. The pre-specified primary analysis, with multiplicity control,
+found that fully fine-tuned RETFound degraded neither less nor
+detectably more than an ImageNet-pretrained EfficientNet-B3. The study
+then shows that:
+
+-   most of the Messidor-2 drop disappears once case mix is matched and
+    no/mild DR are merged, and the two external datasets fail in
+    opposite directions at that boundary, which points to differences in
+    the reference standard rather than to model fragility;
+-   RETFound’s apparent calibration advantage is reproduced by label
+    smoothing alone, a training-recipe effect rather than a benefit of
+    retinal pretraining;
+-   confidence-based referral halved missed referable DR on one external
+    dataset but not the other, and simple confidence was as informative
+    as more elaborate uncertainty scores;
+-   tested quantitatively against expert lesion masks, saliency maps
+    localised lesions only weakly, so they should not be read as proof
+    of interpretability.
+
+The study is therefore an evaluation of cross-dataset reliability, not a
+proposal for another classifier. It is reported following TRIPOD+AI. It
+includes an audit that found 5.9% of labels in a widely shared IDRiD
+mirror differed from the official release, and it provides per-image
+predictions for every model. The work adds to recent articles in this
+journal on deep learning for DR and retinal imaging by emphasising
+external testing, confidence intervals and quantitative evaluation of
+uncertainty and explainability.
+
+I confirm that this manuscript is original, has not been published
+previously, and is not under consideration by any other journal. It has
+not been posted as a preprint. I am the sole author and have approved
+the submitted version. The study used only public, de-identified
+datasets. It received no funding, and I have no competing interests. The
+use of AI assistants in preparing the code and text is described in the
+Methods. I would prefer the standard (subscription) publication route.
+
+Thank you for considering this submission.
+
+Yours sincerely,
+
+Pravin Raj E

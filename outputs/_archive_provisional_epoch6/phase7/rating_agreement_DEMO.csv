@@ -1,0 +1,17 @@
+model,dataset,correct,n,expert_plausible_frac,proxy_plausible_frac,expert_proxy_agree_frac,expert_proxy_kappa
+baseline_efficientnet_b3,IDRiD,False,10,0.9,1.0,0.9,0.0
+baseline_efficientnet_b3,IDRiD,True,10,1.0,1.0,1.0,
+baseline_efficientnet_b3,Messidor-2,False,10,0.8,1.0,0.8,0.0
+baseline_efficientnet_b3,Messidor-2,True,10,0.8,0.9,0.9,0.615
+baseline_resnet50,IDRiD,False,10,0.5,0.9,0.6,0.2
+baseline_resnet50,IDRiD,True,10,0.9,1.0,0.9,0.0
+baseline_resnet50,Messidor-2,False,10,0.8,1.0,0.8,0.0
+baseline_resnet50,Messidor-2,True,10,0.8,0.9,0.9,0.615
+retfound_full,IDRiD,False,10,0.7,0.7,1.0,1.0
+retfound_full,IDRiD,True,10,0.7,0.9,0.8,0.412
+retfound_full,Messidor-2,False,10,0.5,0.3,0.8,0.6
+retfound_full,Messidor-2,True,10,0.6,0.7,0.9,0.783
+retfound_linprobe,IDRiD,False,10,0.6,0.8,0.6,0.091
+retfound_linprobe,IDRiD,True,10,0.6,0.5,0.9,0.8
+retfound_linprobe,Messidor-2,False,10,0.5,0.3,0.8,0.6
+retfound_linprobe,Messidor-2,True,10,0.6,0.7,0.9,0.783

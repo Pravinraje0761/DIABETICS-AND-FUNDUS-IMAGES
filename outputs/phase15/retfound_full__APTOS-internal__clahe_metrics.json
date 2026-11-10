@@ -1,29 +1,29 @@
 {
   "n": 733,
-  "accuracy": 0.5552523874488404,
-  "quadratic_weighted_kappa": 0.5986749245289653,
-  "macro_f1": 0.29419233134560024,
-  "balanced_accuracy": 0.39061755390700414,
+  "accuracy": 0.5702592087312415,
+  "quadratic_weighted_kappa": 0.7024696448147687,
+  "macro_f1": 0.3135824384750346,
+  "balanced_accuracy": 0.4280894873789376,
   "per_class": {
     "No DR": {
       "support": 361,
       "sensitivity": 0.997229916897507,
-      "specificity": 0.5026881720430108
+      "specificity": 0.6505376344086021
     },
     "Mild": {
       "support": 74,
-      "sensitivity": 0.20270270270270271,
-      "specificity": 0.9575113808801214
+      "sensitivity": 0.21621621621621623,
+      "specificity": 0.9635811836115327
     },
     "Moderate": {
       "support": 200,
-      "sensitivity": 0.01,
-      "specificity": 0.99812382739212
+      "sensitivity": 0.03,
+      "specificity": 0.9943714821763602
     },
     "Severe": {
       "support": 39,
-      "sensitivity": 0.6923076923076923,
-      "specificity": 0.8386167146974063
+      "sensitivity": 0.8461538461538461,
+      "specificity": 0.7723342939481268
     },
     "Proliferative": {
       "support": 59,
@@ -40,41 +40,41 @@
       0
     ],
     [
-      57,
-      15,
+      46,
+      16,
       1,
-      1,
+      11,
       0
     ],
     [
-      103,
-      21,
-      2,
-      74,
+      70,
+      20,
+      6,
+      104,
+      0
+    ],
+    [
+      4,
+      1,
+      1,
+      33,
       0
     ],
     [
       10,
       2,
-      0,
-      27,
-      0
-    ],
-    [
-      15,
-      4,
-      0,
-      37,
+      1,
+      43,
       3
     ]
   ],
-  "auc_ovr_macro": 0.8788171058935713,
+  "auc_ovr_macro": 0.8672918756123409,
   "auc_ovr_per_class": {
-    "No DR": 0.9757915586929974,
-    "Mild": 0.7932781035967682,
-    "Moderate": 0.8832645403377112,
-    "Severe": 0.891376634892485,
-    "Proliferative": 0.8503746919478952
+    "No DR": 0.9827242129091831,
+    "Mild": 0.8379813804699996,
+    "Moderate": 0.8872983114446529,
+    "Severe": 0.89056380699032,
+    "Proliferative": 0.7378916662475482
   },
-  "referable_auc": 0.9659492401450281
+  "referable_auc": 0.9661343824731929
 }

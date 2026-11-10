@@ -1,0 +1,5 @@
+81 images with masks
+saliency done: baseline_efficientnet_b3
+saliency done: baseline_resnet50
+saliency done: retfound_linprobe
+saliency done: retfound_full

@@ -3,6 +3,9 @@
   "arch": "retfound_vit_large_patch16",
   "backbone": "ViT-Large/16, RETFound MAE-pretrained (retinal)",
   "mode": "full",
+  "manifest": "data_splits\\aptos_manifest.csv",
+  "img_size": 224,
+  "train_frac": null,
   "epochs_max": 30,
   "batch_size": 16,
   "optimizer": "AdamW",
@@ -22,6 +25,6 @@
   "device": "cuda",
   "train_n": 2562,
   "val_n": 367,
-  "weights_file": "weights/RETFound_mae_natureCFP.pth",
-  "started_utc": "2026-09-08T09:07:00+00:00"
+  "weights_file": "weights\\RETFound_mae_natureCFP.pth",
+  "started_utc": "2026-10-21T02:28:15+00:00"
 }

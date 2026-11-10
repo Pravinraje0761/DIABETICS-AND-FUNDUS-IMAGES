@@ -1,0 +1,233 @@
+\begin{thebibliography}{40}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{{#1}}
+\providecommand{\urlprefix}{URL }
+\providecommand{\doi}[1]{\url{https://doi.org/#1}}
+\providecommand{\eprint}[2][]{\url{#2}}
+ \bibcommenthead
+
+\bibitem[{Abr{\`a}moff et~al(2013)Abr{\`a}moff, Folk, Han, Walker
+  et~al}]{abramoff2013}
+Abr{\`a}moff MD, Folk JC, Han DP, et~al (2013) Automated analysis of retinal
+  images for detection of referable diabetic retinopathy. JAMA Ophthalmology
+  131(3):351--357. \doi{10.1001/jamaophthalmol.2013.1743}
+
+\bibitem[{Alizadeh~Eghtedar et~al(2024)Alizadeh~Eghtedar, Vard, Malekahmadi,
+  and Peyman}]{alizadeh2024}
+Alizadeh~Eghtedar R, Vard A, Malekahmadi M, et~al (2024) A new computer-aided
+  diagnosis tool based on deep learning methods for automatic detection of
+  retinal disorders from {OCT} images. International Ophthalmology 44(1):110.
+  \doi{10.1007/s10792-024-03033-9}
+
+\bibitem[{Alutaibi and Alazmi(2026)}]{alutaibi2026}
+Alutaibi M, Alazmi M (2026) Comparative evaluation of {EfficientNet-B3}, vision
+  transformers, and {RETFound} for seven-category retinopathy fundus image
+  classification. Diagnostics 16(19):3109. \doi{10.3390/diagnostics16193109}
+
+\bibitem[{{Asia Pacific Tele-Ophthalmology Society}(2019)}]{aptos2019}
+{Asia Pacific Tele-Ophthalmology Society} (2019) {APTOS} 2019 blindness
+  detection. Kaggle competition dataset.
+  \url{https://www.kaggle.com/competitions/aptos2019-blindness-detection}.
+  Accessed 8 September 2026
+
+\bibitem[{Beede et~al(2020)Beede, Baylor, Hersch et~al}]{beede2020}
+Beede E, Baylor E, Hersch F, et~al (2020) A human-centered evaluation of a deep
+  learning system deployed in clinics for the detection of diabetic
+  retinopathy. In: Proceedings of the 2020 CHI Conference on Human Factors in
+  Computing Systems, pp 1--12, \doi{10.1145/3313831.3376718}
+
+\bibitem[{Chattopadhay et~al(2018)Chattopadhay, Sarkar, Howlader, and
+  Balasubramanian}]{chattopadhay2018gradcampp}
+Chattopadhay A, Sarkar A, Howlader P, et~al (2018) {Grad-CAM++}: generalized
+  gradient-based visual explanations for deep convolutional networks. In: 2018
+  IEEE Winter Conference on Applications of Computer Vision (WACV), pp
+  839--847, \doi{10.1109/WACV.2018.00097}
+
+\bibitem[{Cohen(1968)}]{cohen1968kappa}
+Cohen J (1968) Weighted kappa: nominal scale agreement with provision for
+  scaled disagreement or partial credit. Psychological Bulletin 70(4):213--220.
+  \doi{10.1037/h0026256}
+
+\bibitem[{Collins et~al(2024)Collins, Moons, Dhiman, Riley
+  et~al}]{tripodai2024}
+Collins GS, Moons KGM, Dhiman P, et~al (2024) {TRIPOD+AI} statement: updated
+  guidance for reporting clinical prediction models that use regression or
+  machine learning methods. BMJ 385:e078378. \doi{10.1136/bmj-2023-078378}
+
+\bibitem[{Dai et~al(2021)Dai, Wu, Li, Cai et~al}]{dai2021spectrum}
+Dai L, Wu L, Li H, et~al (2021) A deep learning system for detecting diabetic
+  retinopathy across the disease spectrum. Nature Communications 12(1):3242.
+  \doi{10.1038/s41467-021-23458-5}
+
+\bibitem[{Decenci{\`e}re et~al(2014)Decenci{\`e}re, Zhang, Cazuguel
+  et~al}]{decenciere2014}
+Decenci{\`e}re E, Zhang X, Cazuguel G, et~al (2014) Feedback on a publicly
+  distributed image database: the {Messidor} database. Image Analysis \&
+  Stereology 33(3):231--234. \doi{10.5566/ias.1155}
+
+\bibitem[{Dosovitskiy et~al(2021)Dosovitskiy, Beyer, Kolesnikov
+  et~al}]{dosovitskiy2021vit}
+Dosovitskiy A, Beyer L, Kolesnikov A, et~al (2021) An image is worth 16x16
+  words: transformers for image recognition at scale. In: International
+  Conference on Learning Representations (ICLR)
+
+\bibitem[{Efron and Tibshirani(1994)}]{efron1994bootstrap}
+Efron B, Tibshirani RJ (1994) An Introduction to the Bootstrap. Chapman \&
+  Hall/CRC, New York, \doi{10.1201/9780429246593}
+
+\bibitem[{Gal and Ghahramani(2016)}]{gal2016dropout}
+Gal Y, Ghahramani Z (2016) Dropout as a {Bayesian} approximation: representing
+  model uncertainty in deep learning. In: Proceedings of the 33rd International
+  Conference on Machine Learning (ICML), PMLR 48, pp 1050--1059
+
+\bibitem[{Geifman and El-Yaniv(2017)}]{geifman2017selective}
+Geifman Y, El-Yaniv R (2017) Selective classification for deep neural networks.
+  In: Advances in Neural Information Processing Systems 30 (NeurIPS)
+
+\bibitem[{Grzybowski et~al(2020)Grzybowski, Brona, Lim, Ruamviboonsuk
+  et~al}]{grzybowski2020review}
+Grzybowski A, Brona P, Lim G, et~al (2020) Artificial intelligence for diabetic
+  retinopathy screening: a review. Eye 34(3):451--460.
+  \doi{10.1038/s41433-019-0566-0}
+
+\bibitem[{Gulshan et~al(2016)Gulshan, Peng, Coram, Stumpe, Wu, Narayanaswamy
+  et~al}]{gulshan2016}
+Gulshan V, Peng L, Coram M, et~al (2016) Development and validation of a deep
+  learning algorithm for detection of diabetic retinopathy in retinal fundus
+  photographs. JAMA 316(22):2402--2410. \doi{10.1001/jama.2016.17216}
+
+\bibitem[{Guo et~al(2017)Guo, Pleiss, Sun, and Weinberger}]{guo2017calibration}
+Guo C, Pleiss G, Sun Y, et~al (2017) On calibration of modern neural networks.
+  In: Proceedings of the 34th International Conference on Machine Learning
+  (ICML), PMLR 70, pp 1321--1330
+
+\bibitem[{He et~al(2016)He, Zhang, Ren, and Sun}]{he2016resnet}
+He K, Zhang X, Ren S, et~al (2016) Deep residual learning for image
+  recognition. In: Proceedings of the IEEE Conference on Computer Vision and
+  Pattern Recognition (CVPR), pp 770--778, \doi{10.1109/CVPR.2016.90}
+
+\bibitem[{He et~al(2022)He, Chen, Xie, Li, Doll{\'a}r, and
+  Girshick}]{he2022mae}
+He K, Chen X, Xie S, et~al (2022) Masked autoencoders are scalable vision
+  learners. In: Proceedings of the IEEE/CVF Conference on Computer Vision and
+  Pattern Recognition (CVPR), pp 16000--16009,
+  \doi{10.1109/CVPR52688.2022.01553}
+
+\bibitem[{Hendrycks and Gimpel(2017)}]{hendrycks2017baseline}
+Hendrycks D, Gimpel K (2017) A baseline for detecting misclassified and
+  out-of-distribution examples in neural networks. In: International Conference
+  on Learning Representations (ICLR)
+
+\bibitem[{Holm(1979)}]{holm1979}
+Holm S (1979) A simple sequentially rejective multiple test procedure.
+  Scandinavian Journal of Statistics 6(2):65--70
+
+\bibitem[{Hou et~al(2025)Hou, Zhou, Goh, Zou et~al}]{hou2025dinov2}
+Hou Q, Zhou Y, Goh JHL, et~al (2025) Can a natural image-based foundation model
+  outperform a retina-specific model in detecting ocular and systemic diseases?
+  Ophthalmology Science 6(1):100923. \doi{10.1016/j.xops.2025.100923}
+
+\bibitem[{Jin and Grzybowski(2026)}]{jin2026editorial}
+Jin K, Grzybowski A (2026) Multimodal {AI} in retinal disease: from images to
+  decisions and real-world endpoints. International Ophthalmology 46(1).
+  \doi{10.1007/s10792-026-04254-w}
+
+\bibitem[{Krause et~al(2018)Krause, Gulshan, Rahimy, Karth et~al}]{krause2018}
+Krause J, Gulshan V, Rahimy E, et~al (2018) Grader variability and the
+  importance of reference standards for evaluating machine learning models for
+  diabetic retinopathy. Ophthalmology 125(8):1264--1272.
+  \doi{10.1016/j.ophtha.2018.01.034}
+
+\bibitem[{Li et~al(2026)Li, Thambawita, Byberg, and Hulman}]{li2026uwf}
+Li LY, Thambawita V, Byberg S, et~al (2026) Assessing the generalisability of
+  foundation models to ultra-wide field retinal imaging for diabetic
+  retinopathy screening in {Denmark} and {Greenland}. International Journal of
+  Medical Informatics 217:106503. \doi{10.1016/j.ijmedinf.2026.106503}
+
+\bibitem[{Mahapadi et~al(2025)Mahapadi, Shirsath, and Pundge}]{mahapadi2025}
+Mahapadi AA, Shirsath V, Pundge A (2025) Non-proliferative diabetic retinopathy
+  detection using {Rosmarus Quagga} optimized explainable generative meta
+  learning based deep convolutional neural network model. International
+  Ophthalmology 45(1):178. \doi{10.1007/s10792-025-03528-z}
+
+\bibitem[{M{\"u}ller et~al(2019)M{\"u}ller, Kornblith, and
+  Hinton}]{muller2019labelsmoothing}
+M{\"u}ller R, Kornblith S, Hinton G (2019) When does label smoothing help? In:
+  Advances in Neural Information Processing Systems 32 (NeurIPS)
+
+\bibitem[{Nagasawa et~al(2019)Nagasawa, Tabuchi, Masumoto, Enno
+  et~al}]{nagasawa2019}
+Nagasawa T, Tabuchi H, Masumoto H, et~al (2019) Accuracy of ultrawide-field
+  fundus ophthalmoscopy-assisted deep learning for detecting
+  treatment-na{\"i}ve proliferative diabetic retinopathy. International
+  Ophthalmology 39(10):2153--2159. \doi{10.1007/s10792-019-01074-z}
+
+\bibitem[{Porwal et~al(2018)Porwal, Pachade, Kamble, Kokare et~al}]{porwal2018}
+Porwal P, Pachade S, Kamble R, et~al (2018) Indian diabetic retinopathy image
+  dataset ({IDRiD}): a database for diabetic retinopathy screening research.
+  Data 3(3):25. \doi{10.3390/data3030025}
+
+\bibitem[{Porwal et~al(2020)Porwal, Pachade, Kokare, Deshmukh
+  et~al}]{porwal2020}
+Porwal P, Pachade S, Kokare M, et~al (2020) {IDRiD}: diabetic retinopathy --
+  segmentation and grading challenge. Medical Image Analysis 59:101561.
+  \doi{10.1016/j.media.2019.101561}
+
+\bibitem[{Poyrazer et~al(2026)Poyrazer, Ya{\u{g}}c{\i}, and
+  Erten}]{poyrazer2026}
+Poyrazer M, Ya{\u{g}}c{\i} H, Erten R (2026) How well do frozen foundation
+  models transfer? {A} calibration-focused benchmark for diabetic retinopathy
+  grading. Frontiers in Medicine 13:1815982. \doi{10.3389/fmed.2026.1815982}
+
+\bibitem[{Sounderajah et~al(2025)Sounderajah, Guni, Liu, Collins
+  et~al}]{stardai2025}
+Sounderajah V, Guni A, Liu X, et~al (2025) The {STARD-AI} reporting guideline
+  for diagnostic accuracy studies using artificial intelligence. Nature
+  Medicine 31(10):3283--3289. \doi{10.1038/s41591-025-03953-8}
+
+\bibitem[{Tan and Le(2019)}]{tan2019efficientnet}
+Tan M, Le QV (2019) {EfficientNet}: rethinking model scaling for convolutional
+  neural networks. In: Proceedings of the 36th International Conference on
+  Machine Learning (ICML), PMLR 97, pp 6105--6114
+
+\bibitem[{Tejani et~al(2024)Tejani, Klontzas, Gatti, Mongan et~al}]{claim2024}
+Tejani AS, Klontzas ME, Gatti AA, et~al (2024) Checklist for artificial
+  intelligence in medical imaging ({CLAIM}): 2024 update. Radiology: Artificial
+  Intelligence 6(4):e240300. \doi{10.1148/ryai.240300}
+
+\bibitem[{Ting et~al(2017)Ting, Cheung, Lim, Tan et~al}]{ting2017}
+Ting DSW, Cheung CYL, Lim G, et~al (2017) Development and validation of a deep
+  learning system for diabetic retinopathy and related eye diseases using
+  retinal images from multiethnic populations with diabetes. JAMA
+  318(22):2211--2223. \doi{10.1001/jama.2017.18152}
+
+\bibitem[{Vought et~al(2023)Vought, Vought, Shah, Szirth, and
+  Bhagat}]{vought2023eyeart}
+Vought R, Vought V, Shah M, et~al (2023) {EyeArt} artificial intelligence
+  analysis of diabetic retinopathy in retinal screening events. International
+  Ophthalmology 43(12):4851--4859. \doi{10.1007/s10792-023-02887-9}
+
+\bibitem[{Yew et~al(2026)Yew, Lei, Goh, Zou et~al}]{yew2026}
+Yew SME, Lei X, Goh JHL, et~al (2026) Performance and label efficiency of
+  traditional deep-learning models and a retina-specific foundation model for
+  ocular and systemic disease detection: a retrospective comparative study. The
+  Lancet Digital Health 8(9):101031. \doi{10.1016/j.landig.2026.101031}
+
+\bibitem[{Yuan et~al(2023)Yuan, Dai, Shi, Li, and Li}]{yuan2023}
+Yuan H, Dai M, Shi C, et~al (2023) A generative adversarial neural network with
+  multi-attention feature extraction for fundus lesion segmentation.
+  International Ophthalmology 43(12):5079--5090.
+  \doi{10.1007/s10792-023-02911-y}
+
+\bibitem[{Zhang et~al(2018)Zhang, Bargal, Lin, Brandt, Shen, and
+  Sclaroff}]{zhang2018topdown}
+Zhang J, Bargal SA, Lin Z, et~al (2018) Top-down neural attention by excitation
+  backprop. International Journal of Computer Vision 126:1084--1102.
+  \doi{10.1007/s11263-017-1059-x}
+
+\bibitem[{Zhou et~al(2023)Zhou, Chia, Wagner, Ayhan et~al}]{zhou2023retfound}
+Zhou Y, Chia MA, Wagner SK, et~al (2023) A foundation model for generalizable
+  disease detection from retinal images. Nature 622(7981):156--163.
+  \doi{10.1038/s41586-023-06555-x}
+
+\end{thebibliography}

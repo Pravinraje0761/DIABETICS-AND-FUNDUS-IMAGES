@@ -1,0 +1,207 @@
+\subsection{Classifier-head depth and activation sensitivity}
+\label{sec:results-headdepth}
+
+\textbf{What varies, and what does not.} The backbones in this study arrive with
+their depth fixed by the pretrained checkpoint: a ViT-L/16 cannot be given
+``five hidden layers'' and still be RETFound. The architectural choice that was
+ours to make, and that the main analysis did not justify, is the depth of the
+classifier head on top of the features. We therefore froze each backbone, cached
+its pooled embeddings once, and swept only the head
+(\texttt{scripts/phase22\_head\_depth\_ablation.py}). Two feature sources were
+used: the penultimate layer of the end-to-end fine-tuned EfficientNet-B3
+($1536$-d) and the frozen RETFound encoder of the linear-probe model ($1024$-d).
+The EfficientNet-B3 features had therefore already been adapted to APTOS during
+fine-tuning, whereas the RETFound features had not; the sweep compares heads
+within each feature source, not adaptation regimes. Heads had
+$d\in\{0,3,4,5,6,7\}$ hidden layers of constant width $256$, each followed by one
+of four activations (ReLU, GELU, tanh, identity) and dropout $0.3$; $d=0$ is a
+linear probe and serves as the anchor. The identity activation is a control: an
+identity-activated stack is a linear map at inference regardless of depth, so its
+gap to the non-linear rows measures how much non-linearity the head needed.
+Everything else was held fixed across depths: features standardised on APTOS-train
+statistics only, class-weighted cross-entropy, AdamW ($\text{lr}=10^{-3}$, weight
+decay $10^{-4}$), batch $256$, at most $60$ epochs with early stopping on
+APTOS-validation balanced accuracy (patience $10$). The grid was
+$21$ (depth, activation) cells $\times$ $5$ seeds $=105$ fits per backbone
+($210$ in total), and every fitted head was scored, unchanged, on the APTOS
+internal test set, Messidor-2, and IDRiD ($630$ evaluations). All $210$ fits
+stopped early before the epoch cap (longest run $52$ epochs), so no depth effect
+below is an artefact of non-convergence. No fit collapsed to a single predicted
+class.
+
+Because the $d=0$ heads here are re-fitted under this common protocol, their
+values differ from the published heads in Table~\ref{tab:master} (RETFound linear
+probe: internal $0.855$ vs.\ $0.847$, Messidor-2 $0.419$ vs.\ $0.394$, IDRiD
+$0.716$ vs.\ $0.626$; EfficientNet-B3 re-fitted linear head on its fine-tuned
+features: $0.862$, $0.517$, $0.720$ vs.\ the end-to-end model's $0.876$,
+$0.499$, $0.760$). All comparisons in this subsection are within the sweep.
+
+\textbf{Reproducibility floor.} Across the five seeds of a fixed (depth,
+activation) cell, QWK varied with a median standard deviation of $0.006$, $0.014$
+and $0.011$ for EfficientNet-B3 (APTOS-internal, Messidor-2, IDRiD) and $0.010$,
+$0.036$ and $0.029$ for RETFound. The external floor is three to four times the
+internal one, and larger for RETFound than for the CNN. Every difference below is
+stated against the floor of its own (backbone, dataset) pair.
+
+\begin{table*}[!t]
+\centering\footnotesize
+\caption{Head-depth sweep on frozen features: mean QWK by number of hidden
+layers ($d=0$: linear probe; $d\geq3$: mean over the four activations and five
+seeds). Floor: median within-cell standard deviation of QWK across seeds. Ratio:
+(best $-$ worst depth mean) / floor; a ratio below $\approx 2$ means depth moved
+QWK no more than reseeding does. Source: \texttt{outputs/phase22/runs.csv}.}
+\label{tab:headdepth}
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{llcccccccc}
+\toprule
+Features & Test set & $d=0$ & $d=3$ & $d=4$ & $d=5$ & $d=6$ & $d=7$ & Floor & Ratio \\
+\midrule
+EfficientNet-B3 & APTOS-int. & 0.862 & 0.866 & 0.868 & 0.861 & 0.868 & 0.867 & 0.006 & 1.1 \\
+EfficientNet-B3 & Messidor-2 & 0.517 & 0.518 & 0.522 & 0.512 & 0.517 & 0.511 & 0.014 & 0.7 \\
+EfficientNet-B3 & IDRiD & 0.720 & 0.747 & 0.753 & 0.745 & 0.749 & 0.753 & 0.011 & 3.1 \\
+\midrule
+RETFound & APTOS-int. & 0.855 & 0.855 & 0.853 & 0.857 & 0.851 & 0.857 & 0.010 & 0.6 \\
+RETFound & Messidor-2 & 0.419 & 0.403 & 0.401 & 0.401 & 0.380 & 0.393 & 0.036 & 1.1 \\
+RETFound & IDRiD & 0.716 & 0.724 & 0.723 & 0.740 & 0.702 & 0.740 & 0.029 & 1.3 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\textbf{Depth.} Head depth did not move internal performance for either backbone
+(Table~\ref{tab:headdepth}; best-minus-worst depth $0.006$--$0.007$ QWK, $0.6$--$1.1\times$
+the floor). This null is expected rather than disappointing: both embeddings are
+already close to linearly separable for APTOS grading, because the non-linear work
+was done upstream, which is also what the competitive linear-probe result in
+Table~\ref{tab:master} implies. Externally, five of six (backbone, dataset) pairs
+were likewise within $1.3\times$ the floor. The single exception, EfficientNet-B3
+on IDRiD ($3.1\times$), is not a depth effect: QWK rose from $0.720$ at $d=0$ to
+$0.745$--$0.753$ for \emph{any} hidden head and was flat from $d=3$ to $d=7$
+(range $0.008$, below the floor), and identity-activated stacks gained as much as
+non-linear ones ($+0.027$ vs.\ $+0.028$--$0.033$; Table~\ref{tab:headact}). A
+head that is linear at inference cannot owe its gain to depth or to non-linearity;
+the plausible source is the training dynamics of the over-parameterised head
+(dropout between layers and longer training, $15$--$17$ vs.\ $12$ epochs on average),
+which act as a regulariser. We report it as such and not as evidence for a deeper
+head.
+
+\begin{table*}[!t]
+\centering\footnotesize
+\caption{Activation effect, marginalised over $d=3$--$7$ (five seeds each):
+mean QWK and, in parentheses, the change relative to the $d=0$ linear probe. The
+identity row is the linear control.}
+\label{tab:headact}
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{llccccc}
+\toprule
+Features & Test set & $d=0$ & ReLU & GELU & tanh & identity \\
+\midrule
+EfficientNet-B3 & APTOS-int. & 0.862 & 0.868 (+0.007) & 0.869 (+0.007) & 0.863 (+0.001) & 0.864 (+0.003) \\
+EfficientNet-B3 & Messidor-2 & 0.517 & 0.520 (+0.003) & 0.524 (+0.008) & 0.512 ($-$0.005) & 0.508 ($-$0.009) \\
+EfficientNet-B3 & IDRiD & 0.720 & 0.747 (+0.028) & 0.750 (+0.030) & 0.753 (+0.033) & 0.747 (+0.027) \\
+\midrule
+RETFound & APTOS-int. & 0.855 & 0.855 ($-$0.000) & 0.866 (+0.011) & 0.856 (+0.001) & 0.842 ($-$0.013) \\
+RETFound & Messidor-2 & 0.419 & 0.382 ($-$0.037) & 0.356 ($-$0.064) & 0.425 (+0.006) & 0.421 (+0.001) \\
+RETFound & IDRiD & 0.716 & 0.734 (+0.018) & 0.745 (+0.030) & 0.730 (+0.014) & 0.695 ($-$0.020) \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\textbf{Activation.} For EfficientNet-B3 the four activations were
+interchangeable on every test set (all within $0.016$ QWK of each other). For
+RETFound the activation mattered, and in opposite directions inside and outside
+the training domain (Table~\ref{tab:headact}). GELU --- the activation of the ViT
+trunk itself, and therefore the most defensible default for a head on ViT
+features --- gave the best internal mean ($0.866$, $+0.011$ over the linear probe)
+and the worst Messidor-2 mean ($0.356$, $-0.064$, $1.8\times$ the Messidor-2
+floor); ReLU followed the same pattern more weakly ($-0.037$). The bounded tanh
+and the identity control stayed at the linear-probe level on Messidor-2
+($+0.006$, $+0.001$). The configuration internal validation would select ---
+the single best internal cell, $d=7$ with GELU ($0.877$, $+0.022$, $2.2\times$
+the internal floor) --- was simultaneously among the worst on Messidor-2
+($0.344$, $-0.076$, $2.1\times$ the floor) while improving IDRiD ($0.777$,
+$+0.061$, $2.1\times$). This is the pattern the main analysis attributes to
+RETFound: added capacity in unbounded non-linear units fits APTOS-specific
+directions of the foundation-model embedding that do not transfer to the
+Messidor-2 acquisition, and whether it helps or hurts on a new site cannot be
+read from internal performance. Because these cells were chosen post hoc from
+$21$, their size should be read against the floor rather than as estimates of a
+true effect.
+
+\begin{table*}[!t]
+\centering\footnotesize
+\caption{Where the errors go: confusion-matrix structure for the linear probe
+($d=0$) and for the head internal validation would choose ($d=7$, GELU, the best
+internal cell for both backbones). Raw counts summed over five seeds ($n$ is
+$5\times$ the test-set size). Adjacent: off by one grade; distant: off by two or
+more. Under/over: predicted grade below/above the reference. Referable DR:
+grade~$\geq 2$. Per-run integer matrices: \texttt{outputs/phase22/confusion\_matrices.json}.}
+\label{tab:headcm}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lllrrrrrrcc}
+\toprule
+Features & Test set & Head & $n$ & Errors & Adjacent & Distant & Under & Over & Ref.\ sens. & Ref.\ spec. \\
+\midrule
+EfficientNet-B3 & APTOS-int. & $d=0$ & 3665 & 738 & 520 & 218 & 341 & 397 & 0.899 & 0.928 \\
+ & & $d=7$ GELU & 3665 & 756 & 563 & 193 & 346 & 410 & 0.913 & 0.926 \\
+ & Messidor-2 & $d=0$ & 8720 & 3347 & 1947 & 1400 & 2757 & 590 & 0.474 & 0.952 \\
+ & & $d=7$ GELU & 8720 & 3311 & 1842 & 1469 & 2891 & 420 & 0.438 & 0.960 \\
+ & IDRiD & $d=0$ & 2275 & 1248 & 1064 & 184 & 663 & 585 & 0.842 & 0.954 \\
+ & & $d=7$ GELU & 2275 & 1129 & 954 & 175 & 660 & 469 & 0.847 & 0.954 \\
+\midrule
+RETFound & APTOS-int. & $d=0$ & 3665 & 905 & 664 & 241 & 386 & 519 & 0.873 & 0.948 \\
+ & & $d=7$ GELU & 3665 & 901 & 748 & 153 & 410 & 491 & 0.899 & 0.939 \\
+ & Messidor-2 & $d=0$ & 8720 & 3444 & 1626 & 1818 & 3035 & 409 & 0.299 & 0.965 \\
+ & & $d=7$ GELU & 8720 & 3564 & 1647 & 1917 & 3342 & 222 & 0.222 & 0.977 \\
+ & IDRiD & $d=0$ & 2275 & 1274 & 976 & 298 & 573 & 701 & 0.805 & 0.816 \\
+ & & $d=7$ GELU & 2275 & 1058 & 793 & 265 & 544 & 514 & 0.863 & 0.899 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\textbf{Confusion-matrix structure.} The total error count says little; where
+the errors move says more (Table~\ref{tab:headcm}). Internally, the deeper GELU
+head for RETFound left the error count unchanged ($905\to901$) but converted
+distant errors into adjacent ones ($241\to153$ errors of two or more grades) and
+raised referable sensitivity ($0.873\to0.899$) --- a genuine, if small,
+improvement in ordinal behaviour. On Messidor-2 the same head moved errors the
+other way: under-grading rose ($3035\to3342$), over-grading fell
+($409\to222$), and distant errors increased ($1818\to1917$), so referable
+sensitivity fell from $0.299$ to $0.222$ while specificity rose from $0.965$ to
+$0.977$. The deeper head pushes Messidor-2 images toward grade~$0$ and misses
+$177$ more referable cases over the five seeds, which for a screening use is the
+costly direction. The EfficientNet-B3 shift on Messidor-2 had the same sign but was
+about half as large ($0.474\to0.438$ sensitivity). On IDRiD both backbones
+improved at depth $7$, mostly by removing adjacent-grade errors.
+
+\textbf{The RETFound--CNN gap is not a head artefact.} On Messidor-2, every one
+of the $21$ EfficientNet-B3 head configurations (lowest cell mean $0.496$)
+outperformed every one of the $21$ RETFound configurations (highest $0.448$). No
+choice of depth or activation closes the Messidor-2 gap reported in
+Table~\ref{tab:drop}. The IDRiD comparison is more sensitive to how the head is
+trained: under this common re-fitting protocol the two linear probes are nearly
+tied on IDRiD ($0.720$ vs.\ $0.716$), and the best RETFound cell ($0.777$)
+exceeds the best EfficientNet-B3 cell ($0.764$). The IDRiD component of the
+headline should therefore be read with the head-training protocol in mind, while
+the Messidor-2 component is robust to it.
+
+\textbf{Selected configuration.} We retain the linear probe ($d=0$). This is a
+parsimony decision under a null result, not a choice of the highest-scoring
+cell: no depth exceeded twice the seed floor internally, the one external gain
+for EfficientNet-B3 (IDRiD) came from any over-parameterised head, including
+linear ones, rather than from depth, and for RETFound the configurations that
+internal validation favours bought their internal gain with lower Messidor-2
+agreement and sensitivity. The linear head has $7{,}685$ (EfficientNet-B3) or
+$5{,}125$ (RETFound) parameters against $0.40$--$0.79$\,M for the $d=3$--$7$
+heads.
+
+\textbf{Limits of this sweep.} The sweep says nothing about trunk depth or about
+full fine-tuning at other depths, because the backbone was frozen throughout.
+Width was held constant at $256$; a capacity-matched (pyramid) schedule was not
+run, so depth and parameter count are not separated. Learning rate, dropout and
+patience were fixed across depths; a per-depth tuned result could differ and
+would answer a different question. Early stopping used validation balanced
+accuracy rather than the QWK criterion of the main models, which is one reason
+the re-fitted linear heads do not reproduce Table~\ref{tab:master} exactly.
+Differences are judged against the across-seed floor, without bootstrap
+confidence intervals over images.
+

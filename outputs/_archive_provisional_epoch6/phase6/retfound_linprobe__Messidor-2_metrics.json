@@ -1,0 +1,79 @@
+{
+  "n": 1744,
+  "accuracy": 0.5894495412844036,
+  "quadratic_weighted_kappa": 0.39377527147996716,
+  "macro_f1": 0.3468734881348237,
+  "balanced_accuracy": 0.4232837999379021,
+  "per_class": {
+    "No DR": {
+      "support": 1017,
+      "sensitivity": 0.8987217305801377,
+      "specificity": 0.31911966987620355
+    },
+    "Mild": {
+      "support": 270,
+      "sensitivity": 0.0,
+      "specificity": 0.991180461329715
+    },
+    "Moderate": {
+      "support": 347,
+      "sensitivity": 0.17579250720461095,
+      "specificity": 0.9427344309234073
+    },
+    "Severe": {
+      "support": 75,
+      "sensitivity": 0.41333333333333333,
+      "specificity": 0.9778310365488316
+    },
+    "Proliferative": {
+      "support": 35,
+      "sensitivity": 0.6285714285714286,
+      "specificity": 0.946752486834406
+    }
+  },
+  "confusion_matrix": [
+    [
+      914,
+      5,
+      39,
+      6,
+      53
+    ],
+    [
+      242,
+      0,
+      17,
+      0,
+      11
+    ],
+    [
+      235,
+      8,
+      61,
+      21,
+      22
+    ],
+    [
+      17,
+      0,
+      22,
+      31,
+      5
+    ],
+    [
+      1,
+      0,
+      2,
+      10,
+      22
+    ]
+  ],
+  "auc_ovr_macro": 0.7575612151911714,
+  "auc_ovr_per_class": {
+    "No DR": 0.6869599206880554,
+    "Mild": 0.5608673802703653,
+    "Moderate": 0.6857407495270845,
+    "Severe": 0.9409386858398242,
+    "Proliferative": 0.9132993396305276
+  }
+}

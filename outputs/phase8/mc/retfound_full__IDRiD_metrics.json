@@ -1,42 +1,42 @@
 {
   "n": 455,
-  "accuracy": 0.3868131868131868,
-  "quadratic_weighted_kappa": 0.6938166841768443,
-  "macro_f1": 0.39557389437364243,
-  "balanced_accuracy": 0.47634928056439685,
+  "accuracy": 0.42857142857142855,
+  "quadratic_weighted_kappa": 0.7349892103890494,
+  "macro_f1": 0.4045122882806374,
+  "balanced_accuracy": 0.49773312927382696,
   "per_class": {
     "No DR": {
       "support": 129,
-      "sensitivity": 0.4108527131782946,
-      "specificity": 0.9938650306748467
+      "sensitivity": 0.46511627906976744,
+      "specificity": 0.9969325153374233
     },
     "Mild": {
       "support": 22,
       "sensitivity": 0.8636363636363636,
-      "specificity": 0.605080831408776
+      "specificity": 0.6697459584295612
     },
     "Moderate": {
       "support": 156,
-      "sensitivity": 0.23076923076923078,
+      "sensitivity": 0.30128205128205127,
       "specificity": 0.9130434782608695
     },
     "Severe": {
       "support": 84,
-      "sensitivity": 0.5952380952380952,
-      "specificity": 0.7978436657681941
+      "sensitivity": 0.7023809523809523,
+      "specificity": 0.7628032345013477
     },
     "Proliferative": {
       "support": 64,
-      "sensitivity": 0.28125,
-      "specificity": 0.9872122762148338
+      "sensitivity": 0.15625,
+      "specificity": 0.9948849104859335
     }
   },
   "confusion_matrix": [
     [
-      53,
-      64,
-      10,
-      2,
+      60,
+      60,
+      5,
+      4,
       0
     ],
     [
@@ -47,33 +47,33 @@
       0
     ],
     [
-      1,
-      82,
-      36,
-      35,
-      2
+      0,
+      71,
+      47,
+      38,
+      0
     ],
     [
       0,
-      20,
-      11,
-      50,
-      3
+      7,
+      16,
+      59,
+      2
     ],
     [
       0,
       5,
       4,
-      37,
-      18
+      45,
+      10
     ]
   ],
-  "auc_ovr_macro": 0.8132466723410372,
+  "auc_ovr_macro": 0.8199648258082579,
   "auc_ovr_per_class": {
-    "No DR": 0.9284015789223379,
-    "Mild": 0.7546714255721184,
-    "Moderate": 0.7186562044421577,
-    "Severe": 0.7645680913874984,
-    "Proliferative": 0.8999360613810741
+    "No DR": 0.9643077947400961,
+    "Mild": 0.7764014276716356,
+    "Moderate": 0.715611868621902,
+    "Severe": 0.793319214478244,
+    "Proliferative": 0.8501838235294117
   }
 }

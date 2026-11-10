@@ -1,15 +1,18 @@
 {
   "arch": "retfound_vit_large_patch16",
   "mode": "full",
-  "best_epoch": 6,
-  "val_qwk": 0.9354,
-  "note": "full fine-tune STOPPED at epoch 7/30 due to OneDrive checkpoint-sync I/O slowdown (epochs went 90s->888s). Best (epoch 6) checkpoint used. Val QWK was still improving.",
+  "best_epoch": 21,
+  "val_qwk": 0.9393576542541995,
+  "epochs_run": 28,
+  "stop_reason": "early stopping (patience 7)",
+  "resumed_from_epoch": [],
   "internal_test": {
     "n": 733,
-    "accuracy": 0.7694406548431105,
-    "quadratic_weighted_kappa": 0.8692505878037823,
-    "macro_f1": 0.6159873203927416,
-    "balanced_accuracy": 0.6288563101667942,
-    "auc_ovr_macro": 0.9151784641682127
-  }
+    "accuracy": 0.7844474761255116,
+    "quadratic_weighted_kappa": 0.882838418924872,
+    "macro_f1": 0.6335929282866356,
+    "balanced_accuracy": 0.6483698236803077,
+    "auc_ovr_macro": 0.9004695411043396
+  },
+  "finished_utc": "2026-10-21T06:05:01+00:00"
 }

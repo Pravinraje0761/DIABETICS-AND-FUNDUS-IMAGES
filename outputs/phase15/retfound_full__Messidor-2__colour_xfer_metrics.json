@@ -1,14 +1,14 @@
 {
   "n": 1744,
-  "accuracy": 0.5911697247706422,
-  "quadratic_weighted_kappa": 0.12254025044722716,
-  "macro_f1": 0.22427202961090428,
-  "balanced_accuracy": 0.24589858126141312,
+  "accuracy": 0.6077981651376146,
+  "quadratic_weighted_kappa": 0.2844144051812335,
+  "macro_f1": 0.34829110634043187,
+  "balanced_accuracy": 0.33982928502813226,
   "per_class": {
     "No DR": {
       "support": 1017,
-      "sensitivity": 0.9990167158308751,
-      "specificity": 0.03163686382393398
+      "sensitivity": 1.0,
+      "specificity": 0.08665749656121045
     },
     "Mild": {
       "support": 270,
@@ -17,24 +17,24 @@
     },
     "Moderate": {
       "support": 347,
-      "sensitivity": 0.0,
-      "specificity": 1.0
+      "sensitivity": 0.011527377521613832,
+      "specificity": 0.9949892627057981
     },
     "Severe": {
       "support": 75,
-      "sensitivity": 0.17333333333333334,
-      "specificity": 0.9952067106051528
+      "sensitivity": 0.37333333333333335,
+      "specificity": 0.9928100659077291
     },
     "Proliferative": {
       "support": 35,
-      "sensitivity": 0.05714285714285714,
+      "sensitivity": 0.3142857142857143,
       "specificity": 1.0
     }
   },
   "confusion_matrix": [
     [
-      1016,
-      1,
+      1017,
+      0,
       0,
       0,
       0
@@ -47,34 +47,34 @@
       0
     ],
     [
-      346,
-      0,
-      0,
+      336,
       1,
+      4,
+      6,
       0
     ],
     [
-      62,
-      0,
-      0,
-      13,
-      0
-    ],
-    [
-      26,
-      0,
+      40,
       0,
       7,
-      2
+      28,
+      0
+    ],
+    [
+      18,
+      0,
+      0,
+      6,
+      11
     ]
   ],
-  "auc_ovr_macro": 0.7361199902577108,
+  "auc_ovr_macro": 0.7478139083444316,
   "auc_ovr_per_class": {
-    "No DR": 0.6652384024540176,
-    "Mild": 0.5016030956329464,
-    "Moderate": 0.6293642820453049,
-    "Severe": 0.9374076293189535,
-    "Proliferative": 0.9469865418373318
+    "No DR": 0.6834731165780088,
+    "Mild": 0.5151314136388763,
+    "Moderate": 0.6760452100940879,
+    "Severe": 0.9082883962452566,
+    "Proliferative": 0.9561314051659283
   },
-  "referable_auc": 0.7382102458688892
+  "referable_auc": 0.7416574429703533
 }

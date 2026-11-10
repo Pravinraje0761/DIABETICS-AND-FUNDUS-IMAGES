@@ -1,0 +1,20 @@
+{
+  "arch": "retfound_vit_large_patch16",
+  "mode": "full",
+  "best_epoch": 5,
+  "val_qwk": 0.9157818922093649,
+  "epochs_run": 12,
+  "stop_reason": "early stopping (patience 7)",
+  "resumed_from_epoch": [
+    4
+  ],
+  "internal_test": {
+    "n": 733,
+    "accuracy": 0.7680763983628922,
+    "quadratic_weighted_kappa": 0.8809438839704435,
+    "macro_f1": 0.6177007204745613,
+    "balanced_accuracy": 0.6289432288977808,
+    "auc_ovr_macro": 0.9271881505339756
+  },
+  "finished_utc": "2026-11-07T07:06:07+00:00"
+}

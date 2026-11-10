@@ -258,7 +258,14 @@ def main() -> int:
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--boot", type=int, default=2000)
     ap.add_argument("--seed", type=int, default=42)
+    ap.add_argument("--preds-dir", default=None, help="override outputs/phase6")
+    ap.add_argument("--out-dir", default=None, help="override outputs/phase19")
     args = ap.parse_args()
+    global PHASE6_DIR, OUT_DIR
+    if args.preds_dir:
+        PHASE6_DIR = PROJECT_DIR / args.preds_dir
+    if args.out_dir:
+        OUT_DIR = PROJECT_DIR / args.out_dir
 
     if not PHASE6_DIR.is_dir():
         print(f"missing {PHASE6_DIR} - run phase6_external_eval.py first")

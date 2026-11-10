@@ -1,0 +1,13 @@
+model,model_label,dataset,n_true_mild,pred_0,pred_1,pred_2,pred_3,pred_4
+baseline_efficientnet_b3,EfficientNet-B3,APTOS-internal,74,8,39,26,0,1
+baseline_efficientnet_b3,EfficientNet-B3,Messidor-2,270,259,4,6,0,1
+baseline_efficientnet_b3,EfficientNet-B3,IDRiD,22,4,17,1,0,0
+baseline_resnet50,ResNet-50,APTOS-internal,74,8,49,17,0,0
+baseline_resnet50,ResNet-50,Messidor-2,270,255,2,13,0,0
+baseline_resnet50,ResNet-50,IDRiD,22,2,19,1,0,0
+retfound_linprobe,RETFound linear probe,APTOS-internal,74,10,45,14,1,4
+retfound_linprobe,RETFound linear probe,Messidor-2,270,242,0,17,0,11
+retfound_linprobe,RETFound linear probe,IDRiD,22,1,10,6,5,0
+retfound_full,RETFound full fine-tune,APTOS-internal,74,10,44,16,3,1
+retfound_full,RETFound full fine-tune,Messidor-2,270,266,0,2,1,1
+retfound_full,RETFound full fine-tune,IDRiD,22,1,19,1,1,0
